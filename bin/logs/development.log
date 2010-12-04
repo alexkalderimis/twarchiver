@@ -1,0 +1,329 @@
+[4298] debug @0.000448> [hit #1] in show in bin/scrape-site.pl l. 9
+[4298] debug @0.000480> [hit #4] in show in bin/scrape-site.pl l. 9
+[8441] debug @0.000440> [hit #1] in show in bin/scrape-site.pl l. 9
+[8914] debug @0.000467> [hit #1] in show in bin/scrape-site.pl l. 9
+[11872] debug @0.000468> [hit #1] in show in bin/scrape-site.pl l. 9
+[11872] debug @0.001015> [hit #4] in show in bin/scrape-site.pl l. 9
+[14042] debug @0.000488> [hit #1] in show in bin/scrape-site.pl l. 9
+[14042] debug @0.250256> [hit #1] http://localhost:3000/show/bar in bin/scrape-site.pl l. 33
+[14042] debug @0.000653> [hit #4] in show in bin/scrape-site.pl l. 9
+[14042] debug @0.002375> [hit #4] http://localhost:3000/show/bar in bin/scrape-site.pl l. 33
+[14042] debug @0.000519> [hit #7] in show in bin/scrape-site.pl l. 9
+[14042] debug @0.002263> [hit #7] http://localhost:3000/show/alexkalderimis in bin/scrape-site.pl l. 33
+[24319] debug @0.000750> [hit #4] in show in bin/scrape-site.pl l. 9
+[24319] debug @0.252837> [hit #4] http://localhost:3000/show/alexkalderimis in bin/scrape-site.pl l. 33
+[26390] debug @0.000533> [hit #1] in show in bin/scrape-site.pl l. 9
+[26390] debug @0.244141> [hit #1] token is , secret is  in bin/scrape-site.pl l. 12
+[26390] debug @0.251666> [hit #1] http://localhost:3000/show/alexkalderimis in bin/scrape-site.pl l. 34
+[31423] debug @0.000439> [hit #1] in show in bin/scrape-site.pl l. 9
+[31423] debug @0.243592> [hit #1] token is , secret is  in bin/scrape-site.pl l. 12
+[31423] debug @0.250438> [hit #1] http://localhost:3000/show/alexkalderimis in bin/scrape-site.pl l. 34
+[5382] debug @0.000497> [hit #1] in show in bin/scrape-site.pl l. 9
+[5382] debug @0.248766> [hit #1] Callback url is http://localhost:3000/show/alexkalderimis in bin/scrape-site.pl l. 33
+[5382] debug @0.248926> [hit #1] Request token is  in bin/scrape-site.pl l. 34
+[5382] debug @0.000663> [hit #2] in show in bin/scrape-site.pl l. 9
+[5382] debug @0.002439> [hit #2] Callback url is http://localhost:3000/show/alexkalderimis in bin/scrape-site.pl l. 33
+[5382] debug @0.002607> [hit #2] Request token is  in bin/scrape-site.pl l. 34
+[8471] debug @0.000441> [hit #1] in show in bin/scrape-site.pl l. 9
+[8471] debug @0.258168> [hit #1] Callback url is http://localhost:3000/show/alexkalderimis in bin/scrape-site.pl l. 33
+[8471] debug @0.258321> [hit #1] Request token is  in bin/scrape-site.pl l. 34
+[10144] debug @0.000437> [hit #1] in show in bin/scrape-site.pl l. 9
+[10144] debug @0.306686> [hit #1] Callback url is http://localhost:3000/show/alexkalderimis in bin/scrape-site.pl l. 33
+[10144] debug @0.306857> [hit #1] Request token is  in bin/scrape-site.pl l. 34
+[10144] debug @0.001049> [hit #2] in show in bin/scrape-site.pl l. 9
+[12928] debug @0.000495> [hit #1] in show in bin/scrape-site.pl l. 9
+[12928] debug @0.252163> [hit #1] Callback url is http://localhost:3000/show/alexkalderimis in bin/scrape-site.pl l. 33
+[12928] debug @0.252312> [hit #1] Request token is  in bin/scrape-site.pl l. 34
+[12928] debug @0.000997> [hit #2] in show in bin/scrape-site.pl l. 9
+[14905] debug @0.000496> [hit #1] in show in bin/scrape-site.pl l. 9
+[14905] debug @0.256919> [hit #1] Callback url is http://localhost:3000/show/alexkalderimis in bin/scrape-site.pl l. 33
+[14905] debug @0.257079> [hit #1] Request token is  in bin/scrape-site.pl l. 34
+[14905] debug @0.000703> [hit #2] in show in bin/scrape-site.pl l. 9
+[14905] debug @0.906533> [hit #2] Authorisation for alexkalderimis failed. in bin/scrape-site.pl l. 27
+[15835] debug @0.000560> [hit #1] in show in bin/scrape-site.pl l. 9
+[15835] debug @0.255321> [hit #1] Getting page 1 of twitter statuses in bin/scrape-site.pl l. 44
+[15835] debug @1.457142> [hit #1] Getting page 2 of twitter statuses in bin/scrape-site.pl l. 44
+[15835] debug @2.386555> [hit #1] Getting page 3 of twitter statuses in bin/scrape-site.pl l. 44
+[16337] debug @0.000496> [hit #1] in show in bin/scrape-site.pl l. 9
+[16337] debug @0.240910> [hit #1] Getting page 1 of twitter statuses in bin/scrape-site.pl l. 44
+[16337] debug @1.253290> [hit #1] Getting page 2 of twitter statuses in bin/scrape-site.pl l. 44
+[16337] debug @2.105755> [hit #1] Getting page 3 of twitter statuses in bin/scrape-site.pl l. 44
+[17002] debug @0.000504> [hit #1] in show in bin/scrape-site.pl l. 9
+[17002] debug @0.250898> [hit #1] Getting page 1 of twitter statuses in bin/scrape-site.pl l. 44
+[17002] debug @1.232605> [hit #1] Getting page 2 of twitter statuses in bin/scrape-site.pl l. 44
+[17002] debug @2.070234> [hit #1] Getting page 3 of twitter statuses in bin/scrape-site.pl l. 44
+[17002] debug @4.928264> [hit #1] Getting page 4 of twitter statuses in bin/scrape-site.pl l. 44
+[17002] debug @6.135633> [hit #1] Getting page 5 of twitter statuses in bin/scrape-site.pl l. 44
+[17002] debug @7.052869> [hit #1] Getting page 6 of twitter statuses in bin/scrape-site.pl l. 44
+[17002] debug @7.931914> [hit #1] Getting page 7 of twitter statuses in bin/scrape-site.pl l. 44
+[17002] debug @8.866303> [hit #1] Getting page 8 of twitter statuses in bin/scrape-site.pl l. 44
+[17002] debug @9.849693> [hit #1] Getting page 9 of twitter statuses in bin/scrape-site.pl l. 44
+[17002] debug @10.785213> [hit #1] Getting page 10 of twitter statuses in bin/scrape-site.pl l. 44
+[17002] debug @11.741778> [hit #1] Getting page 11 of twitter statuses in bin/scrape-site.pl l. 44
+[17002] debug @12.694893> [hit #1] Getting page 12 of twitter statuses in bin/scrape-site.pl l. 44
+[17002] debug @13.611182> [hit #1] Getting page 13 of twitter statuses in bin/scrape-site.pl l. 44
+[17002] debug @14.597263> [hit #1] Getting page 14 of twitter statuses in bin/scrape-site.pl l. 44
+[17002] debug @15.384097> [hit #1] Getting page 15 of twitter statuses in bin/scrape-site.pl l. 44
+[17002] debug @16.547900> [hit #1] Getting page 16 of twitter statuses in bin/scrape-site.pl l. 44
+[17002] debug @17.011827> [hit #1] Getting page 17 of twitter statuses in bin/scrape-site.pl l. 44
+[17002] debug @0.014621> [hit #3] in show in bin/scrape-site.pl l. 9
+[17002] debug @0.035635> [hit #3] Getting page 1 of twitter statuses in bin/scrape-site.pl l. 44
+[17002] debug @0.884733> [hit #3] Getting page 2 of twitter statuses in bin/scrape-site.pl l. 44
+[17002] debug @1.735960> [hit #3] Getting page 3 of twitter statuses in bin/scrape-site.pl l. 44
+[17002] debug @2.563929> [hit #3] Getting page 4 of twitter statuses in bin/scrape-site.pl l. 44
+[17002] debug @5.305164> [hit #3] Getting page 5 of twitter statuses in bin/scrape-site.pl l. 44
+[17002] debug @6.782418> [hit #3] Getting page 6 of twitter statuses in bin/scrape-site.pl l. 44
+[17002] debug @7.624761> [hit #3] Getting page 7 of twitter statuses in bin/scrape-site.pl l. 44
+[17002] debug @8.464588> [hit #3] Getting page 8 of twitter statuses in bin/scrape-site.pl l. 44
+[17002] debug @9.294090> [hit #3] Getting page 9 of twitter statuses in bin/scrape-site.pl l. 44
+[17002] debug @10.349573> [hit #3] Getting page 10 of twitter statuses in bin/scrape-site.pl l. 44
+[17002] debug @11.175886> [hit #3] Getting page 11 of twitter statuses in bin/scrape-site.pl l. 44
+[17002] debug @12.015918> [hit #3] Getting page 12 of twitter statuses in bin/scrape-site.pl l. 44
+[17002] debug @12.879872> [hit #3] Getting page 13 of twitter statuses in bin/scrape-site.pl l. 44
+[17002] debug @13.781056> [hit #3] Getting page 14 of twitter statuses in bin/scrape-site.pl l. 44
+[17002] debug @14.592197> [hit #3] Getting page 15 of twitter statuses in bin/scrape-site.pl l. 44
+[17002] debug @15.450139> [hit #3] Getting page 16 of twitter statuses in bin/scrape-site.pl l. 44
+[17002] debug @15.860062> [hit #3] Getting page 17 of twitter statuses in bin/scrape-site.pl l. 44
+[17002] debug @0.000791> [hit #6] in show in bin/scrape-site.pl l. 9
+[17002] debug @0.010461> [hit #6] Getting page 1 of twitter statuses in bin/scrape-site.pl l. 44
+[17002] debug @0.830949> [hit #6] Getting page 2 of twitter statuses in bin/scrape-site.pl l. 44
+[17002] debug @1.644776> [hit #6] Getting page 3 of twitter statuses in bin/scrape-site.pl l. 44
+[17002] debug @2.706044> [hit #6] Getting page 4 of twitter statuses in bin/scrape-site.pl l. 44
+[17002] debug @3.385968> [hit #6] Getting page 5 of twitter statuses in bin/scrape-site.pl l. 44
+[17002] debug @4.230371> [hit #6] Getting page 6 of twitter statuses in bin/scrape-site.pl l. 44
+[17002] debug @5.065395> [hit #6] Getting page 7 of twitter statuses in bin/scrape-site.pl l. 44
+[17002] debug @5.933644> [hit #6] Getting page 8 of twitter statuses in bin/scrape-site.pl l. 44
+[17002] debug @6.789039> [hit #6] Getting page 9 of twitter statuses in bin/scrape-site.pl l. 44
+[17002] debug @7.619984> [hit #6] Getting page 10 of twitter statuses in bin/scrape-site.pl l. 44
+[17002] debug @8.424974> [hit #6] Getting page 11 of twitter statuses in bin/scrape-site.pl l. 44
+[17002] debug @9.245399> [hit #6] Getting page 12 of twitter statuses in bin/scrape-site.pl l. 44
+[17002] debug @10.167882> [hit #6] Getting page 13 of twitter statuses in bin/scrape-site.pl l. 44
+[17002] debug @10.976644> [hit #6] Getting page 14 of twitter statuses in bin/scrape-site.pl l. 44
+[17002] debug @11.824015> [hit #6] Getting page 15 of twitter statuses in bin/scrape-site.pl l. 44
+[17002] debug @12.644394> [hit #6] Getting page 16 of twitter statuses in bin/scrape-site.pl l. 44
+[17002] debug @13.118703> [hit #6] Getting page 17 of twitter statuses in bin/scrape-site.pl l. 44
+[17002] debug @0.000688> [hit #7] in show in bin/scrape-site.pl l. 9
+[17002] debug @0.001220> [hit #7] Getting page 1 of twitter statuses in bin/scrape-site.pl l. 44
+[17002] debug @0.665119> [hit #7] Getting page 2 of twitter statuses in bin/scrape-site.pl l. 44
+[17002] debug @1.492237> [hit #7] Getting page 3 of twitter statuses in bin/scrape-site.pl l. 44
+[17002] debug @2.151434> [hit #7] Getting page 4 of twitter statuses in bin/scrape-site.pl l. 44
+[17002] debug @2.796190> [hit #7] Getting page 5 of twitter statuses in bin/scrape-site.pl l. 44
+[17002] debug @3.615616> [hit #7] Getting page 6 of twitter statuses in bin/scrape-site.pl l. 44
+[17002] debug @4.458225> [hit #7] Getting page 7 of twitter statuses in bin/scrape-site.pl l. 44
+[17002] debug @5.520789> [hit #7] Getting page 8 of twitter statuses in bin/scrape-site.pl l. 44
+[17002] debug @6.373418> [hit #7] Getting page 9 of twitter statuses in bin/scrape-site.pl l. 44
+[17002] debug @7.237794> [hit #7] Getting page 10 of twitter statuses in bin/scrape-site.pl l. 44
+[17002] debug @8.163873> [hit #7] Getting page 11 of twitter statuses in bin/scrape-site.pl l. 44
+[17002] debug @11.569101> [hit #7] Getting page 12 of twitter statuses in bin/scrape-site.pl l. 44
+[17002] debug @12.386210> [hit #7] Getting page 13 of twitter statuses in bin/scrape-site.pl l. 44
+[17002] debug @13.218943> [hit #7] Getting page 14 of twitter statuses in bin/scrape-site.pl l. 44
+[17002] debug @13.877808> [hit #7] Getting page 15 of twitter statuses in bin/scrape-site.pl l. 44
+[17002] debug @14.535115> [hit #7] Getting page 16 of twitter statuses in bin/scrape-site.pl l. 44
+[17002] debug @14.995454> [hit #7] Getting page 17 of twitter statuses in bin/scrape-site.pl l. 44
+[6480] debug @0.000786> [hit #1] Getting statūs of alexkalderimis in bin/scrape-site.pl l. 9
+[6480] debug @0.462851> [hit #1] Getting page 1 of twitter statuses in bin/scrape-site.pl l. 46
+[6480] debug @2.089633> [hit #1] Getting page 2 of twitter statuses in bin/scrape-site.pl l. 46
+[6480] debug @2.927542> [hit #1] Getting page 3 of twitter statuses in bin/scrape-site.pl l. 46
+[6480] debug @3.754816> [hit #1] Getting page 4 of twitter statuses in bin/scrape-site.pl l. 46
+[6480] debug @4.606869> [hit #1] Getting page 5 of twitter statuses in bin/scrape-site.pl l. 46
+[6480] debug @5.426269> [hit #1] Getting page 6 of twitter statuses in bin/scrape-site.pl l. 46
+[6480] debug @6.281960> [hit #1] Getting page 7 of twitter statuses in bin/scrape-site.pl l. 46
+[6480] debug @7.132941> [hit #1] Getting page 8 of twitter statuses in bin/scrape-site.pl l. 46
+[6480] debug @8.003890> [hit #1] Getting page 9 of twitter statuses in bin/scrape-site.pl l. 46
+[6480] debug @8.799376> [hit #1] Getting page 10 of twitter statuses in bin/scrape-site.pl l. 46
+[6480] debug @9.633402> [hit #1] Getting page 11 of twitter statuses in bin/scrape-site.pl l. 46
+[6480] debug @11.370447> [hit #1] Getting page 12 of twitter statuses in bin/scrape-site.pl l. 46
+[6480] debug @12.241727> [hit #1] Getting page 13 of twitter statuses in bin/scrape-site.pl l. 46
+[6480] debug @13.104568> [hit #1] Getting page 14 of twitter statuses in bin/scrape-site.pl l. 46
+[6480] debug @13.912397> [hit #1] Getting page 15 of twitter statuses in bin/scrape-site.pl l. 46
+[6480] debug @14.630565> [hit #1] Getting page 16 of twitter statuses in bin/scrape-site.pl l. 46
+[6480] debug @15.113311> [hit #1] Getting page 17 of twitter statuses in bin/scrape-site.pl l. 46
+[6480] debug @0.000610> [hit #3] Getting statūs of alexkalderimis in bin/scrape-site.pl l. 9
+[6480] debug @0.002156> [hit #3] Getting page 1 of twitter statuses in bin/scrape-site.pl l. 46
+[6480] debug @0.682288> [hit #3] Getting page 2 of twitter statuses in bin/scrape-site.pl l. 46
+[6480] debug @1.530410> [hit #3] Getting page 3 of twitter statuses in bin/scrape-site.pl l. 46
+[6480] debug @2.364711> [hit #3] Getting page 4 of twitter statuses in bin/scrape-site.pl l. 46
+[6480] debug @3.018097> [hit #3] Getting page 5 of twitter statuses in bin/scrape-site.pl l. 46
+[6480] debug @3.903106> [hit #3] Getting page 6 of twitter statuses in bin/scrape-site.pl l. 46
+[6480] debug @4.738985> [hit #3] Getting page 7 of twitter statuses in bin/scrape-site.pl l. 46
+[6480] debug @5.568584> [hit #3] Getting page 8 of twitter statuses in bin/scrape-site.pl l. 46
+[6480] debug @6.398795> [hit #3] Getting page 9 of twitter statuses in bin/scrape-site.pl l. 46
+[6480] debug @7.225240> [hit #3] Getting page 10 of twitter statuses in bin/scrape-site.pl l. 46
+[6480] debug @8.415279> [hit #3] Getting page 11 of twitter statuses in bin/scrape-site.pl l. 46
+[6480] debug @9.263102> [hit #3] Getting page 12 of twitter statuses in bin/scrape-site.pl l. 46
+[6480] debug @10.090521> [hit #3] Getting page 13 of twitter statuses in bin/scrape-site.pl l. 46
+[6480] debug @10.921624> [hit #3] Getting page 14 of twitter statuses in bin/scrape-site.pl l. 46
+[6480] debug @11.579456> [hit #3] Getting page 15 of twitter statuses in bin/scrape-site.pl l. 46
+[6480] debug @12.214975> [hit #3] Getting page 16 of twitter statuses in bin/scrape-site.pl l. 46
+[6480] debug @12.640156> [hit #3] Getting page 17 of twitter statuses in bin/scrape-site.pl l. 46
+[6480] debug @0.000962> [hit #5] Getting statūs of louwoodley in bin/scrape-site.pl l. 9
+[6480] debug @0.003173> [hit #5] Callback url is http://localhost:3000/show/louwoodley in bin/scrape-site.pl l. 35
+[6480] debug @0.003387> [hit #5] Request token is  in bin/scrape-site.pl l. 36
+[17605] debug @0.000791> [hit #1] Getting statūs of louwoodley in bin/scrape-site.pl l. 9
+[17605] debug @0.642688> [hit #1] Callback url is http://localhost:3000/show/louwoodley in bin/scrape-site.pl l. 36
+[18732] debug @0.000780> [hit #1] Getting statūs of alexkalderimis in bin/scrape-site.pl l. 9
+[18732] debug @0.263021> [hit #1] Getting page 1 of twitter statuses in bin/scrape-site.pl l. 53
+[18732] debug @1.407934> [hit #1] Getting page 2 of twitter statuses in bin/scrape-site.pl l. 53
+[18732] debug @2.324192> [hit #1] Getting page 3 of twitter statuses in bin/scrape-site.pl l. 53
+[18732] debug @3.176029> [hit #1] Getting page 4 of twitter statuses in bin/scrape-site.pl l. 53
+[18732] debug @4.031551> [hit #1] Getting page 5 of twitter statuses in bin/scrape-site.pl l. 53
+[18732] debug @4.890307> [hit #1] Getting page 6 of twitter statuses in bin/scrape-site.pl l. 53
+[18732] debug @5.966635> [hit #1] Getting page 7 of twitter statuses in bin/scrape-site.pl l. 53
+[18732] debug @6.830667> [hit #1] Getting page 8 of twitter statuses in bin/scrape-site.pl l. 53
+[18732] debug @7.711155> [hit #1] Getting page 9 of twitter statuses in bin/scrape-site.pl l. 53
+[18732] debug @8.599728> [hit #1] Getting page 10 of twitter statuses in bin/scrape-site.pl l. 53
+[18732] debug @9.504563> [hit #1] Getting page 11 of twitter statuses in bin/scrape-site.pl l. 53
+[18732] debug @10.727124> [hit #1] Getting page 12 of twitter statuses in bin/scrape-site.pl l. 53
+[18732] debug @11.605510> [hit #1] Getting page 13 of twitter statuses in bin/scrape-site.pl l. 53
+[18732] debug @12.472472> [hit #1] Getting page 14 of twitter statuses in bin/scrape-site.pl l. 53
+[18732] debug @13.155901> [hit #1] Getting page 15 of twitter statuses in bin/scrape-site.pl l. 53
+[18732] debug @15.196798> [hit #1] Getting page 16 of twitter statuses in bin/scrape-site.pl l. 53
+[18732] debug @15.724269> [hit #1] Getting page 17 of twitter statuses in bin/scrape-site.pl l. 53
+[24371] debug @0.000657> [hit #1] Getting statūs of alexkalderimis in bin/scrape-site.pl l. 12
+[24371] debug @0.262641> [hit #1] Getting page 1 of twitter statuses in bin/scrape-site.pl l. 56
+[24371] debug @6.386381> [hit #1] Getting page 2 of twitter statuses in bin/scrape-site.pl l. 56
+[24371] debug @12.213303> [hit #1] Getting page 3 of twitter statuses in bin/scrape-site.pl l. 56
+[24371] debug @18.114738> [hit #1] Getting page 4 of twitter statuses in bin/scrape-site.pl l. 56
+[24371] debug @24.013356> [hit #1] Getting page 5 of twitter statuses in bin/scrape-site.pl l. 56
+[24371] debug @29.874304> [hit #1] Getting page 6 of twitter statuses in bin/scrape-site.pl l. 56
+[24371] debug @35.950349> [hit #1] Getting page 7 of twitter statuses in bin/scrape-site.pl l. 56
+[24371] debug @41.819839> [hit #1] Getting page 8 of twitter statuses in bin/scrape-site.pl l. 56
+[24371] debug @47.687490> [hit #1] Getting page 9 of twitter statuses in bin/scrape-site.pl l. 56
+[24371] debug @53.547683> [hit #1] Getting page 10 of twitter statuses in bin/scrape-site.pl l. 56
+[24371] debug @59.465092> [hit #1] Getting page 11 of twitter statuses in bin/scrape-site.pl l. 56
+[24371] debug @65.360959> [hit #1] Getting page 12 of twitter statuses in bin/scrape-site.pl l. 56
+[24371] debug @71.247462> [hit #1] Getting page 13 of twitter statuses in bin/scrape-site.pl l. 56
+[24371] debug @77.168207> [hit #1] Getting page 14 of twitter statuses in bin/scrape-site.pl l. 56
+[24371] debug @83.046189> [hit #1] Getting page 15 of twitter statuses in bin/scrape-site.pl l. 56
+[24371] debug @88.902866> [hit #1] Getting page 16 of twitter statuses in bin/scrape-site.pl l. 56
+[24371] debug @94.426384> [hit #1] Getting page 17 of twitter statuses in bin/scrape-site.pl l. 56
+[24371] debug @0.000873> [hit #3] Getting statūs of louwoodley in bin/scrape-site.pl l. 12
+[24371] debug @0.003621> [hit #3] Callback url is http://localhost:3000/show/louwoodley in bin/scrape-site.pl l. 39
+[24371] debug @6.064662> [hit #3] Request token is ztKGYoOluHf2Q2sDi6YfQrDgybrlE9qNi3HtedrIE in bin/scrape-site.pl l. 43
+[24371] debug @0.000716> [hit #4] Getting statūs of louwoodley in bin/scrape-site.pl l. 12
+[1796] debug @0.000709> [hit #1] Getting statūs of foo in bin/scrape-site.pl l. 15
+[1796] debug @0.359956> [hit #1] Callback url is http://localhost:3000/show/foo in bin/scrape-site.pl l. 44
+[1796] debug @6.513539> [hit #1] Request token is NnURDPaRpmRVHX615bsYLlTZXOniGXECK4Rm0q2rbG8 in bin/scrape-site.pl l. 48
+[1796] debug @0.001183> [hit #2] Getting statūs of foo in bin/scrape-site.pl l. 15
+[3669] debug @0.000775> [hit #1] Getting statūs of foo in bin/scrape-site.pl l. 15
+[3669] debug @0.244413> [hit #1] Got verifier: 8JZnNeUlxaiyO8XJcKHREKms6CgeoRn3wfx2OfYPo in bin/scrape-site.pl l. 22
+[3669] debug @0.000521> [hit #4] Getting statūs of foo in bin/scrape-site.pl l. 15
+[3669] debug @0.010263> [hit #4] Callback url is http://localhost:3000/show/foo in bin/scrape-site.pl l. 45
+[3669] debug @1.079156> [hit #4] Request token is 8S8kWyWnXqaHLsTDpevaeo2ZcxGbA4J1wDY7HNMLH4 in bin/scrape-site.pl l. 49
+[3669] debug @0.000623> [hit #5] Getting statūs of foo in bin/scrape-site.pl l. 15
+[3669] debug @0.001867> [hit #5] Got verifier: K1Zfeplk8dEE0oIr8OkpGHjfWFWweQaAuL2KUXAJV0 in bin/scrape-site.pl l. 22
+[5486] debug @0.000664> [hit #1] Getting statūs of foo in bin/scrape-site.pl l. 15
+[5486] debug @0.249270> [hit #1] Callback url is http://localhost:3000/show/foo in bin/scrape-site.pl l. 46
+[5486] debug @1.210286> [hit #1] Request token is 0x0wX6xZt40fptspjQZPLbhDpvqzIIPZTDWFMXYMUw in bin/scrape-site.pl l. 50
+[5486] debug @0.000552> [hit #2] Getting statūs of foo in bin/scrape-site.pl l. 15
+[5486] debug @0.001903> [hit #2] Got verifier: 3mLBvqLKrgwfts5dprWPziwQ39iZPNcLtlzUeedpdSk in bin/scrape-site.pl l. 22
+[6270] debug @0.000690> [hit #1] Getting statūs of foo in bin/scrape-site.pl l. 15
+[6270] debug @0.257239> [hit #1] Callback url is http://localhost:3000/show/foo in bin/scrape-site.pl l. 46
+[6270] debug @1.195947> [hit #1] Request token is apCYNwcbZ19kdb5WiEPFrLPxO0eYl4fpNTRbIRmv8E in bin/scrape-site.pl l. 50
+[6270] debug @0.000595> [hit #2] Getting statūs of foo in bin/scrape-site.pl l. 15
+[6270] debug @0.001619> [hit #2] Got verifier: ryBvNAUc7NkWKyukWfRd3uoGdbBZqkhpvpu3RW5y2I in bin/scrape-site.pl l. 22
+[7100] debug @0.000762> [hit #1] Getting statūs of alexkalderimis in bin/scrape-site.pl l. 15
+[7100] debug @0.256036> [hit #1] Callback url is http://localhost:3000/show/alexkalderimis in bin/scrape-site.pl l. 46
+[7100] debug @1.202237> [hit #1] Request token is O5aFAtWo6QatK26mrBAEygGjj7easlrGtJi3LCoLJE in bin/scrape-site.pl l. 50
+[7100] debug @0.000629> [hit #2] Getting statūs of alexkalderimis in bin/scrape-site.pl l. 15
+[7100] debug @0.002005> [hit #2] Got verifier: BguKREUN0cTN2LehSaA4yPGVSVZMCQQemJWIl4GoWI in bin/scrape-site.pl l. 22
+[7100] debug @0.883374> [hit #2] Authorisation for alexkalderimis failed. GET /show/alexkalderimis?oauth_token=O5aFAtWo6QatK26mrBAEygGjj7easlrGtJi3LCoLJE&oauth_verifier=BguKREUN0cTN2LehSaA4yPGVSVZMCQQemJWIl4GoWI HTTP/1.1 in bin/scrape-site.pl l. 40
+[8148] debug @0.000768> [hit #1] Getting statūs of alexkalderimis in bin/scrape-site.pl l. 15
+[8148] debug @0.241434> [hit #1] Getting page 1 of twitter statuses in bin/scrape-site.pl l. 65
+[8148] debug @1.299490> [hit #1] Getting page 2 of twitter statuses in bin/scrape-site.pl l. 65
+[8148] debug @2.153498> [hit #1] Getting page 3 of twitter statuses in bin/scrape-site.pl l. 65
+[8148] debug @2.996914> [hit #1] Getting page 4 of twitter statuses in bin/scrape-site.pl l. 65
+[8148] debug @3.695638> [hit #1] Getting page 5 of twitter statuses in bin/scrape-site.pl l. 65
+[8148] debug @4.582354> [hit #1] Getting page 6 of twitter statuses in bin/scrape-site.pl l. 65
+[8148] debug @5.743324> [hit #1] Getting page 7 of twitter statuses in bin/scrape-site.pl l. 65
+[8148] debug @6.765579> [hit #1] Getting page 8 of twitter statuses in bin/scrape-site.pl l. 65
+[8148] debug @7.895442> [hit #1] Getting page 9 of twitter statuses in bin/scrape-site.pl l. 65
+[8148] debug @8.865663> [hit #1] Getting page 10 of twitter statuses in bin/scrape-site.pl l. 65
+[8148] debug @9.895761> [hit #1] Getting page 11 of twitter statuses in bin/scrape-site.pl l. 65
+[8148] debug @10.762734> [hit #1] Getting page 12 of twitter statuses in bin/scrape-site.pl l. 65
+[8148] debug @11.820281> [hit #1] Getting page 13 of twitter statuses in bin/scrape-site.pl l. 65
+[8148] debug @12.714085> [hit #1] Getting page 14 of twitter statuses in bin/scrape-site.pl l. 65
+[8148] debug @13.352776> [hit #1] Getting page 15 of twitter statuses in bin/scrape-site.pl l. 65
+[8148] debug @14.229271> [hit #1] Getting page 16 of twitter statuses in bin/scrape-site.pl l. 65
+[8148] debug @14.847144> [hit #1] Getting page 17 of twitter statuses in bin/scrape-site.pl l. 65
+[9935] debug @0.000833> [hit #1] Getting statūs of alexkalderimis in bin/scrape-site.pl l. 15
+[9935] debug @0.248545> [hit #1] Callback url is http://localhost:3000/show/alexkalderimis in bin/scrape-site.pl l. 46
+[9935] debug @6.272540> [hit #1] Request token is EdirFoq9wk27CtC5vMkBwf4MJGUiek5levdEwaQsow in bin/scrape-site.pl l. 50
+[9935] debug @0.000978> [hit #2] Getting statūs of alexkalderimis in bin/scrape-site.pl l. 15
+[9935] debug @0.002722> [hit #2] Got verifier: Dcn0R4uWb0RxoXQbsQBg3FcUOcKd7gkXbAXc00lJmWs in bin/scrape-site.pl l. 22
+[9935] debug @6.585302> [hit #2] Authorisation for alexkalderimis failed.
+GET /show/alexkalderimis?oauth_token=EdirFoq9wk27CtC5vMkBwf4MJGUiek5levdEwaQsow&oauth_verifier=Dcn0R4uWb0RxoXQbsQBg3FcUOcKd7gkXbAXc00lJmWs HTTP/1.1 in bin/scrape-site.pl l. 40
+[10993] debug @0.000671> [hit #1] Getting statūs of alexkalderimis in bin/scrape-site.pl l. 15
+[10993] debug @0.254704> [hit #1] Callback url is http://localhost:3000/show/alexkalderimis in bin/scrape-site.pl l. 44
+[10993] debug @1.262157> [hit #1] Request token is YNAScwSNcjpSPHSI7FCRXCJWN4zjUraKgHztUQxEEE in bin/scrape-site.pl l. 48
+[10993] debug @0.000577> [hit #2] Getting statūs of alexkalderimis in bin/scrape-site.pl l. 15
+[10993] debug @0.001594> [hit #2] Got verifier: l3QTHTDk7qGY8L5rcX00sPLWVkHs1rXEwWcqhMmA in bin/scrape-site.pl l. 22
+[10993] debug @0.858873> [hit #2] Authorisation for alexkalderimis failed.
+GET /show/alexkalderimis?oauth_token=YNAScwSNcjpSPHSI7FCRXCJWN4zjUraKgHztUQxEEE&oauth_verifier=l3QTHTDk7qGY8L5rcX00sPLWVkHs1rXEwWcqhMmA HTTP/1.1 in bin/scrape-site.pl l. 38
+[30247] debug @0.000966> [hit #1] Getting statūs of alexkalderimis in bin/scrape-site.pl l. 17
+[30247] debug @0.253721> [hit #1] Getting page 1 of twitter statuses in bin/scrape-site.pl l. 98
+[30247] debug @2.496955> [hit #1] Getting page 2 of twitter statuses in bin/scrape-site.pl l. 98
+[30247] debug @4.265958> [hit #1] Getting page 3 of twitter statuses in bin/scrape-site.pl l. 98
+[30247] debug @6.156837> [hit #1] Getting page 4 of twitter statuses in bin/scrape-site.pl l. 98
+[30247] debug @6.578436> [hit #1] Getting page 5 of twitter statuses in bin/scrape-site.pl l. 98
+[30247] debug @0.000935> [hit #3] Getting statūs of foo in bin/scrape-site.pl l. 17
+[30247] debug @0.004863> [hit #3] callback url is http://localhost:3000/show/foo in bin/scrape-site.pl l. 36
+[30247] debug @0.957516> [hit #3] request token is pFkjBfLnWGaHzsaozfwMCpD9golYj9LGe8ksKqp0 in bin/scrape-site.pl l. 41
+[30247] debug @0.001079> [hit #4] Getting statūs of foo in bin/scrape-site.pl l. 17
+[30247] debug @0.002481> [hit #4] Got verifier:  in bin/scrape-site.pl l. 69
+[32142] debug @0.000783> [hit #1] Getting statūs of alexkalderimis in bin/scrape-site.pl l. 17
+[32142] debug @0.250614> [hit #1] Getting page 1 of twitter statuses in bin/scrape-site.pl l. 98
+[32142] debug @2.021984> [hit #1] Getting page 2 of twitter statuses in bin/scrape-site.pl l. 98
+[32142] debug @3.720976> [hit #1] Getting page 3 of twitter statuses in bin/scrape-site.pl l. 98
+[32142] debug @5.378432> [hit #1] Getting page 4 of twitter statuses in bin/scrape-site.pl l. 98
+[32142] debug @6.548550> [hit #1] Getting page 5 of twitter statuses in bin/scrape-site.pl l. 98
+[32142] debug @0.000943> [hit #3] Getting statūs of foo in bin/scrape-site.pl l. 17
+[32142] debug @0.005253> [hit #3] callback url is http://localhost:3000/show/foo in bin/scrape-site.pl l. 36
+[32142] debug @1.040351> [hit #3] request token is MR2Pu9t7bCDXBQ7xeu7JzM71gq9OiD793ql9T1XCdI in bin/scrape-site.pl l. 41
+[32142] debug @0.000605> [hit #4] Getting statūs of foo in bin/scrape-site.pl l. 17
+[32142] debug @0.001767> [hit #4] Got verifier: CPchxjD461S6VoJGo3Ys3Jo6H2mk2v7EttZ6n0HOHk in bin/scrape-site.pl l. 69
+[433] debug @0.000685> [hit #1] Getting statūs of alexkalderimis in bin/scrape-site.pl l. 17
+[433] debug @0.249718> [hit #1] Getting page 1 of twitter statuses in bin/scrape-site.pl l. 98
+[433] debug @2.092336> [hit #1] Getting page 2 of twitter statuses in bin/scrape-site.pl l. 98
+[433] debug @3.944753> [hit #1] Getting page 3 of twitter statuses in bin/scrape-site.pl l. 98
+[433] debug @6.156629> [hit #1] Getting page 4 of twitter statuses in bin/scrape-site.pl l. 98
+[433] debug @6.603812> [hit #1] Getting page 5 of twitter statuses in bin/scrape-site.pl l. 98
+[433] debug @0.000867> [hit #3] Getting statūs of foo in bin/scrape-site.pl l. 17
+[433] debug @0.004665> [hit #3] callback url is http://localhost:3000/show/foo in bin/scrape-site.pl l. 36
+[433] debug @0.857999> [hit #3] request token is TxUaoyI6rYVWHu4mziKSsVw1zgB9cB7343Nxq9McmQ in bin/scrape-site.pl l. 41
+[433] debug @0.000592> [hit #4] Getting statūs of foo in bin/scrape-site.pl l. 17
+[433] debug @0.001712> [hit #4] Got verifier: b1GvTw8jTznIE4TuyZSx8K7qVl98GMkRSZHKd8Ymj0E in bin/scrape-site.pl l. 69
+[5108] debug @0.000961> [hit #1] Getting statūs of alexkalderimis in bin/scrape-site.pl l. 17
+[5108] debug @0.271726> [hit #1] callback url is http://localhost:3000/show/alexkalderimis in bin/scrape-site.pl l. 36
+[5108] debug @6.233111> [hit #1] request token is gx892Te8K3pZnZBaslKzkGiAdNvpWApFwPEbXdn5Y in bin/scrape-site.pl l. 41
+[5108] debug @0.000600> [hit #2] Getting statūs of alexkalderimis in bin/scrape-site.pl l. 17
+[5108] debug @0.001701> [hit #2] Got verifier: mQ3fbnChvbXUmZq5Oox90kdz1mlCBmu2iSnemf6rBDA in bin/scrape-site.pl l. 69
+[5108] debug @5.930799> [hit #2] Getting page 1 of twitter statuses in bin/scrape-site.pl l. 89
+[5108] debug @14.475544> [hit #2] Getting page 2 of twitter statuses in bin/scrape-site.pl l. 89
+[5108] debug @23.451547> [hit #2] Getting page 3 of twitter statuses in bin/scrape-site.pl l. 89
+[5108] debug @30.247150> [hit #2] Getting page 4 of twitter statuses in bin/scrape-site.pl l. 89
+[5108] debug @35.677579> [hit #2] Getting page 5 of twitter statuses in bin/scrape-site.pl l. 89
+[15445] debug @0.000986> [hit #1] Getting statūs of alexkalderimis in bin/scrape-site.pl l. 17
+[15445] debug @0.279159> [hit #1] Getting page 1 of twitter statuses in bin/scrape-site.pl l. 89
+[15445] debug @2.167225> [hit #1] Getting page 2 of twitter statuses in bin/scrape-site.pl l. 89
+[15445] debug @5.320835> [hit #1] Getting page 3 of twitter statuses in bin/scrape-site.pl l. 89
+[15445] debug @7.080859> [hit #1] Getting page 4 of twitter statuses in bin/scrape-site.pl l. 89
+[15445] debug @10.581879> [hit #1] Getting page 5 of twitter statuses in bin/scrape-site.pl l. 89
+[19128] debug @0.001595> [hit #1] Getting statūs of alexkalderimis in bin/scrape-site.pl l. 17
+[19128] debug @0.241186> [hit #1] Getting page 1 of twitter statuses in bin/scrape-site.pl l. 89
+[19128] debug @1.998005> [hit #1] Getting page 2 of twitter statuses in bin/scrape-site.pl l. 89
+[19128] debug @3.637586> [hit #1] Getting page 3 of twitter statuses in bin/scrape-site.pl l. 89
+[19128] debug @6.759574> [hit #1] Getting page 4 of twitter statuses in bin/scrape-site.pl l. 89
+[19128] debug @7.225950> [hit #1] Getting page 5 of twitter statuses in bin/scrape-site.pl l. 89
+[21780] debug @0.014796> [hit #1] Getting statÅ«s of alexkalderimis in bin/scrape-site.pl l. 17
+[21780] debug @0.262624> [hit #1] Getting page 1 of twitter statuses in bin/scrape-site.pl l. 89
+[21780] debug @2.080483> [hit #1] Getting page 2 of twitter statuses in bin/scrape-site.pl l. 89
+[21780] debug @3.735242> [hit #1] Getting page 3 of twitter statuses in bin/scrape-site.pl l. 89
+[21780] debug @5.440904> [hit #1] Getting page 4 of twitter statuses in bin/scrape-site.pl l. 89
+[21780] debug @5.890391> [hit #1] Getting page 5 of twitter statuses in bin/scrape-site.pl l. 89
+[30839] debug @0.014399> [hit #1] Getting statÅ«s of alexkalderimis in bin/scrape-site.pl l. 18
+[30839] debug @0.475010> [hit #1] Getting page 1 of twitter statuses in bin/scrape-site.pl l. 90
+[30839] debug @3.357570> [hit #1] Getting page 2 of twitter statuses in bin/scrape-site.pl l. 90
+[30839] debug @9.229289> [hit #1] Getting page 3 of twitter statuses in bin/scrape-site.pl l. 90
+[30839] debug @11.242339> [hit #1] Getting page 4 of twitter statuses in bin/scrape-site.pl l. 90
+[30839] debug @11.688586> [hit #1] Getting page 5 of twitter statuses in bin/scrape-site.pl l. 90

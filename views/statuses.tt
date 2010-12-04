@@ -1,0 +1,128 @@
+  
+<!-- 
+    Credit goes to the Ruby on Rails team for this page 
+    has been heavily based on the default Rails page that is 
+    built with a scaffolded application.
+
+    Thanks a lot to them for their work.
+
+    See Ruby on Rails if you want a kickass framework in Ruby:
+    http://www.rubyonrails.org/
+-->;
+<script language="javascript" type="text/javascript" src="/javascripts/statuses.js">
+</script>
+<script language="javascript" type="text/javascript" src="/javascripts/ajax.js">
+</script>
+<div id="page">
+      <div id="sidebar">
+        <ul id="sidebar-items">
+            <li>
+                <h3><a href="#" onclick="javascript:toggleDiv('timeline');">Timeline</a></h3>
+                <div id="timeline" style="display: none;">
+                    <ul>
+                        <% timeline %>
+                    </ul>
+                </div>
+            </li>
+            <li>
+                <h3><a href="#" onclick="javascript:toggleDiv('mentions');">Mentions</a></h3>
+                <div id="mentions" style="display: none;">
+                    <ul>
+                        <% mentions %>
+                    </ul>
+                </div>
+            <li>
+            </li>
+                <h3><a href="#" onclick="javascript:toggleDiv('hashtags');">Hash-Tags</a></h3>
+                <div id="hashtags" style="display: none;">
+                    <ul>
+                        <% hashtags %>
+                    </ul>
+                </div>
+            </li>
+            </li>
+                <h3><a href="javascript:toggleDiv('usertags');">Your tags</a></h3>
+                <div id="usertags" style="display: none;">
+                    <ul id="tagLinksList">
+                        <% usertags %>
+                    </ul>
+                </div>
+            </li>
+            <li>
+                <h3>Your Tweet History</h3>
+
+                <ul>
+                    <li>Tweeting since: <% beginning %></li>
+                    <li>Most recent tweet: <% most_recent %></li>
+                    <li>Number of mentions: <% no_of_mentions %></li>
+                    <li>Number of Hashtags: <% no_of_hashtags %></li>
+                    <li>Number of Tags: <span id="tagCounter"> <% no_of_usertags %> </span> </li>
+                </ul>
+
+          </li>
+        </ul>
+
+      </div>
+
+      <div id="content">
+        <div id="header">
+          <h1><% title %></h1>
+ <!--         <h2><% sub_title %></h2>
+          <br> -->
+        </div>
+
+            <div id="menu">
+            <ul>
+                <li><a href="#" onclick="javascript:toggleDiv('about-content')">Summary</a></li>
+                <li><a href="#" onclick="javascript:toggleDiv('export')">Export</a></li>
+                <li><a href="#" onclick="javascript:toggleDiv('search')">Search</a></li>
+                <li><a href="#" onclick="javascript:toggleDiv('masstagger')">Tag these Tweets</a></li>
+            </ul>
+            </div>
+        <div id="getting-started">
+
+          <div id="about-content" style="display: none;">
+            <table>
+                <tbody>
+                <tr>
+                    <td>Number of tweets</td>
+                    <td><tt><% tweet_number %></tt></td>
+                </tr>
+                <tr>
+                    <td>From</td>
+                    <td><tt><% from %></tt></td>
+                </tr>
+                <tr>
+                    <td>To</td>
+                    <td><tt><% to %></tt></td>
+                </tr>
+                </tbody>
+            </table>
+          </div>
+          <div id="export" style="display: none;">
+            <ul>
+                <li><a href="<% download_base %>.txt">Download as text file</a></li>
+                <li><a href="<% download_base %>.tsv">Download as tab separated value file</a></li>
+            </ul>
+          </div>
+          <div id="search" style="display: none;">
+            <form method="get" action="<% search_url %>"/>
+                <p>Search Term:
+                    <input type="text" name="searchterm" size="30" />
+                    <input type="submit" value="Find" />
+                </p>
+            </form>
+          </div>
+          <div id="masstagger" style="display: none;">
+            <form>
+                <p>Tag list:
+                    <input type="text" id="masstag" size="30" />
+                    <input type="button" value="Add" onclick="javascript:addmasstags('<% username %>')" />
+                    <input type="button" value="Remove" onclick="javascript:deletemasstags('<% username %>')" />
+                </p>
+            </form>
+          </div>
+          <% content %>
+        </div>
+      </div>
+    </div>

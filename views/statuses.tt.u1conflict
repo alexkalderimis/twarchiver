@@ -1,0 +1,193 @@
+  
+<!-- 
+    Credit goes to the Ruby on Rails team for this page 
+    has been heavily based on the default Rails page that is 
+    built with a scaffolded application.
+
+    Thanks a lot to them for their work.
+
+    See Ruby on Rails if you want a kickass framework in Ruby:
+    http://www.rubyonrails.org/
+-->;
+<script language="javascript" type="text/javascript">
+   var request = null;
+
+   function createRequest() {
+     try {
+       request = new XMLHttpRequest();
+     } catch (trymicrosoft) {
+       try {
+         request = new ActiveXObject("Msxml2.XMLHTTP");
+       } catch (othermicrosoft) {
+         try {
+           request = new ActiveXObject("Microsoft.XMLHTTP");
+         } catch (failed) {
+           request = null;
+         }
+       }
+     }
+
+     if (request == null)
+       alert("Error creating request object!");
+   }
+  function addNewTag(user, tweetId) {
+     var tag = document.getElementById("tag-" + tweetId).value;
+     createRequest();
+     var url = "/addtag/" + new Date().getTime();
+     request.open("POST", url, true);
+     request.onreadystatechange = getUpdatePageFn(tweetId, tag);
+     request.setRequestHeader("Content-Type",
+        "application/x-www-form-urlencoded");
+     request.send(
+        "&tag=" + escape(tag) +
+        "&username=" + escape(user) +
+        "&tweetId=" + escape(tweetId));
+  }
+  function getUpdatePageFn(tweetId, tag) {
+    var tagListId = "tagList-" + tweetId;
+    var liNode = document.createElement("li");
+    var tagText = document.createTextNode(tag);
+    liNode.appendChild(tagText);
+    return function() {
+        if (request.readyState == 4) {
+            var result = request.getResponseHeader("Status");
+            if (request.status == 200) {
+                var tagList = document.getElementById(tagListId);
+                var tagCounter = document.getElementById("tagCounter");
+                if (result == "added") {
+                    tagListId.append(tagLi);
+                    var count = parseInt(tagCounter.getText);
+                    tagCounter.setText(count + 1);
+                } else {
+                    alert(result);
+                }
+            } else {
+                if ((result == null) || (result.length == null) || (result.length <= 0)) {
+                    alert("Sorry - adding tag failed. " + request.status);
+                } else {
+                    alert(result);
+                }
+            }
+        }
+    };
+  } 
+</script>
+<div id="page">
+      <div id="sidebar">
+        <ul id="sidebar-items">
+            <li>
+                <h3><a href="javascript:toggleDiv('timeline');">Timeline</a></h3>
+                <div id="timeline" style="display: none;">
+                    <ul>
+                        <% timeline %>
+                    </ul>
+                </div>
+            </li>
+            <li>
+                <h3><a href="javascript:toggleDiv('mentions');">Mentions</a></h3>
+                <div id="mentions" style="display: none;">
+                    <ul>
+                        <% mentions %>
+                    </ul>
+                </div>
+            <li>
+            </li>
+                <h3><a href="javascript:toggleDiv('hashtags');">Hash-Tags</a></h3>
+                <div id="hashtags" style="display: none;">
+                    <ul>
+                        <% hashtags %>
+                    </ul>
+                </div>
+            </li>
+            </li>
+                <h3><a href="javascript:toggleDiv('usertags');">Your tags</a></h3>
+                <div id="usertags" style="display: none;">
+                    <ul>
+                        <% usertags %>
+                    </ul>
+                </div>
+            </li>
+            <li>
+                <h3>Your Tweet History</h3>
+
+                <ul>
+                    <li>Tweeting since: <% beginning %></li>
+                    <li>Most recent tweet: <% most_recent %></li>
+                    <li>Number of mentions: <% no_of_mentions %></li>
+                    <li>Number of Hashtags: <% no_of_hashtags %></li>
+                    <li>Number of Tags: <% no_of_usertags %></li>
+                </ul>
+
+          </li>
+        </ul>
+
+      </div>
+
+      <div id="content">
+        <div id="header">
+          <h1><% title %></h1>
+ <!--         <h2><% sub_title %></h2>
+          <br> -->
+        </div>
+
+            <div id="menu">
+            <ul>
+                <li><a href="javascript:toggleDiv('about-content')">About your tweets</a></li>
+                <li><a href="javascript:toggleDiv('export')">Export</a></li>
+                <li><a href="javascript:toggleDiv('search')">Search your Tweets</a></li>
+            </ul>
+            </div>
+        <div id="getting-started">
+
+          <div id="about-content" style="display: none;">
+            <table>
+                <tbody>
+                <tr>
+                    <td>Number of tweets</td>
+                    <td><tt><% tweet_number %></tt></td>
+                </tr>
+                <tr>
+                    <td>From</td>
+                    <td><tt><% from %></tt></td>
+                </tr>
+                <tr>
+                    <td>To</td>
+                    <td><tt><% to %></tt></td>
+                </tr>
+                </tbody>
+            </table>
+          </div>
+          <div id="export" style="display: none;">
+            <ul>
+                <li><a href="<% download_base %>.txt">Download as text file</a></li>
+                <li><a href="<% download_base %>.tsv">Download as tab separated value file</a></li>
+            </ul>
+          </div>
+          <div id="search" style="display: none;">
+            <form method="get" action="<% search_url %>"/>
+                <p>Search Term:
+                    <input type="text" name="searchterm" />
+                    <input type="submit" />
+                </p>
+            </form>
+          </div>
+          
+    <script type="text/javascript">
+    $('#about_env_link').click(function() {
+        $('#about-content').slideToggle('fast', function() {
+            // ok
+        });
+    });
+    </script>
+    <script language="javascript">
+    function toggleDiv(divid){
+        $("#" + divid).slideToggle('fast', function() {
+        });
+    };
+    </script>
+          <ol>          
+            <% content %>
+          </ol>
+        </div>
+      </div>
+    </div>
