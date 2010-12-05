@@ -49,11 +49,30 @@
                 </div>
             </li>
             <li>
+                <h3><a href="#" onclick="javascript:toggleDiv('retweeteds');">Retweeted Statuses</a></h3>
+                <div id="retweeteds" style="display: none;">
+                    <ul id="retweetedLinksList">
+                        <li><a href="/show/<% username %>/retweeted">All Retweeted Statuses (<% retweeted_count %>)</a></h3>
+                        <% retweeteds_list %>
+                    </ul>
+                </div>
+            </li>
+            <li>
+                <h3><a href="#" onclick="javascript:toggleDiv('favouriteds');">Favourited Statuses</a></h3>
+                <div id="favouriteds" style="display: none;">
+                    <ul id="favedLinksList">
+                        <li><a href="/show/<% username %>/favorited">All Favourited Statuses (<% favourited_count %>)</a></h3>
+                        <% faveds_list %>
+                    </ul>
+                </div>
+            </li>
+            <li>
                 <h3>Your Tweet History</h3>
 
                 <ul>
                     <li>Tweeting since: <% beginning %></li>
                     <li>Most recent tweet: <% most_recent %></li>
+                    <li>Number of Tweets: <% tweet_count %></li>
                     <li>Number of mentions: <% no_of_mentions %></li>
                     <li>Number of Hashtags: <% no_of_hashtags %></li>
                     <li>Number of Tags: <span id="tagCounter"> <% no_of_usertags %> </span> </li>
@@ -65,7 +84,7 @@
       </div>
 
       <div id="content">
-        <div id="header">
+        <div id="header" style="background-image: url(<% profile_image %>);">
           <h1><% title %></h1>
  <!--         <h2><% sub_title %></h2>
           <br> -->
@@ -118,7 +137,7 @@
                 <p>Tag list:
                     <input type="text" id="masstag" size="30" />
                     <input type="button" value="Add" onclick="javascript:addmasstags('<% username %>')" />
-                    <input type="button" value="Remove" onclick="javascript:deletemasstags('<% username %>')" />
+                    <input type="button" value="Remove" onclick="javascript:deleteMassTags('<% username %>')" />
                 </p>
             </form>
           </div>
