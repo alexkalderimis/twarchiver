@@ -16,6 +16,8 @@ use Data::Dumper;
 
 use constant TWITTER_BASE   => 'http://twitter.com/';
 use constant TWITTER_SEARCH => 'http://twitter.com/search';
+use constant ACTIONS => qw/retweeted favorited/;
+my %order_by_recent = ('order_by' => {-'desc' => 'tweet_id'});
 my $TAGS_KEY = 'twarchiver:tags';
 
 my $html = HTML::EasyTags->new();
@@ -46,32 +48,31 @@ get '/show/:username/:prefix' => \&show_popular_stats;
 
 get '/show/:username/favourited' => \&show_favourited_stats;
 
+
+
 sub show_popular_stats {
     my $user = params->{username};
     my $count = params->{count};
     my $prefix = params->{prefix};
-    if (not $prefix or not grep {$prefix eq $_} qw/retweeted favorited/) {
+    if (not $prefix or not grep {$prefix eq $_} ACTIONS) {
         pass and return false;
     }
-    my $statuses = get_statuses($user);
-    return unless ( ref $statuses );
-    my @populars = ($count)
-        ? grep {$_->{$prefix . "_count"} == $count} @$statuses
-        : grep {$_->{$prefix}} @$statuses;
-    if (@populars) {
-        debug(to_dumper($populars[0]));
-        debug("true") if $populars[0]->{$prefix};
-        debug($populars[0]->{$prefix});
-    }
+    my $col = $prefix . '_count';
+    my $value = ($count) ? $count : {'>=', 1};
+    my $db = get_db();
+    my $user_rec = get_user_record();
+    my @populars = $user_rec->search_related('tweets',
+        {$col => $value},
+        {%order_by_recent},
+    );
 
-    my $data  = organise_tweets($statuses);
     my $title = 'Statuses from '
       . $html->a(
         href => request->uri_for( join( '/', 'show', $user ) ),
         text => $user,
       ) . ' which have been ' . $prefix;
       $title .= " $count times" if $count;
-    return_status_page( $statuses, \@populars, $data, $title );
+    return_status_page( \@populars, $title );
 }
 
 sub search_username {
@@ -171,97 +172,105 @@ sub show_tweets_about {
 
 sub show_tweets_including {
     my ( $user, $searchterm, $is_case_insensitive ) = @_;
-    my $statuses = get_statuses($user);
-    return unless ( ref $statuses eq 'ARRAY' );
-    my $re;
-    eval { $re = ($is_case_insensitive) ? qr/$searchterm/i : qr/$searchterm/; };
+
+    eval { $re = ($is_case_insensitive) 
+            ? qr/$searchterm/i 
+            : qr/$searchterm/; 
+    };
     if ($@) {
-        $re =
-          ($is_case_insensitive)
+        $re = ($is_case_insensitive)
           ? qr/\Q$searchterm\E/i
           : qr/\Q$searchterm\E/;
     }
-    my @stats_with_searchterm =
-      map { $_->{text} =~ s{$re}{<span class="key-term">$&</span>}g; $_ }
-      grep { $_->{text} =~ $re } @$statuses;
-    debug( "Got " . scalar(@stats_with_searchterm) . " tweets with searchterm" );
+    my $db = get_db();
+    my $user_rec = get_user_record($user);
+    my $rs = $user_rec->tweets;
+    my @tweets_with_searchterm;
+    while (my $tweet = $rs->next()) {
+        push @tweets_with_searchterm, $tweet if ($tweet->text =~ $re);
+    }
+    for (@tweets_with_searchterm) {
+        my $x = $_->text; 
+        $x =~ s{$re}{<span class="key-term">$&</span>}g;
+        $_->{highlighted_text} = $x;
+    }
+    debug( "Got " . scalar(@tweets_with_searchterm)
+            . " tweets with searchterm" );
 
-    my $data  = organise_tweets($statuses);
     my $title = 'Statuses from '
       . $html->a(
         href => request->uri_for( join( '/', 'show', $user ) ),
         text => $user,
       ) . " mentioning $searchterm";
-    my $subtitle = 'Just the tweets making a mention';
-    return_status_page( $statuses, \@stats_with_searchterm, $data, $title );
+    return_status_page( \@tweets_with_searchterm, $title );
 }
 
 sub show_tweets_tagged_with {
     my $user     = params->{username};
     my $tag      = params->{tag};
-    my $statuses = get_statuses($user);
-    return unless ( ref $statuses );
-    my @tagged_stats;
-  OUTER: for ( my $i = 0 ; $i < @$statuses ; $i++ ) {
-        my $status = $statuses->[$i];
-        next OUTER unless ( $status->{$TAGS_KEY} );
-      INNER: for ( my $j = 0 ; $j < @{ $status->{$TAGS_KEY} } ; $j++ ) {
-            if ( $status->{$TAGS_KEY}->[$j] eq $tag ) {
-                push @tagged_stats, $status;
-                last INNER;
-            }
-        }
-    }
-    my $data  = organise_tweets($statuses);
+    my $user_rec = get_user_record($user);
+    my @tagged_stats = $user_rec->tweets->search(
+        {'tag.text' => $tag},
+        {join {tweet_tags => 'tag'},
+        %order_by_recent},
+    );
+
     my $title = 'Statuses from '
       . $html->a(
         href => request->uri_for( join( '/', 'show', $user ) ),
         text => $user,
       ) . " tagged with $tag";
-    return_status_page( $statuses, \@tagged_stats, $data, $title );
+    return_status_page( \@tagged_stats, $title );
 }
 
 sub return_status_page {
-    my ( $all_stats, $relevant_stats, $data, $title ) = @_;
-    my ( $mentions, $mention_count ) = make_mention_list($all_stats);
-    my ( $hashtags, $hashtag_count ) = make_hashtag_list($all_stats);
-    my ( $usertags, $usertag_count ) = make_tag_list($all_stats);
-    my ( $to,       $from ) =
-      ( $relevant_stats->[0] )
-      ? map( { $relevant_stats->[$_]->{created_at} } 0, -1 )
-      : ( "No tweets found" x 2 );
-    my $profile_image = $all_stats->[0]{user}{profile_image_url}
-      || '/images/squirrel_icon64.gif';
-    my $background_image = $all_stats->[0]{user}{profile_background_image_url}
-      || '/images/perldancer-bg.jpg';
+    my ( $relevant_stats, $title ) = @_;
+    my $user_rec = get_user_record(params->{username});
+    my ( $mentions, $mention_count ) = make_mention_list();
+    my ( $hashtags, $hashtag_count ) = make_hashtag_list();
+    my ( $usertags, $usertag_count ) = make_tag_list();
+    my ( $to, $from ) = (@$relevant_stats) 
+        ? map {$_->created_at->strftime($date_format)} @{$relevant_stats}[0, -1]
+        : ( "No tweets found" x 2 );
+
+    my $profile_image    = $user_rec->profile_image_url || '/images/squirrel_icon64.gif';
+    my $background_image = $user_rec->profile_bkg_url   || '/images/perldancer-bg.jpg';
+
+    my ($retweeted_count, $favourited_count)  = 
+        map {$user_rec->search_related('tweets', {$_.'_count' => {'>' => 0}})->count} ACTIONS;
+
+    my $most_recent = $user_rec->tweets->search(undef, {%order_by_recent})
+        ->first()->created_at()->strftime($date_format);
+    my $beginning   = $user_rec->tweets->search(undef, {order_by => 'tweet_id'})
+        ->first()->created_at()->strftime($date_format);
+
+    my $content = make_content($relevant_stats);
 
     my @args = (
         profile_image    => $profile_image,
         bkg_image        => $background_image,
-        retweeted_count  => $data->{retweeted_count},
-        favourited_count => $data->{favourited_count},
-        tweet_count      => ($all_stats->[0]{user}{statuses_count} || 0),
+        retweeted_count  => $retweeted_count,
+        favourited_count => $favourited_count,
+        tweet_count      => $user_rec->tweets->count;
         username         => params->{username},
         title            => $title,
         search_url       => request->uri_for( join( '/', 'search', params->{username} ) ),
         tweet_number     => scalar(@$relevant_stats),
         to               => $to,
         from             => $from,
-        content          => make_content($relevant_stats),
-        timeline         => make_timeline($data),
+        content          => $content,
+        timeline         => make_timeline(),
         mentions         => $mentions,
         hashtags         => $hashtags,
         usertags         => $usertags,
-        retweeteds_list  => make_popular_list($all_stats, 'retweeted'),
-        faveds_list      => make_popular_list($all_stats, 'favorited'),
-        beginning => $dt_prsr->parse_datetime( $all_stats->[0]{user}{created_at} )
-          ->strftime($date_format),
-        most_recent => $dt_prsr->parse_datetime( $all_stats->[0]->{created_at} )
-          ->strftime($date_format),
-        no_of_mentions => $mention_count,
-        no_of_hashtags => $hashtag_count,
-        no_of_usertags => $usertag_count,
-        download_base  => request->uri_for( join( '/', 'download', params->{username} ) ),
+        retweeteds_list  => make_popular_list('retweeted'),
+        faveds_list      => make_popular_list('favorited'),
+        beginning        => $beginning,
+        most_recent      => $most_recent,
+        no_of_mentions   => $mention_count,
+        no_of_hashtags   => $hashtag_count,
+        no_of_usertags   => $usertag_count,
+        download_base    => request->uri_for( join( '/', 'download', params->{username} ) ),
     );
     template statuses => {@args};
 }
@@ -272,15 +281,19 @@ sub show_statuses_within {
     my $month  = params->{month};
     my $digits = qr/^\d+$/;
     pass and return false if ( $year !~ $digits && $month !~ $digits );
-    debug("Showing statuses within");
-    my $statuses = get_statuses($user);
-    return unless ( ref $statuses );
-    my $data                = organise_tweets($statuses);
-    my $stats_for_the_month = $data->{sts}{$year}{$month};
-    my $title =
-      sprintf( "Statuses for %s from %s %s", $user, $data->{month_names}{$month}, $year );
+    my $db = get_db();
+    my $user = get_user_record($user);
+    my @stats_for_the_month = $user->search_related('tweets',
+        {
+            year => $year,
+            month => $month,
+        },
+        {%order_by_recent},
+    );
+    my $title = sprintf( "Statuses for %s from %s %s", 
+          $user, get_month_name_for($month), $year);
 
-    return_status_page( $statuses, $stats_for_the_month, $data, $title );
+    return_status_page( [@stats_for_the_month], $title );
 }
 
 sub get_statuses {
@@ -304,11 +317,9 @@ sub show_statuses_for {
 
     my $statuses = get_statuses($user);
     return unless ( ref $statuses );
-    my $data = organise_tweets($statuses);
 
     my $title    = "Status Archive for $user";
-    my $subtitle = "All the statuses I could find";
-    return_status_page( $statuses, $statuses, $data, $title, $subtitle );
+    return_status_page( $statuses, $statuses, $title);
 }
 
 sub download_tweets {
@@ -351,7 +362,7 @@ sub get_tweets_as_spreadsheet {
     );
     my $response;
     for my $st (@$statuses) {
-        $csv->combine( @{$st}{qw/created_at text/} );
+        $csv->combine( map {$st->$_} qw/created_at text/ );
         $response .= $csv->string() . "\n";
     }
     return $response;
@@ -359,12 +370,13 @@ sub get_tweets_as_spreadsheet {
 
 sub status_to_text {
     my $status = shift;
-    my ( $created_at, $text ) = @{$status}{qw/created_at text/};
-    my $tags =
-      ( $status->{$TAGS_KEY} )
-      ? join( ', ', @{ $status->{$TAGS_KEY} } )
-      : '';
-    $tags = 'Tags: ' . $tags if $tags;
+    my $year = $status->year;
+    my $month = get_month_name_for($status->month);
+    my $text = $status->text;
+    my @tags = $status->search_related('tags')->all;
+    $tags = (@tags) 
+            ? 'Tags: ' . join(', ', @tags)
+            : '';
     my $result;
     eval {
         local $SIG{__WARN__};
@@ -382,7 +394,7 @@ $tags
         write TEMP;
     };
     if ( my $e = $@ ) {
-        error( "Problem with " . $status->{text} );
+        error( "Problem with " . $status->text . $e );
     }
     return $result;
 }
@@ -396,126 +408,173 @@ sub make_content {
     }
 }
 
-sub organise_tweets {
-    my $statuses = shift;
-
-    my $datetimes =
-      [ map { $dt_prsr->parse_datetime( $_->{created_at} ) } @$statuses ];
-    my %data = ( favourited_count => 0, retweeted_count => 0 );
-    for ( 0 .. $#{$datetimes} ) {
-        my $dt = $datetimes->[$_];
-        my $st = $statuses->[$_];
-        $data{favourited_count}++ if $st->{favourited};
-        $data{retweeted_count}++  if $st->{retweeted};
-        push @{ $data{dts}{ $dt->year }{ $dt->month } }, $dt;
-        push @{ $data{sts}{ $dt->year }{ $dt->month } }, $st;
-        $data{month_names}{ $dt->month } = $dt->month_name;
-    }
-    return \%data;
-}
-
 sub make_timeline {
-    my ($data) = @_;
+    my $db = get_db();
+    my $user = get_user_record($user);
+    my @years = map {$_->year} $user_rec->search_related('tweets',
+        undef,
+        {
+            columns => ['year'],
+            distinct => 1,
+            order_by => {-desc => 'year'},
+        }
+    );
     my @list_items;
-    for my $year ( sort { $b <=> $a } keys %{ $data->{dts} } ) {
-        my @month_links = map {
-            $html->a(
-                href => request->uri_for( join( '/', 'show', params->{username}, $year, $_ ) ),
-                text => sprintf( "%s (%d Tweets)",
-                    $data->{month_names}{$_},
-                    scalar( @{ $data->{dts}{$year}{$_} } ) ),
-            );
-          } sort {
-            $b <=> $a
-          } keys %{ $data->{dts}{$year} };
-        my $year_item = join( "\n", $html->h3($year), $html->li_group( \@month_links ), );
+    for my $year ( @years ) {
+        my @months = map {$_->month} $user_rec->search_related('tweets',
+            {year => $year},
+            {
+                columns => ['month'],
+                distinct => 1,
+                order_by => {-desc => 'month'},
+            }
+        );
+        my @month_links = map {make_month_link($year, $_)} @months;
+        my $year_item = join( "\n", 
+            $html->h3($year), 
+            $html->li_group( \@month_links ), );
         push @list_items, $year_item;
     }
     return $html->li_group( \@list_items );
+}
 
+sub make_month_link {
+    my ($year, $month) = @_;
+    my $db = get_db();
+    my $user = get_user_record(params->{username});
+    my $number_of_tweets = $user_rec->search_related('tweets',
+        {
+            year => $year,
+            month => $month,
+        }
+    })->count;
+    return $html->a(
+        href => request->uri_for(join( '/',
+                'show', $user, $year, $month)),
+        text => sprintf( "%s (%s tweets)",
+            get_month_name_for($month), $number_of_tweets),
+    );
 }
 
 sub make_mention_list {
-    my ($statuses) = @_;
+    my $db = get_db();
+    my @mentions = $db->resultset('Mention')->search(
+        {
+            'tweets.user' => params->{username},
+        },
+        {
+            'join' => 'tweets',
+            order_by => 'mention.screen_name',
+        }
+    );
+
     my @list_items;
-    my %no_of_m;
-    for my $status (@$statuses) {
-        my @mentions_in_stat = $status->{text} =~ /$mentions_re/g;
-        $no_of_m{$_}++ for @mentions_in_stat;
-    }
-    if (%no_of_m) {
-        push @list_items, map {
-            sprintf( "%s %s",
-                make_mention_link($_), make_mention_report_link( $_, $no_of_m{$_} ) )
-          }
-          sort {
-            $no_of_m{$b} <=> $no_of_m{$a}
-          }
-          sort keys %no_of_m;
+    if (@mentions) {
+        @list_items = map { sprintf( "%s %s", 
+                        make_mention_link($_->screen_name), 
+                        make_mention_report_link(
+                            $_->screen_name, 
+                            count($_, 'tweets')
+                        ))}
+                    sort {count($b, 'tweets') <=> count($a, 'tweets')}
+                    @mentions;
     } else {
         push @list_items, $html->p("No mentions found");
     }
-    return ( $html->li_group( \@list_items ), (%no_of_m) ? scalar(@list_items) : 0 );
+    return ( $html->li_group( \@list_items ), scalar(@mentions) );
+}
+
+sub count {
+    my ($record, $key) = @_;
+    return $record->search_related(
+        $key, 
+        {user => params->{username}},
+        {cache => 1}
+    )->count;
 }
 
 sub make_hashtag_list {
-    my ($statuses) = @_;
+    my $db = get_db();
+    my @hashtags = $db->resultset('HashTag')->search(
+        {
+            'tweets.user' => params->{username},
+        },
+        {
+            'join' => 'tweets',
+            order_by => 'hashtag.topic',
+        }
+    );
+
     my @list_items;
-    my %no_of_h;
-    for my $status (@$statuses) {
-        my @hashtags_in_stat = $status->{text} =~ /$hashtags_re/g;
-        $no_of_h{$_}++ for @hashtags_in_stat;
-    }
-    if (%no_of_h) {
-        push @list_items, map {
-            sprintf( "%s %s",
-                make_hashtag_link($_), make_hashtag_report_link( $_, $no_of_h{$_} ) )
-          }
-          sort {
-            $no_of_h{$b} <=> $no_of_h{$a}
-          }
-          sort keys %no_of_h;
+    if (@hashtags) {
+        @list_items = map { sprintf( "%s %s", 
+                        make_hashtag_link($_->topic), 
+                        make_hashtag_report_link(
+                            $_->topic, 
+                            count($_, 'tweets')
+                        ))}
+                    sort {count($b, 'tweets') <=> count($a, 'tweets')}
+                    @hashtags;
     } else {
         push @list_items, $html->p("No hashtags found");
     }
-
-    return ( $html->li_group( \@list_items ), (%no_of_h) ? scalar(@list_items) : 0 );
+    return ( $html->li_group( \@list_items ), scalar(@hashtags) );
 }
 
 sub make_tag_list {
-    my ($statuses) = @_;
-    my @list_items;
-    my %no_of_t;
-    for my $status (@$statuses) {
-        if ( $status->{$TAGS_KEY} ) {
-            $no_of_t{$_}++ for @{ $status->{$TAGS_KEY} };
+    my $db = get_db();
+    my @tags = $db->resultset('Tag')->search(
+        {
+            'tweets.user' => params->{username},
+        },
+        {
+            'join' => 'tweets',
+            order_by => 'tag.tag_text',
         }
-    }
-    if (%no_of_t) {
-        push @list_items, map { make_tag_link( $_, $no_of_t{$_} ) }
-          sort { $no_of_t{$b} <=> $no_of_t{$a} }
-          sort keys %no_of_t;
+    );
+
+    my @list_items;
+    if (@tags) {
+        @list_items = map { make_tag_link($_->tag_text, count($_, 'tweets')))}
+                      sort {count($b, 'tweets') <=> count($a, 'tweets')}
+                      @tags;
     } else {
         push @list_items, $html->p("No tags found");
     }
-
-    return ( $html->li_group( \@list_items ), (%no_of_t) ? scalar(@list_items) : 0 );
+    return ( $html->li_group( \@list_items ), scalar(@tags) );
 }
 
 sub make_popular_list {
-    my ($statuses, $action) = @_;
+    my $action = shift;
+    my $db = get_db();
+
+    my $count_col = $action . '_count';
+    my @action_numbers = sort {$b <=> $a} map {$_->$count_col} 
+        $db->resultset('Tweet')->search(
+            {
+                user => params->{username},
+            },
+            {
+                columns => [$count_col],
+                distinct => 1,
+                order_by => $count_col,
+            }
+    );
+    my @tweet_numbers = map {
+        $db->resultset('Tweet')->count({
+                user => params->{username},
+                $count_col => $_
+            });
+    } @action_numbers;
     my @list_items;
-    my %no_actioned_x_times;
-    for my $status (@$statuses) {
-        if ( $status->{$action} ) {
-            $no_actioned_x_times{$status->{$action . '_count'}}++;
+    if (@action_numbers) {
+        for (0 .. $#action_numbers) {
+            push @list_items, make_popular_link(
+                $action_numbers[$_],
+                $tweet_numbers[$_],
+                $action,
+            );
         }
-    }
-    if (%no_actioned_x_times) {
-        push @list_items,
-            map { make_popular_link( $_, $no_actioned_x_times{$_}, $action ) }
-            sort { $no_actioned_x_times{$b} <=> $no_actioned_x_times{$a} }
-            sort keys %no_actioned_x_times;
     } else {
         push @list_items, $html->p("No $action tweets found");
     }
@@ -524,22 +583,22 @@ sub make_popular_list {
 }
 
 sub make_popular_link {
-    my $retweeted_count = shift;
+    my $actioned_count = shift;
     my $number_of_tweets = shift;
     my $action = my $text = shift;
     $text =~ s/^./uc($&)/e;
-    if ($retweeted_count == 1) {
+    if ($actioned_count == 1) {
         $text .= "once";
-    } elsif ($retweeted_count == 2) {
+    } elsif ($actioned_count == 2) {
         $text .= "twice";
     } else {
-        $text .= "$retweeted_count times";
+        $text .= "$actioned_count times";
     }
     $text .= "($number_of_tweets)";
 
     my $uri = URI->new(request->uri_for(join('/', 
-                'show', params->{username}, 'retweeted')));
-    $uri->query_form(count => $retweeted_count);
+                'show', params->{username}, $action)));
+    $uri->query_form(count => $actioned_count);
     return $html->a(
         href => $uri,
         text => $text,
@@ -588,53 +647,18 @@ sub request_tokens_for {
     $twitter->request_token_secret( $cookies{$user}{secret} );
     my @bits = $twitter->request_access_token( verifier => $verifier );
 
-    #        die "names don't match - got $screen_name"
-    #            unless ( $screen_name eq $user);
+    die "names don't match - got $screen_name"
+        unless ( $screen_name eq $user);
     save_tokens( @bits[ 3, 0, 1 ] );
     return ( @bits[ 0, 1 ] );
 }
 
-sub retrieve_statuses {
-    my ( $user, @tokens ) = @_;
-    my %no_of_st;
-    my @stats = grep { $no_of_st{ $_->{id} }++ < 1 } restore_statuses_for($user);
-
-    if (@tokens) {
-        my $twitter = get_twitter(@tokens);
-
-        my $since =
-          (@stats)
-          ? $stats[0]->{id}
-          : 0;
-
-        debug( sprintf "Restored %d statuses", scalar(@stats) ) if @stats;
-
-        if ( $twitter->authorized ) {
-
-            for ( my $page = 1 ; ; ++$page ) {
-                debug("Getting page $page of twitter statuses");
-                my $args = { count => 100, page => $page };
-                $args->{since_id} = $since if $since;
-                my $statuses = $twitter->user_timeline($args);
-                last unless @$statuses;
-                unshift @stats, @$statuses;
-
-                #			last if (@stats > 20);
-            }
-            store_statuses( $user, \@stats );
-            return \@stats;
-        } else {
-            die "Not authorised.";
-        }
-    } else {
-        return \@stats;
-    }
-}
+#TODO Rewrite make table
 
 sub make_table {
     my $status = shift;
     return '' unless $status;
-    my $text = $status->{text};
+    my $text = $status->text;
     my @urls = $text =~ /$urls_re/g;
     if (@urls) {
         @urls = uniq(@urls);
