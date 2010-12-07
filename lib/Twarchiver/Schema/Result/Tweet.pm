@@ -176,7 +176,7 @@ Related object: L<Twarchiver::Schema::Result::Mention>
 __PACKAGE__->many_to_many(
     'mentions',
     'tweet_mentions',
-    'mentions',
+    'mention',
 );
 
 =head2 hashtags
