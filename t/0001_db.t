@@ -286,4 +286,7 @@ ok ! ($tag = $tweet->tags->find({text => "Tag One"}))
     => "The tweet is no longer tagged with the unlinked tag";
 
 is $tweet->tags->count, 2, "Back to two tags";
+
+is Tags->search({retweeted_count => {'>=' => 1}})->count, 4
+    => "There are the right number of retweets";
 done_testing;
