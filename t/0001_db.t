@@ -14,7 +14,7 @@ use Test::DBIx::Class {
     schema_class => 'Twarchiver::Schema',
     connect_info => ['dbi:SQLite:dbname=:memory:','',''],
     fixture_class => '::Populate',
-}, 'User', 'Tweet', 'Mention', 'Tag';
+}, 'User', 'Tweet', 'Mention', 'Tag', 'Hashtag';
 
 ## Your testing code below ##
 fixtures_ok sub {
@@ -47,6 +47,7 @@ fixtures_ok sub {
                     tweet_hashtags => [
                         {hashtag => {topic => 'Topic One'}},
                         {hashtag => {topic => 'Topic Two'}},
+                        {hashtag => {topic => 'Topic Three'}},
                     ],
                     tweet_tags => [
                         {tag => {text => 'Tag One'}},
@@ -67,6 +68,7 @@ fixtures_ok sub {
                         day => $now->day,
                     ),
                     tweet_mentions => [
+                        {mention => {screen_name => 'Mention Two'}},
                         {mention => {screen_name => 'Mention Three'}},
                         {mention => {screen_name => 'Mention Four'}},
                     ],
@@ -75,6 +77,7 @@ fixtures_ok sub {
                         {url => {address => 'Url Four'}},
                     ],
                     tweet_hashtags => [
+                        {hashtag => {topic => 'Topic Two'}},
                         {hashtag => {topic => 'Topic Three'}},
                         {hashtag => {topic => 'Topic Four'}},
                     ],
@@ -88,7 +91,11 @@ fixtures_ok sub {
                     tweet_id=>3, text=>'Tweet Three',
                     created_at => DateTime->new(
                         year => 2010, month => 5, day => 6
-                    )
+                    ),
+                    retweeted_count => 200_000,
+                    tweet_hashtags => [
+                        {hashtag => {topic => 'Topic Three'}},
+                    ],
                 },
         ],
     });
@@ -138,6 +145,7 @@ fixtures_ok sub {
                     tweet_mentions => [
                         {mention => {screen_name => 'Mention Seven'}},
                         {mention => {screen_name => 'Mention Eight'}},
+                        {mention => {screen_name => 'Mention One'}},
                     ],
                     tweet_urls => [
                         {url => {address => 'Url Seven'}},
@@ -254,7 +262,7 @@ my $tweets_in_may2010 = Tweet
 
 is $tweets_in_may2010->count, 2, "Can find tweets in a particular month";
 
-my $tweet = Tweet->find({text => "Tweet Six"});
+$tweet = Tweet->find({text => "Tweet Six"});
 
 is $tweet->tags->count, 2, "Can find tags ok";
 is_deeply(
@@ -287,6 +295,60 @@ ok ! ($tag = $tweet->tags->find({text => "Tag One"}))
 
 is $tweet->tags->count, 2, "Back to two tags";
 
-is Tags->search({retweeted_count => {'>=' => 1}})->count, 4
+is Tweet->search({retweeted_count => {'>=' => 1}})->count, 5
     => "There are the right number of retweets";
+
+my @retweet_counts = grep {defined}
+        map {$_->retweeted_count} 
+        Tweet->search(
+            undef, 
+            {
+                select => ['retweeted_count'],
+                distinct => 1,
+            }
+        );
+
+is_deeply(
+    [ @retweet_counts ],
+    [ 100_000, 200_000, 300_000 ],
+    "Can summarise the retweet counts"
+) or diag(explain(\@retweet_counts));
+
+is Tweet->search({retweeted_count => 200_000})->count, 3
+    => "And we can get the right number of retweets by count";
+
+ok my $user_one = User->find({screen_name => "User One"})
+    => "Can find user one";
+
+my $userOnes_200_000er_tweets = $user_one->tweets->search(
+    {retweeted_count => 200_000}
+);
+
+my %occurances_of_topics = map {($_->topic, $_->get_column('topic_count'))}
+    Hashtag->search(
+    {   
+        'user.screen_name' => "User One"
+    },
+    {   
+        select => [
+            'topic',
+            {count => 'topic'}
+        ],
+        as => [qw/topic topic_count/],
+        join => {tweet_hashtags => { tweet => 'user'}},
+        distinct => 1,
+    }
+);
+is_deeply(
+    {%occurances_of_topics},
+    {
+        'Topic One' => '1',
+        'Topic Two' => '2',
+        'Topic Three' => '3',
+        'Topic Four' => '1',
+    },
+    "Can summarise hashtags properly"
+);
+
+
 done_testing;
