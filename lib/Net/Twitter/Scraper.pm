@@ -44,6 +44,7 @@ use File::Basename;
 use File::Path qw(make_path);
 use File::Spec::Functions;
 use Scalar::Util 'blessed';
+use Twarchiver::DB::Schema;
 
 use constant CONS_KEY      => 'duo83UgzZ99BRPpf56pUnA';
 use constant CONS_SEC      => '6Si7yg4S1USpVFFYpL6N8Bc3MftddMXEQYefbn9U3w';
@@ -51,9 +52,35 @@ use constant STORAGE_PATHS => ( dirname($0), 'data', 'auth-tokens' );
 use constant STATUS_STORAGE => (dirname($0), 'data', 'statuses');
 
 use Exporter 'import';
-our @EXPORT = qw/get_twitter restore_tokens save_tokens store_statuses restore_statuses_for/;
+our @EXPORT = qw/get_twitter restore_tokens save_tokens store_statuses restore_statuses_for get_db get_user_record/;
 
 my %cookies;
+my $schema;
+
+my $span_re           = qr/<.?span.*?>/;
+my $mentions_re       = qr/(\@(?:$span_re|\w+)+\b)/;
+my $hashtags_re       = qr/(\#(?:$span_re|[\w-]+)+)/;
+my $urls_re           = qr{(http://(?:$span_re|[\w\./]+)+\b)};
+
+sub get_db {
+    unless ($schema) {
+        $schema = Twarchiver::DB::Schema->connect(
+            "dbi:SQLite:dbname=".setting('database'));
+    }
+
+    return $schema;
+}
+
+my %name_of_month;
+sub get_month_name_for {
+    my $month_number = shift;
+    unless (%name_of_month) {
+        %name_of_month = map 
+            {$_ => DateTime->new(year => 2010, month => $_)->month_name} 
+                1 .. 12;
+    }
+    return $name_of_month{$month_number};
+}
 
 sub get_twitter {
     my @tokens = @_;
@@ -75,102 +102,152 @@ sub get_twitter {
     
 sub restore_statuses_for {
     my $user = shift;
-    my $status_file = catfile(STATUS_STORAGE, $user);
-    if (-f $status_file) {
-        if (open(my $in, '<', $status_file)) {
-            my $content = join('', <$in>);
-            close($in) or die("Couldn't close $status_file, $!");
-            my $VAR1;
-            eval($content);
-            my $stats = $VAR1;
-            if (ref $stats ne 'ARRAY') {
-                my $type = ref $stats;
-                die("Wrong content - got $type\n$content");
-            }
-            return @$stats;
-        } else {
-            unlink $status_file;
+    my $user_rec = get_user_record($user);
+    my @statuses = $user_rec->search_related('tweets')->all;
+    return @statuses;
+}
+
+sub get_since_id_for {
+    my $user = shift;
+    my $user_rec = get_user_record($user);
+    my ($most_recent_tweet) = $user_rec->search_related('tweets',
+        {   
+            undef,
+            {order_by => { -desc => 'tweet_id' }},
         }
+    );
+    if ($most_recent_tweet) {
+        return $most_recent_tweet->id;
+    } else {
+        return 0;
     }
-    return;
+}
+
+
+sub retrieve_statuses {
+    my ( $user, @tokens ) = @_;
+    my %no_of_st;
+
+    if (@tokens) {
+        my $twitter = get_twitter(@tokens);
+
+        my $since = get_since_for($user);
+
+        if ( $twitter->authorized ) {
+
+            for ( my $page = 1 ; ; ++$page ) {
+                debug("Getting page $page of twitter statuses");
+                my $args = { count => 100, page => $page };
+                $args->{since_id} = $since if $since;
+                my $statuses = $twitter->user_timeline($args);
+                last unless @$statuses;
+                store_twitter_statuses(@stats);
+            }
+        } else {
+            die "Not authorised.";
+        }
+    } 
+    return restore_statuses_for($user);
+}
+
+sub store_twitter_statuses {
+    my @statuses = @_;
+    my $db = get_db;
+    for (@statuses) {
+        my $tweet_rec = get_tweet_record($_->{id}, $_->{screen_name});
+        my ($text, $retweeted, $retweeted_no, $favorited, $favorited_no) 
+            = @{$_}{qw/text retweeted retweeted_count 
+                favorited favorited_count/};
+        }
+        $tweet_rec->text($text);
+        $tweet_rec->retweeted($retweeted);
+        $tweet_rec->retweeted_count($retweeted_no);
+        $tweet_rec->favorited($favorited);
+        $tweet_rec->favorited_count($favorited_no);
+
+        my $dt = $datetime_parser->parse_datetime($_->{created_at});
+        $tweet_rec->created_at($dt);
+
+        my @mentions = $text =~ /$mentions_re/g;
+        for my $mention (@mentions) {
+            my $mention_rec = $db->resultset('Mention')->find_or_create({
+                screen_name => $mention
+            });
+            $mention_rec->add_to_tweets($tweet_rec);
+            $tweet_rec->add_to_mentions($mention_rec);
+            $mention_rec->update;
+        }
+        my @hashtags = $text =~ /$hashtags_re/g;
+        for my $hashtag (@hashtags) {
+            my $hashtag_rec = $db->resultset('Hashtag')->find_or_create({
+                topic => $hashtag
+            });
+            $hashtag_rec->add_to_tweets($tweet_rec);
+            $tweet_rec->add_to_hashtags($hashtag_rec);
+            $hashtag_rec->update;
+        }
+        my @urls = $tweet_text =~ /$urls_re/g;
+        for my $url (@urls) {
+            my $url_rec = $db->resultset('Url')->find_or_create({
+                address => $url
+            });
+            $url_rec->add_to_tweets($tweet_rec);
+            $tweet_rec->add_to_urls($url_rec);
+            $url_rec->update;
+        }
+        $tweet_rec->update;
+    }
 }
 
 sub restore_tokens {
     my $user = shift;
-    my $key_file = catfile( STORAGE_PATHS, $user );
-    if ( -f $key_file ) {
-        if ( open( my $in, '<', $key_file ) ) {
-            my %keys;
-            for (<$in>) {
-                chomp;
-                my ( $k, $v ) = split(/\t/);
-                $keys{$k} = $v;
-            }
-            close($in) or die "Couldn't close $key_file, $!";
-            return @keys{qw/access_token access_token_secret/};
-        } else {
-            print "Couldn't open key file - deleting\n";
-            unlink $key_file;
-        }
+    my $user_rec = get_user_record($user);
+
+    my @tokens = (
+        $user_rec->access_token,
+        $user_rec->access_token_secret,
+    );
+
+    return unless (@tokens == 2);
+    return @tokens;
+}
+
+sub get_user_record {
+    my $user = shift;
+    my $db = get_db();
+    my $user_rec = $db->resultset('User')->find_or_create(
+        {
+            screen_name => $user,
+        },
+    );
+    return $user_rec;
+}
+
+sub get_tweet_record {
+    my ($id, $screen_name) = @_;
+    my $db = get_db();
+    my $user_rec = get_user_record($screen_name);
+    my $tweet_rec = $user_rec->tweets->find(
+        {'tweet_id' = > $id,}
+    );
+    unless ($tweet_rec) {
+        $tweet_rec = $user_rec->add_to_tweets({
+                tweet_id => $id,
+        });
     }
-    return;
+    return $tweet_rec;
 }
 
-sub print_tokens {
-    my ( $glob, $token, $secret ) = @_;
-    printf( $glob "%s\t%s\n%s\t%s",
-        'access_token', $token, 'access_token_secret', $secret );
-    close($glob) or die("Couldn't close key file, $!");
-    return;
-}
-
-sub print_statuses {
-    my ( $glob, $stats ) = @_;
-    print $glob Dumper($stats);
-    close($glob) or die("Couldn't close status file, $!");
-    return;
-}
+    
 
 sub save_tokens {
     my ( $user, $token, $secret ) = @_;
-    my $key_file = catfile( STORAGE_PATHS, $user );
-    if ( -f $key_file ) {
-        if ( open( my $out, '>', $key_file ) ) {
-            return print_tokens( $out, $token, $secret );
-        } else {
-            unlink $key_file;
-            return save_tokens( $user, $token, $secret );
-        }
-    } else {
-        my $base_dir = catfile(STORAGE_PATHS);
-        unless ( -d $base_dir ) {
-            make_path($base_dir);
-        }
-        open( my $out, '>', $key_file )
-          or die("Couldn't write to $key_file, $!");
-        return print_tokens( $out, $token, $secret );
-    }
-}
+    my $user_rec = get_user_record($user);
 
-sub store_statuses {
-    my ($user, $stats) = @_;
-    my $status_file = catfile(STATUS_STORAGE, $user);
-    if (-f $status_file) {
-        if ( open( my $out, '>', $status_file ) ) {
-            return print_statuses( $out, $stats );
-        } else {
-            unlink $status_file;
-            return store_statuses( $user, $stats );
-        }
-    } else {
-        my $base_dir = catfile(STATUS_STORAGE);
-        unless ( -d $base_dir ) {
-            make_path($base_dir);
-        }
-        open( my $out, '>', $status_file )
-          or die("Couldn't write to $status_file, $!");
-        return print_statuses( $out, $stats );
-    }
+    $user_rec->update({
+            access_token => $token,
+            access_token_secret => $secret,
+    });
 }
 
 
