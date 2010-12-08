@@ -14,7 +14,7 @@ use Test::DBIx::Class {
     schema_class => 'Twarchiver::Schema',
     connect_info => ['dbi:SQLite:dbname=:memory:','',''],
     fixture_class => '::Populate',
-}, 'User', 'Tweet', 'Mention';
+}, 'User', 'Tweet', 'Mention', 'Tag';
 
 ## Your testing code below ##
 fixtures_ok sub {
@@ -84,7 +84,12 @@ fixtures_ok sub {
                     ],
 
                 },
-                {tweet_id=>3, text=>'Tweet Three'},
+                {
+                    tweet_id=>3, text=>'Tweet Three',
+                    created_at => DateTime->new(
+                        year => 2010, month => 5, day => 6
+                    )
+                },
         ],
     });
     $user_rs->create({
@@ -148,7 +153,12 @@ fixtures_ok sub {
                     ],
 
                 },
-                {text=>'Tweet Seven'},
+                {
+                    text=>'Tweet Seven',
+                    created_at => DateTime->new(
+                        year => 2010, month => 5, day => 17
+                    )
+                },
         ],
     });
 
@@ -221,4 +231,59 @@ my $user_one_mentions = Mention->search(
 );
 
 is $user_one_mentions->count, 5, "Can find mentions by user";
+
+my $tweets_before_today = Tweet->search({
+        created_at => {'<=', DateTime->now()},
+    });
+
+is $tweets_before_today->count, 6, "Can find tweets by date comparison";
+
+my $start_of_may = DateTime->new(
+    year => 2010,
+    month => 5,
+    day => 1,
+);
+my $start_of_june = DateTime->new(
+    year => 2010,
+    month => 6,
+    day => 1,
+);
+my $tweets_in_may2010 = Tweet
+    ->search({created_at => {'>' => $start_of_may}})
+    ->search({created_at => {'<' => $start_of_june}});
+
+is $tweets_in_may2010->count, 2, "Can find tweets in a particular month";
+
+my $tweet = Tweet->find({text => "Tweet Six"});
+
+is $tweet->tags->count, 2, "Can find tags ok";
+is_deeply(
+    [$tweet->tags->get_column("text")->all],
+    ["Tag Seven", "Tag Eight"],
+    "And they have the right topics",
+);
+is Tag->count, 8, "We have the right total tag count";
+
+lives_ok(
+    sub {$tweet->add_to_tags({text => "Tag One"})},
+    "Can add a tag"
+);
+is $tweet->tags->count, 3, "Now have three tags";
+
+is Tag->count, 8, "Adding an existing tag doesn't change the overall count";
+
+ok my $tag = $tweet->tags->find({text => "Tag One"})
+    => "Can find the added tag";
+
+ok my $link = $tag->tweet_tags->find({
+        tweet => $tweet
+    }) => "Can find the link";
+$link->delete;
+
+is Tag->count, 8, "Deleting a link doesn't delete the tag";
+
+ok ! ($tag = $tweet->tags->find({text => "Tag One"}))
+    => "The tweet is no longer tagged with the unlinked tag";
+
+is $tweet->tags->count, 2, "Back to two tags";
 done_testing;
