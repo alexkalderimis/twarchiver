@@ -14,7 +14,7 @@ use Test::DBIx::Class {
     schema_class => 'Twarchiver::Schema',
     connect_info => ['dbi:SQLite:dbname=:memory:','',''],
     fixture_class => '::Populate',
-}, 'User', 'Tweet', 'Mention', 'Tag', 'Hashtag';
+}, 'User', 'Tweet', 'Mention', 'Tag', 'Hashtag', "Url";
 
 ## Your testing code below ##
 fixtures_ok sub {
@@ -349,6 +349,87 @@ is_deeply(
     },
     "Can summarise hashtags properly"
 );
+
+is $user_one->tweets->get_column('tweet_id')->max, 7
+    => "get_since_id_for logic test";
+
+is $user_one->tweets->find(7)->text, "Tweet Four"
+    => "The since id points to the right record";
+
+is User->find_or_create({screen_name => "User One"})->id, 
+    $user_one->id(),
+    "get_user_record logic test";
+    
+is_deeply(
+    [$user_one->access_token, $user_one->access_token_secret],
+    ['Access Token One', 'Access Secret One'],
+    "restore_tokens logic test"
+);
+
+lives_ok(
+    sub {$user_one->update({
+        access_token => "Token One - Updated",
+        access_token_secret => "Secret One - Updated",
+    });},
+    "Can update tokens"
+);
+
+is_deeply(
+    [$user_one->access_token, $user_one->access_token_secret],
+    ['Token One - Updated', 'Secret One - Updated'],
+    "save_tokens logic test"
+);
+
+my $user_tweets_rs = $user_one->tweets->search(
+    undef,
+    {order_by => {-desc => 'tweet_id'}},
+);
+is $user_tweets_rs->count, 4
+    => "restore_statuses_for count test";
+
+is_deeply(
+    [$user_tweets_rs->get_column('text')->all],
+    ["Tweet Four", "Tweet Three", "Tweet Two", "Tweet One"],
+    "restore_statuses_for content test"
+);
+
+ok my $tweet_7 = Tweet->find({text => "Tweet Seven"})
+    => "Can find tweet 7";
+
+is $tweet_7->tags->count, 0
+    => "Starts with 0 tags";
+
+
+is $tweet_7->urls->count, 0
+    => "Starts with 0 urls";
+
+lives_ok(
+    sub {$tweet_7->add_to_urls({address => "Added Url"})},
+    "Can add a url"
+);
+
+is $tweet_7->urls->count, 1
+    => "Now has 1 url";
+
+ok my $added_url = Url->find({address => "Added Url"})
+    => "Can find the added url";
+
+is $added_url->tweets->count, 1
+    => "The added url has one tweet";
+
+is Url->count, 9
+    => "The number of urls overall is right";
+
+lives_ok(
+    sub {$tweet_7->add_to_urls({address => "Url One"})},
+    "Can add an existing url"
+);
+
+is $tweet_7->urls->count, 2
+    => "The count of urls for the tweet has gone up";
+
+is Url->count, 9
+    => "The number of urls overall hasn't gone up";
 
 
 done_testing;
