@@ -24,7 +24,7 @@ use Exporter 'import';
 our @EXPORT = qw/get_twitter restore_tokens save_tokens store_statuses restore_statuses_for get_db get_user_record/;
 
 my $html = HTML::EasyTags->new();
-my $datetime_parser = DateTime::Format::Strptime->new( 
+my $dt_parser = DateTime::Format::Strptime->new( 
     pattern => '%a %b %d %T %z %Y' );
 
 my %cookies;
@@ -80,8 +80,10 @@ Returns:   A list of the users statuses (Row objects).
 sub restore_statuses_for {
     my $user = shift;
     my $user_rec = get_user_record($user);
-    my @statuses = sort {$b->created_at->epoch <=> $a->created_at->epoch}
-                    $user_rec->search_related('tweets')->all;
+    my @statuses = $user_rec->tweets->search(
+                        undef, 
+                        {order_by => {-desc => 'tweet_id'}},
+                    );
     return @statuses;
 }
 
@@ -148,47 +150,25 @@ sub store_twitter_statuses {
     my $db = get_db;
     for (@statuses) {
         my $tweet_rec = get_tweet_record($_->{id}, $_->{screen_name});
-        my ($text, $retw, $retw_no, $fav, $fav_no) 
-            = @{$_}{qw/text retweeted retweeted_count 
-                favorited favorited_count/};
-        }
-        $tweet_rec->text($text);
-        $tweet_rec->retweeted($retweeted);
-        $tweet_rec->retweeted_count($retweeted_no);
-        $tweet_rec->favorited($favorited);
-        $tweet_rec->favorited_count($favorited_no);
-
-        my $dt = $datetime_parser->parse_datetime($_->{created_at});
-        $tweet_rec->created_at($dt);
-        $tweet_rec->year($dt->year);
-        $tweet_rec->month($dt->month);
+        $tweet_rec->update({
+            text            => $_->{text},
+            retweeted_count => $_->{retweeted_count},
+            favorited_count => $_->{favorited_count},
+            created_at => $dt_parser->parse_datetime($_->{created_at}),
+        });
+        my $text = $_->{text};
 
         my @mentions = $text =~ /$mentions_re/g;
         for my $mention (@mentions) {
-            my $mention_rec = $db->resultset('Mention')->find_or_create({
-                screen_name => $mention
-            });
-            $mention_rec->add_to_tweets($tweet_rec);
-            $tweet_rec->add_to_mentions($mention_rec);
-            $mention_rec->update;
+            $tweet_rec->add_to_mentions({screen_name => $mention});
         }
         my @hashtags = $text =~ /$hashtags_re/g;
         for my $hashtag (@hashtags) {
-            my $hashtag_rec = $db->resultset('Hashtag')->find_or_create({
-                topic => $hashtag
-            });
-            $hashtag_rec->add_to_tweets($tweet_rec);
-            $tweet_rec->add_to_hashtags($hashtag_rec);
-            $hashtag_rec->update;
+            $tweet_rec->add_to_hashtags({topic => $hashtag});
         }
         my @urls = $tweet_text =~ /$urls_re/g;
         for my $url (@urls) {
-            my $url_rec = $db->resultset('Url')->find_or_create({
-                address => $url
-            });
-            $url_rec->add_to_tweets($tweet_rec);
-            $tweet_rec->add_to_urls($url_rec);
-            $url_rec->update;
+            $tweet_rec->add_to_urls({$address => $url});
         }
         $tweet_rec->update;
     }
@@ -223,7 +203,7 @@ sub get_tweet_record {
     my $db = get_db();
     my $user_rec = get_user_record($screen_name);
     my $tweet_rec = $user_rec->tweets->find(
-        {'tweet_id' = > $id,}
+        {'tweet_id' => $id,}
     );
     unless ($tweet_rec) {
         $tweet_rec = $user_rec->add_to_tweets({
@@ -232,8 +212,6 @@ sub get_tweet_record {
     }
     return $tweet_rec;
 }
-
-    
 
 sub save_tokens {
     my ( $user, $token, $secret ) = @_;
@@ -244,11 +222,5 @@ sub save_tokens {
             access_token_secret => $secret,
     });
 }
-
-
-
-get '/' => sub {
-    template 'index';
-};
 
 true;
