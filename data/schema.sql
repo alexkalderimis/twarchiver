@@ -17,7 +17,7 @@ CREATE TABLE user (
     profile_image_url TEXT,
     profile_bkg_url TEXT,
     access_token TEXT,
-    access_token_secret INTEGER
+    access_token_secret TEXT
 );
 
 CREATE TABLE tweet_mention (

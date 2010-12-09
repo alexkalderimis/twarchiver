@@ -57,7 +57,7 @@ __PACKAGE__->table("user");
 
 =head2 access_token_secret
 
-  data_type: 'integer'
+  data_type: 'text'
   is_nullable: 1
 
 =cut
@@ -78,7 +78,7 @@ __PACKAGE__->add_columns(
   "access_token",
   { data_type => "text", is_nullable => 1 },
   "access_token_secret",
-  { data_type => "integer", is_nullable => 1 },
+  { data_type => "text", is_nullable => 1 },
 );
 __PACKAGE__->set_primary_key("user_id");
 
