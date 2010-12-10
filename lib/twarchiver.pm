@@ -6,10 +6,10 @@ our $VERSION = '0.1';
 use Net::Twitter;
 use Try::Tiny;
 use File::Basename;
-use File::Path qw(make_path);
 use File::Spec::Functions;
-use Scalar::Util 'blessed';
 use Twarchiver::DB::Schema;
+use HTML::EasyTags;
+use DateTime::Format::Strptime;
 
 use constant CONS_KEY      => 'duo83UgzZ99BRPpf56pUnA';
 use constant CONS_SEC      => '6Si7yg4S1USpVFFYpL6N8Bc3MftddMXEQYefbn9U3w';
@@ -107,9 +107,7 @@ sub get_search_username_content {
     my $searchterm = params->{searchterm};
     my $is_case_insensitive = params->{i};
 
-    if (needs_authorisation($user)) {
-        return $html->p("Not Authorised");
-    }
+    return $html->p("Not Authorised") if (needs_authorisation($user));
 
     eval { $re = ($is_case_insensitive) 
             ? qr/$searchterm/i 
@@ -146,9 +144,7 @@ Returns:  The content html string
 
 sub get_username_content {
     my $user = params->{username};
-    if (needs_authorisation($user)) {
-        return $html->p("Not Authorised");
-    }
+    return $html->p("Not Authorised") if (needs_authorisation($user));
     download_latest_tweets_for($user);
     my @tweets = restore_statuses_for($user);
     my $content = make_content(@tweets);
@@ -159,7 +155,7 @@ sub get_username_content {
 
 Function:  Orchestrate the construction of content. 
 Arguments: A list of DBIx::Class Tweet result rows
-Returns:   A ol > li list of tweets, or a p apology if no tweets found
+Returns:   A <ol > li> list of tweets, or <p>apology</p> if no tweets found
 
 =cut
 
@@ -512,7 +508,7 @@ sub store_twitter_statuses {
         }
         my @urls = $tweet_text =~ /$urls_re/g;
         for my $url (@urls) {
-            $tweet_rec->add_to_urls({$address => $url});
+            $tweet_rec->add_to_urls({address => $url});
         }
         $tweet_rec->update;
     }
