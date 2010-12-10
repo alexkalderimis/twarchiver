@@ -13,69 +13,64 @@
 </script>
 <script language="javascript" type="text/javascript" src="/javascripts/ajax.js">
 </script>
+<script language="javascript" type="text/javascript" src="/javascripts/jquery.throbber.js"></script>
+
 <div id="page">
-      <div id="sidebar">
+    <div id="sidebar">
         <ul id="sidebar-items">
             <li>
                 <h3><a href="#" onclick="javascript:toggleDiv('timeline');">Timeline</a></h3>
                 <div id="timeline" style="display: none;">
-                    <ul>
-                        <% timeline %>
-                    </ul>
+                    <ul id="timeline-list"><li>Loading<li></ul>
                 </div>
             </li>
             <li>
                 <h3><a href="#" onclick="javascript:toggleDiv('mentions');">Mentions</a></h3>
                 <div id="mentions" style="display: none;">
-                    <ul>
-                        <% mentions %>
-                    </ul>
+                    <ul id="mentions-list"><li>Loading<li></ul>
                 </div>
             <li>
             </li>
                 <h3><a href="#" onclick="javascript:toggleDiv('hashtags');">Hash-Tags</a></h3>
                 <div id="hashtags" style="display: none;">
-                    <ul>
-                        <% hashtags %>
-                    </ul>
+                    <ul id="hashtags-list"><li>Loading<li></ul>
                 </div>
             </li>
             </li>
                 <h3><a href="javascript:toggleDiv('usertags');">Your tags</a></h3>
                 <div id="usertags" style="display: none;">
                     <ul id="tagLinksList">
-                        <% usertags %>
-                    </ul>
+                    <li>Loading<li></ul>
                 </div>
             </li>
             <li>
                 <h3><a href="#" onclick="javascript:toggleDiv('retweeteds');">Retweeted Statuses</a></h3>
                 <div id="retweeteds" style="display: none;">
-                    <ul id="retweetedLinksList">
-                        <li><a href="/show/<% username %>/retweeted">All Retweeted Statuses (<% retweeted_count %>)</a></h3>
-                        <% retweeteds_list %>
-                    </ul>
+                    <ul id="retweetedLinksList"><li>Loading<li></ul>
                 </div>
             </li>
             <li>
                 <h3><a href="#" onclick="javascript:toggleDiv('favouriteds');">Favourited Statuses</a></h3>
                 <div id="favouriteds" style="display: none;">
-                    <ul id="favedLinksList">
-                        <li><a href="/show/<% username %>/favorited">All Favourited Statuses (<% favourited_count %>)</a></h3>
-                        <% faveds_list %>
-                    </ul>
+                    <ul id="favedLinksList"><li>Loading<li></ul>
                 </div>
             </li>
             <li>
                 <h3>Your Tweet History</h3>
 
                 <ul>
-                    <li>Tweeting since: <% beginning %></li>
-                    <li>Most recent tweet: <% most_recent %></li>
-                    <li>Number of Tweets: <% tweet_count %></li>
-                    <li>Number of mentions: <% no_of_mentions %></li>
-                    <li>Number of Hashtags: <% no_of_hashtags %></li>
-                    <li>Number of Tags: <span id="tagCounter"> <% no_of_usertags %> </span> </li>
+                    <li>Tweeting since: <span id="beginning">
+                    </span></li>
+                    <li>Most recent tweet: <span id="most_recent">
+                    </span></li>
+                    <li>Number of Tweets: <span id="tweet_count">
+                    </span></li>
+                    <li>Number of mentions: <span id="no_of_mentions">
+                    </span></li>
+                    <li>Number of Hashtags: <span id="no_of_hashtags">
+                    </span></li>
+                    <li>Number of Tags: <span id="tagCounter">
+                    </span></li>
                 </ul>
 
           </li>
@@ -120,8 +115,8 @@
           </div>
           <div id="export" style="display: none;">
             <ul>
-                <li><a href="<% download_base %>.txt">Download as text file</a></li>
-                <li><a href="<% download_base %>.tsv">Download as tab separated value file</a></li>
+                <li><a href="/download/<% username %>.txt">Download as text file</a></li>
+                <li><a href="/download/<% username %>.tsv">Download as tab separated value file</a></li>
             </ul>
           </div>
           <div id="search" style="display: none;">
@@ -141,7 +136,23 @@
                 </p>
             </form>
           </div>
-          <% content %>
+          <div id="content"><p>Loading</p></div>
         </div>
       </div>
     </div>
+
+    <script> 
+        // Asynchronously load the content
+        $("#content").load("/load/content/<% content_url %>", null, function() {;
+            $.get("/load/summary/<% content_url %>", null, 
+                loadSummary, "json");
+            $("#timeline-list").load("/load/timeline/for/<% username %>");
+            $("#mentions-list").load("/load/mentions/for/<% username %>");
+            $("#hashtags-list").load("/load/hashtags/for/<% username %>");
+            $("#urls-list").load("/load/urls/for/<% username %>");
+            $("#tagLinksList").load("/load/tags/for/<% username %>");
+            $("#retweetedLinksList").load("/load/retweeteds/for/<% username %>");
+            $("#favedLinksList").load("/load/favourites/for/<% username %>");
+        }).throbber(image: "/images/ajax-loader.gif");
+    </script>
+

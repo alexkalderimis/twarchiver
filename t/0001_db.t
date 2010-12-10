@@ -431,5 +431,25 @@ is $tweet_7->urls->count, 2
 is Url->count, 9
     => "The number of urls overall hasn't gone up";
 
+my @user_one_tweets = $user_one->tweets;
+is scalar(@user_one_tweets), 4
+    => "Make content logic test: get tweets by user";
+
+my $first_tweet = shift @user_one_tweets;
+
+is $first_tweet->text, "Tweet One"
+    => "Make content logic test: get attributes of tweet";
+
+is $first_tweet->mentions->count, 4
+    => "Make content logic test: get references of tweets";
+
+is $first_tweet->mentions->first->screen_name, "Mention One"
+    => "Make content logic test: get attributes of references";
+
+is_deeply(
+    [$first_tweet->tags->get_column("text")->all],
+    ["Tag One", "Tag Two"],
+    "Make content logic test: get tags as a list"
+);
 
 done_testing;

@@ -75,12 +75,6 @@ sub show_popular_stats {
     return_status_page( \@populars, $title );
 }
 
-sub search_username {
-    my $user       = params->{username};
-    my $searchterm = params->{searchterm};
-    show_tweets_including( $user, $searchterm, 1 );
-}
-
 post '/addtags/:time' => sub {
     my $user      = params->{username};
     my $tags      = params->{tags};
@@ -158,52 +152,6 @@ post '/removetags/:time' => sub {
     return;
 };
 
-sub show_mentions_to {
-    my $user    = params->{username};
-    my $mention = '@' . params->{mention};
-    show_tweets_including( $user, $mention, 0 );
-}
-
-sub show_tweets_about {
-    my $user    = params->{username};
-    my $hashtag = params->{hashtag};
-    show_tweets_including( $user, $hashtag, 0 );
-}
-
-sub show_tweets_including {
-    my ( $user, $searchterm, $is_case_insensitive ) = @_;
-
-    eval { $re = ($is_case_insensitive) 
-            ? qr/$searchterm/i 
-            : qr/$searchterm/; 
-    };
-    if ($@) {
-        $re = ($is_case_insensitive)
-          ? qr/\Q$searchterm\E/i
-          : qr/\Q$searchterm\E/;
-    }
-    my $db = get_db();
-    my $user_rec = get_user_record($user);
-    my $rs = $user_rec->tweets;
-    my @tweets_with_searchterm;
-    while (my $tweet = $rs->next()) {
-        push @tweets_with_searchterm, $tweet if ($tweet->text =~ $re);
-    }
-    for (@tweets_with_searchterm) {
-        my $x = $_->text; 
-        $x =~ s{$re}{<span class="key-term">$&</span>}g;
-        $_->{highlighted_text} = $x;
-    }
-    debug( "Got " . scalar(@tweets_with_searchterm)
-            . " tweets with searchterm" );
-
-    my $title = 'Statuses from '
-      . $html->a(
-        href => request->uri_for( join( '/', 'show', $user ) ),
-        text => $user,
-      ) . " mentioning $searchterm";
-    return_status_page( \@tweets_with_searchterm, $title );
-}
 
 sub show_tweets_tagged_with {
     my $user     = params->{username};
@@ -312,15 +260,6 @@ sub get_statuses {
     }
 }
 
-sub show_statuses_for {
-    my $user = params->{username};
-
-    my $statuses = get_statuses($user);
-    return unless ( ref $statuses );
-
-    my $title    = "Status Archive for $user";
-    return_status_page( $statuses, $statuses, $title);
-}
 
 sub download_tweets {
     my $user   = params->{username};
@@ -605,24 +544,6 @@ sub make_popular_link {
     );
 }
 
-sub authorise {
-    my $user   = shift;
-    my $cb_url = request->uri_for( request->path );
-    debug("callback url is $cb_url");
-    try {
-        my $twitter = get_twitter();
-        my $url = $twitter->get_authorization_url( callback => $cb_url );
-        debug( "request token is " . $twitter->request_token );
-        $cookies{$user}{token}  = $twitter->request_token;
-        $cookies{$user}{secret} = $twitter->request_token_secret;
-        redirect($url);
-        return "authorise";
-    }
-    catch {
-        error($_);
-        send_error("Authorisation failed, $_");
-    };
-}
 
 sub get_tokens_for {
     my $user = shift;
@@ -638,122 +559,9 @@ sub get_tokens_for {
     }
 }
 
-sub request_tokens_for {
-    my ( $user, $verifier ) = @_;
-    debug("Got verifier: $verifier");
-
-    my $twitter = get_twitter();
-    $twitter->request_token( $cookies{$user}{token} );
-    $twitter->request_token_secret( $cookies{$user}{secret} );
-    my @bits = $twitter->request_access_token( verifier => $verifier );
-
-    die "names don't match - got $screen_name"
-        unless ( $screen_name eq $user);
-    save_tokens( @bits[ 3, 0, 1 ] );
-    return ( @bits[ 0, 1 ] );
-}
 
 #TODO Rewrite make table
 
-sub make_table {
-    my $status = shift;
-    return '' unless $status;
-    my $text = $status->text;
-    my @urls = $text =~ /$urls_re/g;
-    if (@urls) {
-        @urls = uniq(@urls);
-        debug( sprintf( "Found %d urls: %s", scalar(@urls), join( ', ', @urls ) ) );
-        my %link_for;
-        for my $url (@urls) {
-            (my $cleaned_url = $url) =~ s/$span_re//g;
-            $link_for{$url} = $html->a(
-                href => $cleaned_url,
-                text => $url,
-            );
-        }
-        while ( my ( $lhs, $rhs ) = each %link_for ) {
-            $text =~ s/$lhs/$rhs/g;
-        }
-    }
-    my @mentions = $text =~ /$mentions_re/g;
-    if (@mentions) {
-        @mentions = uniq(@mentions);
-        debug( sprintf "Found %d mentions: %s", scalar(@mentions), join( ', ', @mentions ) );
-        my %link_for;
-        for my $mention (@mentions) {
-            (my $cleaned_mention = $mention) =~ s/$span_re//g;
-            $link_for{$mention} = $html->a(
-                href => get_mention_url($cleaned_mention),
-                text => $mention,
-            );
-        }
-        while ( my ( $lhs, $rhs ) = each %link_for ) {
-            $text =~ s/$lhs/$rhs/g;
-        }
-    }
-
-    my @hashtags = $text =~ /$hashtags_re/g;
-    if (@hashtags) {
-        @hashtags = uniq(@hashtags);
-        debug( sprintf "Found %d hashtags: %s", scalar(@hashtags), join( ', ', @hashtags ) );
-        my %link_for;
-        for my $hashtag (@hashtags) {
-            (my $cleaned_hashtag = $hashtag) =~ s/$span_re//g;
-            $link_for{$hashtag} = $html->a(
-                href => get_hashtag_url($cleaned_hashtag),
-                text => $hashtag,
-            );
-        }
-        while ( my ( $lhs, $rhs ) = each %link_for ) {
-            $text =~ s/$lhs/$rhs/g;
-        }
-    }
-
-    my $id        = $status->{id};
-    my $list_item = join(
-        "\n",
-        $html->div_start( onclick => "toggleForm('$id');", ),
-        $html->h2(
-            $dt_prsr->parse_datetime( $status->{created_at} )->strftime("%d %b %Y %X")
-        ),
-        $html->p($text),
-    );
-    $list_item .= $html->div_start( id => $id . '-tags', class => 'tags-list' );
-    $list_item .= "\n"
-      . $html->ul(
-        { id => "tagList-$id" },
-        (
-            ( $status->{$TAGS_KEY} and @{ $status->{$TAGS_KEY} } )
-            ? $html->li_group( $status->{$TAGS_KEY} )
-            : ''
-        )
-      );
-    $list_item .= $html->div_end;
-    $list_item .= $html->div_end;
-    $list_item .= $html->form_start(
-        style  => 'display: none;',
-        class  => 'tag-form',
-        method => 'post',
-        id     => $id
-    );
-    $list_item .= $html->p(
-            "Tag:" 
-          . $html->input( type => 'text', id => "tag-$id" )
-          . $html->input(
-            value   => 'Add',
-            type    => 'button',
-            onclick => sprintf( "javascript:addNewTag('%s', '%s');", params->{username}, $id ),
-          )
-          . $html->input(
-            value   => 'Remove',
-            type    => 'button',
-            onclick => sprintf( "javascript:deleteTag('%s', '%s');", params->{username}, $id ),
-          ),
-    );
-    $list_item .= $html->form_end();
-
-    return $list_item;
-}
 
 sub make_tag_link {
     my ( $tag, $count ) = @_;
