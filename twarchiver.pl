@@ -1,5 +1,9 @@
 #!/usr/bin/perl
 
+sub make_tag_sidebar_item {
+    my $tag = shift;
+    return make_tag_link(
+
 use utf8;
 use Dancer;
 use Dancer::Plugin::Ajax;
@@ -76,9 +80,6 @@ sub show_popular_stats {
 }
 
 post '/addtags/:time' => sub {
-    my $user      = params->{username};
-    my $tags      = params->{tags};
-    my @tweet_ids = split( /,/, params->{tweetIds} );
     my $statuses  = get_statuses( $user, 1 );
     die "not authorised" unless ( ref $statuses );
     my @statuses;
@@ -261,83 +262,6 @@ sub get_statuses {
 }
 
 
-sub download_tweets {
-    my $user   = params->{username};
-    my $format = params->{format};
-
-    my $statuses = get_statuses($user);
-    return unless ( ref $statuses );
-
-    if ( $format eq 'txt' ) {
-        get_tweets_as_textfile($statuses);
-    } elsif ( $format eq 'tsv' ) {
-        get_tweets_as_spreadsheet( $statuses, "\t" );
-    } elsif ( $format eq 'csv' ) {
-        get_tweets_as_spreadsheet( $statuses, ',' );
-    } else {
-        die "Unknown format requested: $format";
-    }
-}
-
-sub get_tweets_as_textfile {
-    my $statuses = shift;
-
-    content_type 'text/plain';
-
-    return join( "\n\n", map { status_to_text($_) } @$statuses );
-}
-
-sub get_tweets_as_spreadsheet {
-    my ( $statuses, $separator ) = @_;
-
-    content_type "text/tab-separated-values";
-
-    my $csv = Text::CSV->new(
-        {
-            sep_char     => $separator,
-            binary       => 1,
-            always_quote => 1,
-        }
-    );
-    my $response;
-    for my $st (@$statuses) {
-        $csv->combine( map {$st->$_} qw/created_at text/ );
-        $response .= $csv->string() . "\n";
-    }
-    return $response;
-}
-
-sub status_to_text {
-    my $status = shift;
-    my $year = $status->year;
-    my $month = get_month_name_for($status->month);
-    my $text = $status->text;
-    my @tags = $status->search_related('tags')->all;
-    $tags = (@tags) 
-            ? 'Tags: ' . join(', ', @tags)
-            : '';
-    my $result;
-    eval {
-        local $SIG{__WARN__};
-        open( TEMP, '>', \$result );
-        format TEMP = 
-Time:   @<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-        $created_at
-^<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< ~~
-$text
-^<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< 
-$tags
-      ^<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< ~~
-      $tags
-.
-        write TEMP;
-    };
-    if ( my $e = $@ ) {
-        error( "Problem with " . $status->text . $e );
-    }
-    return $result;
-}
-
 sub make_content {
     my $statuses = shift;
     if (@$statuses) {
@@ -377,24 +301,6 @@ sub make_timeline {
     return $html->li_group( \@list_items );
 }
 
-sub make_month_link {
-    my ($year, $month) = @_;
-    my $db = get_db();
-    my $user = get_user_record(params->{username});
-    my $number_of_tweets = $user_rec->search_related('tweets',
-        {
-            year => $year,
-            month => $month,
-        }
-    })->count;
-    return $html->a(
-        href => request->uri_for(join( '/',
-                'show', $user, $year, $month)),
-        text => sprintf( "%s (%s tweets)",
-            get_month_name_for($month), $number_of_tweets),
-    );
-}
-
 sub make_mention_list {
     my $db = get_db();
     my @mentions = $db->resultset('Mention')->search(
@@ -409,13 +315,7 @@ sub make_mention_list {
 
     my @list_items;
     if (@mentions) {
-        @list_items = map { sprintf( "%s %s", 
-                        make_mention_link($_->screen_name), 
-                        make_mention_report_link(
-                            $_->screen_name, 
-                            count($_, 'tweets')
-                        ))}
-                    sort {count($b, 'tweets') <=> count($a, 'tweets')}
+        @list_items =                    sort {count($b, 'tweets') <=> count($a, 'tweets')}
                     @mentions;
     } else {
         push @list_items, $html->p("No mentions found");
@@ -423,42 +323,6 @@ sub make_mention_list {
     return ( $html->li_group( \@list_items ), scalar(@mentions) );
 }
 
-sub count {
-    my ($record, $key) = @_;
-    return $record->search_related(
-        $key, 
-        {user => params->{username}},
-        {cache => 1}
-    )->count;
-}
-
-sub make_hashtag_list {
-    my $db = get_db();
-    my @hashtags = $db->resultset('HashTag')->search(
-        {
-            'tweets.user' => params->{username},
-        },
-        {
-            'join' => 'tweets',
-            order_by => 'hashtag.topic',
-        }
-    );
-
-    my @list_items;
-    if (@hashtags) {
-        @list_items = map { sprintf( "%s %s", 
-                        make_hashtag_link($_->topic), 
-                        make_hashtag_report_link(
-                            $_->topic, 
-                            count($_, 'tweets')
-                        ))}
-                    sort {count($b, 'tweets') <=> count($a, 'tweets')}
-                    @hashtags;
-    } else {
-        push @list_items, $html->p("No hashtags found");
-    }
-    return ( $html->li_group( \@list_items ), scalar(@hashtags) );
-}
 
 sub make_tag_list {
     my $db = get_db();
@@ -521,28 +385,6 @@ sub make_popular_list {
     return $html->li_group( \@list_items );
 }
 
-sub make_popular_link {
-    my $actioned_count = shift;
-    my $number_of_tweets = shift;
-    my $action = my $text = shift;
-    $text =~ s/^./uc($&)/e;
-    if ($actioned_count == 1) {
-        $text .= "once";
-    } elsif ($actioned_count == 2) {
-        $text .= "twice";
-    } else {
-        $text .= "$actioned_count times";
-    }
-    $text .= "($number_of_tweets)";
-
-    my $uri = URI->new(request->uri_for(join('/', 
-                'show', params->{username}, $action)));
-    $uri->query_form(count => $actioned_count);
-    return $html->a(
-        href => $uri,
-        text => $text,
-    );
-}
 
 
 sub get_tokens_for {
@@ -575,58 +417,6 @@ sub make_tag_link {
     );
 }
 
-sub get_mention_url {
-    my $mention = shift;
-    return TWITTER_BASE . substr( $mention, 1 );
-}
-
-sub make_mention_link {
-    my $mention = shift;
-    $mention =~ s/$span_re//g;
-    return $html->a(
-        href => get_mention_url($mention),
-        text => $mention,
-    );
-}
-
-sub get_hashtag_url {
-    my $hashtag = shift;
-    my $uri     = URI->new(TWITTER_SEARCH);
-    $uri->query_form( q => $hashtag );
-    return "$uri";
-}
-
-sub make_hashtag_link {
-    my $hashtag = shift;
-    $hashtag =~ s/$span_re//g;
-
-    return $html->a(
-        href => get_hashtag_url($hashtag),
-        text => $hashtag,
-    );
-}
-
-sub make_hashtag_report_link {
-    my ( $hashtag, $count ) = @_;
-    return $html->a(
-        href => request->uri_for(
-            join( '/', 'show', params->{username}, 'on', substr( $hashtag, 1 ) )
-        ),
-        text  => "($count hashtags)",
-        class => 'sidebarinternallink',
-    );
-}
-
-sub make_mention_report_link {
-    my ( $mention, $count ) = @_;
-    return $html->a(
-        href => request->uri_for(
-            join( '/', 'show', params->{username}, 'to', substr( $mention, 1 ) )
-        ),
-        text  => "($count mentions)",
-        class => 'sidebarinternallink',
-    );
-}
 
 get '/' => sub {
     template 'index' => { page_title => 'twarchiver' };
