@@ -63,6 +63,7 @@ __PACKAGE__->table("tweet");
 
 =cut
 
+__PACKAGE__->load_components(qw/InflateColumn::DateTime/);
 __PACKAGE__->add_columns(
   "tweet_id",
   { data_type => "integer", is_auto_increment => 1, is_nullable => 0 },
