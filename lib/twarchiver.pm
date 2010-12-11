@@ -47,25 +47,52 @@ my %urliser_for = (
     hashtags => sub {return get_hashtag_url(shift)},
 );
 
-=head2 show_statuses_for
+my $count_order = {$b->get_column('count') <=> $a->get_column('count')};
 
-Function: return a page loading all the statuses from a user
+sub add_tags_to_tweets {
+    my @tags = @{shift};
+    my @tweets = @{shift};
+    my $response = {};
+    for my $tweet_id (@tweets) {
+        my $tweet = get_db()->resultset('Tweet')
+                            ->find({tweet_id => $tweet_id});
+        push @{$response->{errors}}, "Could not find tweet $tweet_id";
+        for my $tag (@tags) {
+            if ($tweet->tags->search({text => $tag})->count) {
+                push @{$response->{errors}}, 
+                    "Tweet $tweet_id is already tagged with $tag";
+            } else {
+                $tweet->add_to_tags({text => $tag});
+                push @{$response->{$tweet_id}{added}}, $tag;
+            }
+        }
+        $tweet->update;
+    }
+    return $response;
+}
 
-=cut
-
-sub show_statuses_for {
-    my $user = params->{username};
-
-    return authorise($user) if needs_authorisation($user);
-
-    my $title       = "Status Archive for $user";
-    my $content_url = $user;
-
-    template 'statuses' => {
-        content_url => $content_url,
-        title => $title,
-        username => $user,
-    };
+sub remove_tags_from_tweets {
+    my @tags = @{shift};
+    my @tweets = @{shift};
+    my $response = {};
+    for my $tweet_id (@tweets) {
+        my $tweet = get_db()->resultset('Tweet')
+                            ->find({tweet_id => $tweet_id});
+        push @{$response->{errors}}, "Could not find tweet $tweet_id";
+        for my $tag (@tags) {
+            if ($tweet->tags->search({text => $tag})->count) {
+                my $tag = $tweet->tags->find({text => $tag});
+                my $link = $tag->tweet_tags->find({tweet => $tweet});
+                $link->delete;
+                push @{$response->{$tweet_id}{removed}}, $tag;
+            } else {
+                push @{$response->{errors}}, 
+                    "Could not find tag '$tag' on tweet $tweet_id";
+            }
+        }
+        $tweet->update;
+    }
+    return $response;
 }
 
 =head2 show_tweets_including
@@ -92,63 +119,6 @@ sub show_tweets_including {
         title => $title,
         username => $user,
     };
-}
-
-=head2 [String] get_search_username_content 
-
-Function: Called by ajax to populate the page with content for all tweets
-          matching a particular search term
-Returns:  The content html string
-
-=cut
-
-sub get_search_username_content {
-    my $user = params->{username};
-    my $searchterm = params->{searchterm};
-    my $is_case_insensitive = params->{i};
-
-    return $html->p("Not Authorised") if (needs_authorisation($user));
-
-    eval { $re = ($is_case_insensitive) 
-            ? qr/$searchterm/i 
-            : qr/$searchterm/; 
-    };
-    if ($@) {
-        $re = ($is_case_insensitive)
-          ? qr/\Q$searchterm\E/i
-          : qr/\Q$searchterm\E/;
-    }
-    download_latest_tweets_for($user);
-    my $rs = restore_statuses_for($user);
-    my @tweets;
-    while (my $tweet = $rs->next()) {
-        if ($tweet->text =~ $re) {
-            my $x = $_->text; 
-            $x =~ s{$re}{<span class="key-term">$&</span>}g;
-            $_->{highlighted_text} = $x;
-            push @tweets, $tweet;
-        }
-    }
-    debug( "Got " . scalar(@tweets) . " tweets with searchterm" );
-
-    my $content = make_content(@tweets);
-    return $content;
-}
-
-=head2 [String] get_username_content 
-
-Function: Called by ajax to populate the page with content for all tweets
-Returns:  The content html string
-
-=cut
-
-sub get_username_content {
-    my $user = params->{username};
-    return $html->p("Not Authorised") if (needs_authorisation($user));
-    download_latest_tweets_for($user);
-    my @tweets = restore_statuses_for($user);
-    my $content = make_content(@tweets);
-    return $content;
 }
 
 =head2 [String] make_content( tweets )
@@ -262,13 +232,13 @@ sub make_tweet_li {
           . $html->input(
                 value   => 'Add',
                 type    => 'button',
-                onclick => sprintf( "javascript:addNewTag('%s', '%s');", 
+                onclick => sprintf( "javascript:addTags('%s', '%s');", 
                     $status->user->screen_name, $id ),
           )
           . $html->input(
                 value   => 'Remove',
                 type    => 'button',
-                onclick => sprintf( "javascript:deleteTag('%s', '%s');", 
+                onclick => sprintf( "javascript:removeTags('%s', '%s');", 
                     $status->user->screen_name, $id ),
           ),
         ),
@@ -415,7 +385,7 @@ sub get_twitter {
     return Net::Twitter->new(%args);
 }
 
-=head2 restore_statuses_for( screen_name, [condition] )
+=head2 get_all_tweets_for( screen_name, [condition] )
 
 Function:  get tweets from database for a specific user
 Arguments: the user's twitter screen name
@@ -425,7 +395,7 @@ Returns:   <List Context> A list of the users statuses (Row objects)
 
 =cut
     
-sub restore_statuses_for {
+sub get_all_tweets_for {
     my $user      = shift;
     my $condition = shift;
     my $user_rec = get_user_record($user);
@@ -542,6 +512,96 @@ Returns:   A DBIx::Class User result row object
 
 =cut
 
+sub make_popular_sidebar {
+    my $username = shift;
+    my $action = shift;
+    my $column = $action . '_count';
+    my $linkname = shift;
+    my $user = get_user_record($username);
+    my $total = $user->tweets
+                     ->search({$action '._count' => {'>' => 0}})
+                     ->count;
+    my $list = $html->li_group([
+        $html->a(
+            href => request->uri_for(join( '/',
+                    'show', $username, $linkname)),
+            text => "All $linkname statuses ($total)",
+        )]);
+    if ($total) {
+        my @rows = get_popular_summary($username, $action);
+        $list .= $html->li_group([
+            map {make_popular_link(
+                $_->$column, $_->get_column("occurs"), $action)} @rows]);
+    }
+    return $list;
+}
+
+sub make_popular_link {
+    my $actioned_count = shift;
+    my $number_of_tweets = shift;
+    my $action = my $text = shift;
+    $text =~ s/^./uc($&)/e;
+    if ($actioned_count == 1) {
+        $text .= "once";
+    } elsif ($actioned_count == 2) {
+        $text .= "twice";
+    } else {
+        $text .= "$actioned_count times";
+    }
+    $text .= "($number_of_tweets)";
+
+    my $uri = URI->new(request->uri_for(join('/', 
+                'show', params->{username}, $action)));
+    $uri->query_form(count => $actioned_count);
+    return $html->a(
+        href => $uri,
+        text => $text,
+    );
+}
+
+sub get_popular_summary {
+    my $username = shift;
+    my $action = shift;
+    my $col = $action . '_count';
+    return get_user_record($username)->tweets->search(undef,
+                    {
+                        'select' => [
+                            $col
+                            {count => $col,
+                            -as   => 'occurs'},
+                        ],
+                        as => [$col, 'occurs'],
+                        distinct => 1,
+                        'order_by' => {-desc => 'occurs'},
+                    });
+}
+
+sub get_years_for {
+    my $user = shift;
+    my @years = uniq map {$_->created_at->year} 
+                    $user_one->search_related('tweets',
+                        { created_at => {'!=' => undef}},
+                        { order_by => {-desc => 'created_at'}}
+                    )->all;
+    return @years;
+}
+
+sub get_months_in {
+    my $username = shift;
+    my $year = shift;
+    my $user = get_user_record($username);
+    my $year_start = DateTime->new(year => $year, month => 1, day => 1);
+    my $year_end =  DateTime->new(year => $year, month => 12, day => 31);
+
+    my @months = uniq map {$_->created_at->month} 
+        $user->search_related('tweets',
+            {created_at => {'!=' => undef}})
+        ->search({created_at => {'>=' => $year_start}})
+        ->search({created_at => {'<=' => $year_end}})
+        ->all;
+    return @months;
+}
+
 sub get_user_record {
     my $user = shift;
     my $db = get_db();
@@ -549,8 +609,294 @@ sub get_user_record {
         {
             screen_name => $user,
         },
+        {
+            prefetch => 'tweets'
+        }
     );
     return $user_rec;
+}
+sub get_urls_for {
+    my $user = shift;
+    return get_tweet_features_for_user($user, 
+        'Url', 'address', 'tweet_urls');
+}
+
+sub get_mentions_for {
+    my $user = shift;
+    return get_tweet_features_for_user($user, 
+        'Mention', 'screen_name', 'tweet_mentions');
+}
+sub get_hashtags_for {
+    my $user = shift;
+    return get_tweet_features_for_user($user, 
+        'Hashtag', 'topic', 'tweet_hashtags');
+}
+
+sub get_tags_for {
+    my $user = shift;
+    return get_tweet_features_for_user($user, 
+        'Tag', 'text', 'tweet_tags');
+}
+
+sub get_tweet_features_for_user {
+    my ($user, $source, $main_col, $bridge_table) = @_;
+    my $search = get_db()->resultset($source)->search(
+        {   
+            'user.screen_name' => $user
+        },
+        {   
+            'select' => [
+                $main_col, 
+                {count => $main_col, -as => 'number'}
+            ],
+            'as' => [$main_col, 'count'],
+            join => {$bridge_table => { tweet => 'user'}},
+            distinct => 1,
+            'order_by' => {-desc => 'number'},
+        }
+    );
+    return $search;
+}
+
+sub make_year_group {
+    my ($username, $year) = @_;
+    my @months = get_months_in($username, $year);
+    my $month_group = $html->li_group(
+        [map {make_month_link($username, $year, $_)} @months]);
+    my $list_item = $html->h3($year)
+                    . "\n"
+                    . $month_group;
+    return $list_item;
+}
+
+sub get_tweets_with_tag {
+    my ($username, $tag) = @_;
+    my $user = get_user_record($username);
+    return $user->tweets->search(
+        {'tag.text' => $tag},
+        {'join' => {tweet_tags => 'tag'}}
+    );
+}
+
+sub get_popular_tweets {
+    my ($username, $action, $count) = @_;
+    my $column = $action . '_count';
+    my $condition = ($count) 
+        ? {$column => $count}
+        : {$column => {'>' => 0}};
+    my $user = get_user_record($username);
+    return $user->tweets->search($condition);
+}
+
+sub get_tweets_in_month {
+    my ($username, $year, $month) = @_;
+    my $user = get_user_record($username);
+    my $start_of_month = DateTime->new(
+        year => $year, month => $month, day => 1);
+    my $end_of_month = DateTime->new(
+        year => $year, month => $month, day => 1
+    )->add( months => 1 );
+        
+    return $user->tweets
+                ->search({created_at => {'>=' => $start_of_month})
+                ->search({created_at => {'<=' => $end_of_month});
+}
+
+sub make_user_home_link {
+    my $user = params->{username};
+    my $link = $html->a(
+        href => request->uri_for( join( '/', 'show', $user ) ),
+        text => $user,
+      );
+    return $link;
+}
+
+sub make_month_link {
+    my ($user, $y, $m) = @_;
+    my $number_of_tweets = get_tweets_in_month($user, $y, $m)->count;
+    return $html->a(
+        href => request->uri_for(join( '/',
+                'show', $user, $y, $m)),
+        text => sprintf( "%s (%s tweets)",
+            get_month_name_for($m), $number_of_tweets),
+    );
+}
+
+sub make_url_sidebar_item {
+    my $url = shift;
+    return sprintf( "%s %s", 
+        $html->a(href => $url->address, text => $url->address),
+        make_url_report_link(
+            $url->topic, 
+            $url->get_column("count"),
+        )
+    );
+}
+
+sub make_url_report_link {
+    my ( $address, $count ) = @_;
+    return $html->a(
+        href => request->uri_for( join( '/', 
+            show => params->{username}, url => $address,
+        ),
+        text  => "(linked to $count times)",
+        class => 'sidebarinternallink',
+    );
+}
+    
+
+sub make_tag_sidebar_item {
+    my $username = shift;
+    my $tag = shift;
+    return make_tag_link($username, $tag->text, $tag);
+}
+
+sub make_tag_link {
+    my ( $username, $tag, $count ) = @_;
+    return $html->a(
+        href  => request->uri_for( join( '/', 
+                show => $username, tag => $tag ) ),
+        text  => "$tag ($count)",
+        count => $count,
+        tag   => $tag,
+        class => 'tagLink',
+    );
+}
+
+sub make_hashtag_sidebar_item {
+    my $hashtag = shift;
+    return sprintf( "%s %s", 
+        make_hashtag_link($hashtag->topic), 
+        make_hashtag_report_link(
+            $hashtag->topic, 
+            $hashtag->get_column("count"),
+        )
+    );
+}
+
+sub get_hashtag_url {
+    my $topic = shift;
+    my $uri     = URI->new(TWITTER_SEARCH);
+    $uri->query_form( q => $topic );
+    return "$uri";
+}
+
+sub make_hashtag_link {
+    my $topic = shift;
+    $topic =~ s/$span_re//g;
+
+    return $html->a(
+        href => get_hashtag_url($topic),
+        text => $topic,
+    );
+}
+
+sub make_hashtag_report_link {
+    my ( $topic, $count ) = @_;
+    return $html->a(
+        href => request->uri_for( join( '/', 
+            'show', params->{username}, 'on', substr( $topic, 1 ) )
+        ),
+        text  => "($count hashtags)",
+        class => 'sidebarinternallink',
+    );
+}
+
+sub make_mention_sidebar_item {
+    my $mention = shift;
+    return sprintf( "%s %s", 
+        make_mention_link($mention->screen_name), 
+        make_mention_report_link(
+            $mention->screen_name, 
+            $mention->get_column("count"),
+        )
+    );
+}
+
+sub get_mention_url {
+    my $mention = shift;
+    return TWITTER_BASE . substr( $mention, 1 );
+}
+
+
+sub make_mention_link {
+    my $screen_name = shift;
+    $mention =~ s/$span_re//g;
+    return $html->a(
+        href => get_mention_url($screen_name),
+        text => $screen_name,
+    );
+select}
+
+sub make_mention_report_link {
+    my ( $screen_name, $count ) = @_;
+    return $html->a(
+        href => request->uri_for(join( '/', 
+            'show', params->{username}, 'to', substr( $screen_name, 1 ) )
+        ),
+        text  => "($count mentions)",
+        class => 'sidebarinternallink',
+    );
+}
+        
+sub get_tweets_as_textfile {
+    my @tweets = shift;
+
+    content_type 'text/plain';
+
+    return join( "\n\n", map { tweet_to_text($_) } @tweets );
+}
+
+sub get_tweets_as_spreadsheet {
+    my ( $separator, @tweets ) = @_;
+
+    content_type "text/tab-separated-values";
+
+    my $csv = Text::CSV->new(
+        {
+            sep_char     => $separator,
+            binary       => 1,
+            always_quote => 1,
+        }
+    );
+    return join ("\n", map {
+        $csv->combine( 
+            $_->created_at->strftime(date_format),
+            $_->text
+        );
+        $csv->string()
+    } @tweets;
+}
+
+sub tweet_to_text {
+    my $tweet = shift;
+    my $year = $tweet->created_at->year;
+    my $month = $tweet->created_at->month_name;
+    my $text = $tweet->text;
+    my @tags = $tweet->tags->get_column('text');
+    $tags = (@tags) 
+            ? 'Tags: ' . join(', ', @tags)
+            : '';
+    my $result;
+    eval {
+        local $SIG{__WARN__};
+        open( TEMP, '>', \$result );
+        format TEMP = 
+Time:   @<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+        $created_at
+^<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< ~~
+$text
+^<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< 
+$tags
+      ^<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< ~~
+      $tags
+.
+        write TEMP;
+    };
+    if ( my $e = $@ ) {
+        error( "Problem with " . $tweet->text . $e );
+    }
+    return $result;
 }
 
 =head2 [ResultRow] get_tweet_record( tweet_id, screen_name )
