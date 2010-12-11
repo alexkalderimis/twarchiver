@@ -9,6 +9,7 @@ use warnings;
 
 use DateTime;
 use Test::Exception;
+use List::MoreUtils qw(uniq);
 
 use Test::DBIx::Class {
     schema_class => 'Twarchiver::Schema',
@@ -84,6 +85,7 @@ fixtures_ok sub {
                     tweet_tags => [
                         {tag => {text => 'Tag Three'}},
                         {tag => {text => 'Tag Four'}},
+                        {tag => {text => 'Tag One'}},
                     ],
 
                 },
@@ -158,6 +160,7 @@ fixtures_ok sub {
                     tweet_tags => [
                         {tag => {text => 'Tag Seven'}},
                         {tag => {text => 'Tag Eight'}},
+                        {tag => {text => 'Tag One'}},
                     ],
 
                 },
@@ -264,23 +267,23 @@ is $tweets_in_may2010->count, 2, "Can find tweets in a particular month";
 
 $tweet = Tweet->find({text => "Tweet Six"});
 
-is $tweet->tags->count, 2, "Can find tags ok";
+is $tweet->tags->count, 3, "Can find tags ok";
 is_deeply(
     [$tweet->tags->get_column("text")->all],
-    ["Tag Seven", "Tag Eight"],
+    ["Tag Seven", "Tag Eight", "Tag One"],
     "And they have the right topics",
 );
 is Tag->count, 8, "We have the right total tag count";
 
 lives_ok(
-    sub {$tweet->add_to_tags({text => "Tag One"})},
+    sub {$tweet->add_to_tags({text => "Tag Two"})},
     "Can add a tag"
 );
-is $tweet->tags->count, 3, "Now have three tags";
+is $tweet->tags->count, 4, "Now have three tags";
 
 is Tag->count, 8, "Adding an existing tag doesn't change the overall count";
 
-ok my $tag = $tweet->tags->find({text => "Tag One"})
+ok my $tag = $tweet->tags->find({text => "Tag Two"})
     => "Can find the added tag";
 
 ok my $link = $tag->tweet_tags->find({
@@ -290,10 +293,10 @@ $link->delete;
 
 is Tag->count, 8, "Deleting a link doesn't delete the tag";
 
-ok ! ($tag = $tweet->tags->find({text => "Tag One"}))
+ok ! ($tag = $tweet->tags->find({text => "Tag Two"}))
     => "The tweet is no longer tagged with the unlinked tag";
 
-is $tweet->tags->count, 2, "Back to two tags";
+is $tweet->tags->count, 3, "Back to two tags";
 
 is Tweet->search({retweeted_count => {'>=' => 1}})->count, 5
     => "There are the right number of retweets";
@@ -324,7 +327,9 @@ my $userOnes_200_000er_tweets = $user_one->tweets->search(
     {retweeted_count => 200_000}
 );
 
-my %occurances_of_topics = map {($_->topic, $_->get_column('topic_count'))}
+my @occurances_of_topics = 
+    map {[$_->topic() => $_->get_column('count')]}
+    sort {$b->get_column('count') <=> $a->get_column('count')}
     Hashtag->search(
     {   
         'user.screen_name' => "User One"
@@ -334,21 +339,21 @@ my %occurances_of_topics = map {($_->topic, $_->get_column('topic_count'))}
             'topic',
             {count => 'topic'}
         ],
-        as => [qw/topic topic_count/],
+        as => [qw/topic count/],
         join => {tweet_hashtags => { tweet => 'user'}},
         distinct => 1,
     }
 );
 is_deeply(
-    {%occurances_of_topics},
-    {
-        'Topic One' => '1',
-        'Topic Two' => '2',
-        'Topic Three' => '3',
-        'Topic Four' => '1',
-    },
+    [@occurances_of_topics],
+    [
+        ['Topic Three' => '3'],
+        ['Topic Two' => '2'],
+        ['Topic Four' => '1'],
+        ['Topic One' => '1'],
+    ],
     "Can summarise hashtags properly"
-);
+) or diag(explain \@occurances_of_topics);
 
 is $user_one->tweets->get_column('tweet_id')->max, 7
     => "get_since_id_for logic test";
@@ -452,4 +457,40 @@ is_deeply(
     "Make content logic test: get tags as a list"
 );
 
+my @years = uniq map {$_->created_at->year} 
+                    $user_one->search_related('tweets',
+                        { created_at => {'!=' => undef}})->all;
+is_deeply(
+    \@years,
+    [2010, 2009],
+    "get_years_for logic test"
+) or diag explain \@years;
+
+my $year_start = DateTime->new(year => 2010, month => 1, day => 1);
+my $year_end =  DateTime->new(year => 2010, month => 12, day => 31);
+
+my @months = uniq map {$_->created_at->month} 
+                    $user_one->search_related('tweets',
+                        {created_at => {'!=' => undef}})
+                    ->search({created_at => {'>=' => $year_start}})
+                    ->search({created_at => {'<=' => $year_end}})
+                    ->all;
+is_deeply(
+    \@months,
+    [12, 5],
+    "get_months_in logic test"
+) or diag explain \@months;
+
+my @statuses = map {$_->text}
+               $user_one->tweets
+                        ->search(
+                            {'tag.text' => "Tag One"},
+                            {'join' => {tweet_tags => 'tag'}}
+                        )->all;
+
+is_deeply(
+    \@statuses,
+    ["Tweet One", "Tweet Two"],
+    "Can find tweets by user and tag text",
+) or diag explain \@statuses;
 done_testing;
