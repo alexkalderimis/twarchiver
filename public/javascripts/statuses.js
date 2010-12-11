@@ -1,74 +1,95 @@
-function addmasstags(user) {
+function addTagsToAll(user) {
     var tweetIds = $.map($('form.tag-form'), function(el) {return el.id});
     var tagFieldValue = document.getElementById('masstag').value;
     var tags = tagFieldValue.split(",");
     tags = jQuery.map(tags, function(str) {return trim(str)});
-    tagList = tags.join(",");
-    var tweet_ids = tweetIds.join(",");
-    createRequest();
-    var url = "/addtags/" + new Date().getTime();
-    request.open("POST", url, true);
-    request.onreadystatechange = getTagAdder(tweetIds, tags, user);
-    request.setRequestHeader("Content-Type",
-            "application/x-www-form-urlencoded");
-    request.send(
-            "&tags=" + escape(tagList) +
-            "&username=" + escape(user) +
-            "&tweetIds=" + escape(tweet_ids));
+    requestAddTags(user, tags, tweetIds);
 }
-function deleteMassTags(user) {
+
+function addTags(user, tweetId) {
+    var tweetIds = [tweetId];
+    var tagFieldValue = document.getElementById("tag-" + tweetId).value;
+    var tags = tagFieldValue.split(",");
+    tags = jQuery.map(tags, function(str) {return trim(str)});
+    toggleDiv(tweetId);
+    requestAddTags(user, tags, tweetIds);
+}
+function requestAddTags(user, tags, tweetIds) {
+    var tagList = tags.join(",");
+    var tweetList = tweetIds.join(",");
+    var info = {
+        username : user,
+        tags     : tagList,
+        tweetIds : tweetList
+    };
+    $.ajax({ 
+        cache : false,
+        data  : info,
+        dataType : "json",
+        error    : handleError,
+        success  : getTagAdder(user),
+        type     : "post",
+        url      : "/addtags",
+    });
+}
+
+function removeTagsFromAll(user) {
     var tweetIds = $.map($('form.tag-form'), function(el) {return el.id});
     var tagFieldValue = document.getElementById('masstag').value;
     var tags = tagFieldValue.split(",");
     tags = jQuery.map(tags, function(str) {return trim(str)});
-    tagList = tags.join(",");
-    var tweet_ids = tweetIds.join(",");
-    createRequest();
-    var url = "/removetags/" + new Date().getTime();
-    request.open("POST", url, true);
-    request.onreadystatechange = getTagDeleter(tweetIds, tags, user);
-    request.setRequestHeader("Content-Type",
-            "application/x-www-form-urlencoded");
-    request.send(
-            "&tags=" + escape(tagList) +
-            "&username=" + escape(user) +
-            "&tweetIds=" + escape(tweet_ids));
+    requestRemoveTags(user, tags, tweetIds);
 }
 
+function removeTags(user, tweetId) {
+    var tweetIds = [tweetId];
+    var tagFieldValue = document.getElementById("tag-" + tweetId).value;
+    var tags = tagFieldValue.split(",");
+    tags = jQuery.map(tags, function(str) {return trim(str)});
+    requestRemoveTags(user, tags, tweetIds);
+    toggleDiv(tweetId);
+}
 
-function getTagAdder(tweetIds, tags, user) {
-    return function() {
-        // if the request has responded
-        if (request.readyState == 4) {
-            var resultString = request.getResponseHeader("Results");
-            // if the request succeeded, 
-            // add the tags to the tweets & increment the counts
-            // or inform us if there are duplicates
-            if (request.status == 200) {
-                var messages = [];
-                var resultLists = resultString.split(",,");
-                for (i=0; i < tweetIds.length;i++) {
-                    var tagListId = "tagList-" + tweetIds[i];
-                    var tagListElem = document.getElementById(tagListId);
-                    var resultListString = resultLists[i];
-                    var resultList = resultListString.split(",");
-                    for (j=0; j < tags.length; j++) {
-                        var tag = tags[j];
-                        var result = resultList[j];
-                        if (result == "added") {
-                            addTagToTweet(tag, tagListElem, tag);
-                        } else {
-                            messages.push(result);
-                        }
-                    }
-                }
-                if (messages.length > 0) {
-                    alert(messages.join("\n"));
-                }
+function requestRemoveTags(user, tags, tweetIds) {
+    var tagList = tags.join(",");
+    var tweet_ids = tweetIds.join(",");
+    var info = {
+        tags     : tagList,
+        username : user,
+        tweetIds : tweet_ids
+    };
+    var tagDeleter = getTagDeleter(tweetIds, tags, user);
+    $.ajax({ 
+        cache : false,
+        data  : info,
+        dataType : "json",
+        error    : handleError,
+        success  : getTagDeleter(user),
+        type     : "post",
+        url      : "/removetags",
+    });
+}
+
+function getTagAdder(user) {
+    return function(data) {
+        var messages = [];
+        jQuery.each(data, function(key, value) {
+            if (key == "errors") {
+                messages.push(value);
             } else {
-                handleError(resultString, request);
+                var tweetId = key;
+                var addedTags = value.added;
+                var tagListId = "tagList-" + tweetIds[i];
+                var tagListElem = document.getElementById(tagListId);
+                for (var i = 0; i < addedTags.length; i++) {
+                    addTagToTweet(addedTags[i], tagListElem);
+                }
             }
+        };
+        if (messages.length > 0) {
+            alert(messages.join("\n"));
         }
+        updateSideBars(user);
     };
 }
 
@@ -79,43 +100,8 @@ function addTagToTweet(tag, tagListElem, user) {
     liElem.appendChild(tagText);
     // then add it onto the list
     tagListElem.appendChild(liElem);
-    // Now either increment the count on the link, or add a new one
-    var tagLinks = jQuery('a.tagLink');
-    var foundLink = false;
-    // first try and find this tag in the list of links
-    for (k=0;k < tagLinks.length; k++) {
-        // match it against the link's tag
-        var tagK = tagLinks[k].getAttribute("tag");
-        if (tagK == tag) {
-            foundLink = true;
-            var link = tagLinks[k];
-            // increment the count
-            var tagCount = parseInt(link.getAttribute("count"));
-            tagCount++;
-            link.setAttribute("count", tagCount);
-            // change the link text
-            link.innerHTML = tag + " (" + tagCount + ")";
-        }
-    }
-    if (foundLink == false) {
-        // Than increment the global counter as well
-        var tagCounter = document.getElementById("tagCounter");
-        var count = parseInt(tagCounter.innerHTML);
-        tagCounter.innerHTML = count + 1;
-        // and add a new link tag list item to the tags list
-        var tagLinksList = document.getElementById('tagLinksList');
-        var listItem = document.createElement("li");
-        var link = document.createElement("a");
-        link.setAttribute("href",  "/show/" + user + "/tag/" + tag);
-        link.setAttribute("count", "1");
-        link.setAttribute("tag",   tag);
-        link.setAttribute("class", "tagLink");
-        var linkText = document.createTextNode(tag + " (1)");
-        listItem.appendChild(link);
-        link.appendChild(linkText);
-        tagLinksList.appendChild(listItem);
-    }
 }
+
 function removeTagFromTagList(tag, tagListElem) {
     var tagLiElems = tagListElem.children;
     for (j=0;j < tagLiElems.length; j++) {
@@ -129,112 +115,33 @@ function removeTagFromTagList(tag, tagListElem) {
             break;
         }
     }
-    var foundLink = false;
-    var tagLinks = jQuery('a.tagLink');
-    for (j=0;j < tagLinks.length; j++) {
-        var tagJ = tagLinks[j].getAttribute("tag");
-        if (tagJ == tag) {
-            foundLink = true;
-            var tagCount = parseInt(tagLinks[j].getAttribute("count"));
-            if (tagCount == 1) {
-                var tagLinksList = document.getElementById('tagLinksList');
-                tagLinksList.removeChild(tagLinks[j].parentNode);
-                count = parseInt(tagCounter.innerHTML);
-                tagCounter.innerHTML = Math.max(count - 1, 0);
-                break;
+}
+
+function getTagDeleter(user) {
+    return function(data) {
+        var messages = [];
+        jQuery.each(data, function(key, value) {
+            if (key == "errors") {
+                messages.push(value);
             } else {
-                tagCount = tagCount - 1;
-                tagLinks[j].setAttribute("count", tagCount);
-                tagLinks[j].innerHTML = tag + " (" + tagCount + ")";
-                break;
-            }
-        }
-    }
-}
-
-function addNewTag(user, tweetId) {
-    var tweetIds = [tweetId];
-    var tagFieldValue = document.getElementById("tag-" + tweetId).value;
-    var tags = tagFieldValue.split(",");
-    tags = jQuery.map(tags, function(str) {return trim(str)});
-    tagList = tags.join(",");
-    createRequest();
-    var url = "/addtags/" + new Date().getTime();
-    request.open("POST", url, true);
-    request.onreadystatechange = getTagAdder(tweetIds, tags, user);
-    request.setRequestHeader("Content-Type",
-            "application/x-www-form-urlencoded");
-    request.send(
-            "&tags=" + escape(tagList) +
-            "&username=" + escape(user) +
-            "&tweetIds=" + escape(tweetId));
-    toggleDiv(tweetId);
-}
-
-function deleteTag(user, tweetId) {
-    var tweetIds = [tweetId];
-    var tagFieldValue = document.getElementById("tag-" + tweetId).value;
-    var tags = tagFieldValue.split(",");
-    tags = jQuery.map(tags, function(str) {return trim(str)});
-    tagList = tags.join(",");
-    createRequest();
-    var url = "/removetags/" + new Date().getTime();
-    request.open("POST", url, true);
-    request.onreadystatechange = getTagDeleter(tweetIds, tags, user);
-    request.setRequestHeader("Content-Type",
-            "application/x-www-form-urlencoded");
-    request.send(
-            "&tags=" + escape(tagList) +
-            "&username=" + escape(user) +
-            "&tweetIds=" + escape(tweetId));
-    toggleDiv(tweetId);
-}
-
-function getTagDeleter(tweetIds, tags, user) {
-    return function() {
-        if (request.readyState == 4) {
-            var resultString = request.getResponseHeader("Results");
-            if (request.status == 200) {
-                var messages = [];
-                var resultLists = resultString.split(",,");
-                var tagCounter = document.getElementById("tagCounter");
-                for (var i=0; i < tweetIds.length; i++) {
-                    var resultListString = resultLists[i];
-                    var resultList = resultListString.split(",");
-
-                    var tagListId = "tagList-" + tweetIds[i];
-                    var tagListElem = document.getElementById(tagListId);
-
-                    for (var j=0; j < tags.length; j++) {
-                        var tag = tags[j];
-                        var result = resultList[j];
-                        if (result == "deleted") {
-                            removeTagFromTagList(tag, tagListElem);
-                        } else {
-                            messages.push(result);
-                        }
-                    }
-                } 
-                if (messages.length > 0) {
-                    alert(messages.join("\n"));
+                var tweetId = key;
+                var addedTags = value.added;
+                var tagListId = "tagList-" + tweetIds[i];
+                var tagListElem = document.getElementById(tagListId);
+                for (var i = 0; i < addedTags.length; i++) {
+                    removeTagFromTagList(addedTags[i], tagListElem);
                 }
-            } else {
-                handleError(resultString, request);
             }
+        };
+        if (messages.length > 0) {
+            alert(messages.join("\n"));
         }
+        updateSideBars(user);
     };
-} 
+}
 
-function handleError(resultString, request) {
-    var message;
-    if ((resultString == null) 
-            || (resultString.length == null) 
-            || (resultString.length <= 0)) {
-        message = "Sorry - request failed.";
-    } else {
-        message = resultString;
-    }
-    alert(message + request.status);
+function handleError(request, resultString) {
+    alert(resultString);
 }
 
 
@@ -249,6 +156,15 @@ function toggleForm(divId) {
     });
 }
 
+function updateSideBars(user) {
+    $("#timeline-list").load("/load/timeline/for/" + user);
+    $("#mentions-list").load("/load/mentions/for/" + user);
+    $("#hashtags-list").load("/load/hashtags/for/" + user);
+    $("#urls-list").load("/load/urls/for/" + user);
+    $("#tagLinksList").load("/load/tags/for/" + user);
+    $("#retweetedLinksList").load("/load/retweeteds/for/" + user);
+    $("#favedLinksList").load("/load/favourites/for/" + user);
+}
 /**
 *
 *  Javascript trim, ltrim, rtrim
