@@ -30,3 +30,5 @@ template: "simple"
 logger: 'file'
 
 log: debug
+
+database: "data/twarchiver.db"
