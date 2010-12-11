@@ -131,8 +131,8 @@
             <form>
                 <p>Tag list:
                     <input type="text" id="masstag" size="30" />
-                    <input type="button" value="Add" onclick="javascript:addmasstags('<% username %>')" />
-                    <input type="button" value="Remove" onclick="javascript:deleteMassTags('<% username %>')" />
+                    <input type="button" value="Add" onclick="javascript:addTagsToAll('<% username %>')" />
+                    <input type="button" value="Remove" onclick="javascript:removeTagsFromAll('<% username %>')" />
                 </p>
             </form>
           </div>
@@ -146,13 +146,7 @@
         $("#content").load("/load/content/<% content_url %>", null, function() {;
             $.get("/load/summary/<% content_url %>", null, 
                 loadSummary, "json");
-            $("#timeline-list").load("/load/timeline/for/<% username %>");
-            $("#mentions-list").load("/load/mentions/for/<% username %>");
-            $("#hashtags-list").load("/load/hashtags/for/<% username %>");
-            $("#urls-list").load("/load/urls/for/<% username %>");
-            $("#tagLinksList").load("/load/tags/for/<% username %>");
-            $("#retweetedLinksList").load("/load/retweeteds/for/<% username %>");
-            $("#favedLinksList").load("/load/favourites/for/<% username %>");
+            updateSideBars(<% content_url %>);
         }).throbber(image: "/images/ajax-loader.gif");
     </script>
 
