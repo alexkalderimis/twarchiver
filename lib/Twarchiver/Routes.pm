@@ -1,18 +1,29 @@
 package Twarchiver::Routes;
 
 use Dancer ':syntax';
+use Dancer::Plugin::Ajax;
+use Twarchiver::DBActions ':routes';
+use Twarchiver::HTMLActions ':routes';
 
 get '/' => sub {
-    template 'index';
+    template 'index' => {page_title => 'twarchiver'};
 };
 
 get '/show/:username/to/:mention' => sub {
     my $user    = params->{username};
     my $mention = '@' . params->{mention};
     show_tweets_including( $user, $mention, 0 );
+
+get '/show/:username/on/:hashtag' => sub {
     my $user    = params->{username};
     my $hashtag = params->{hashtag};
     show_tweets_including( $user, $hashtag, 0 );
+};
+
+get '/show/:username/url' => sub {
+    my $user = params->{username};
+    my $url  = params->{address};
+    show_tweets_including( $user, $url, 0 );
 };
 
 get '/show/:username/tag/:tag' => sub {
@@ -31,7 +42,6 @@ get '/show/:username/tag/:tag' => sub {
         username    => $user,
     };
 };
-
 
 =head2 /show/:username
 
@@ -63,16 +73,11 @@ get '/show/:username/:year/:month' => sub {
         ($year !~ $digits && $month !~ $digits);
 
     return authorise($username) if needs_authorisation($username);
-    
-    my $month_name = get_month_name_for($month);
 
     my $content_url = join('/', $username, $year, $month);
 
-    my $title = 'Statuses from '
-      . $html->a(
-        href => request->uri_for( join( '/', 'show', $username ) ),
-        text => $username,
-      ) . " from $month_name $year";
+    my $title = sprintf "Statuses by %s from %s %s",
+        make_user_home_link(), get_month_name_for($month), $year;
 
     template 'statuses' => {
         content_url => $content_url,
@@ -89,15 +94,12 @@ get '/show/:username/:action' => sub {
     return authorise($username) if needs_authorisation($username);
     my $content_url = join('/', $username, $action);
 
-    my $title = 'Statuses from '
-      . $html->a(
-        href => request->uri_for( join( '/', 'show', $username ) ),
-        text => $username,
-      ) . " which have been $action";
+    my $title = sprintf "Statuses by %s which have been %s",
+        make_user_home_link(), $action;
 
     if ($count) {
         $content_url .= "?count=$count";
-        $title .= $count . ' times';
+        $title .= " $count times";
     }
 
     template 'statuses' => {
@@ -106,7 +108,6 @@ get '/show/:username/:action' => sub {
         username => $username,
     };
 };
-
 
 get '/download/:username.:format' => sub {
     my $user   = params->{username};
@@ -168,7 +169,7 @@ get '/load/content/:username/:action' => sub {
     return $content;
 };
 
-get '/load/content/:username/search/:searchterm' => sub {
+get '/load/content/:username/search' => sub {
     my $user                = params->{username};
     my $searchterm          = params->{searchterm};
     my $is_case_insensitive = params->{i};
@@ -183,7 +184,7 @@ get '/load/content/:username/search/:searchterm' => sub {
           : qr/\Q$searchterm\E/;
     }
     download_latest_tweets_for($user);
-    my $rs = restore_statuses_for($user);
+    my $rs = get_all_tweets_for($user);
     my @tweets;
     while ( my $tweet = $rs->next() ) {
         if ( $tweet->text =~ $re ) {
@@ -274,7 +275,7 @@ get '/load/content/:username' => sub {
     my $user = params->{username};
     return $html->p("Not Authorised") if ( needs_authorisation($user) );
     download_latest_tweets_for($user);
-    my @tweets  = restore_statuses_for($user);
+    my @tweets  = get_all_tweets_for($user);
     my $content = make_content(@tweets);
     return $content;
 };
