@@ -7,28 +7,35 @@ use Net::Twitter;
 use Try::Tiny;
 use File::Basename;
 use File::Spec::Functions;
-use Twarchiver::DB::Schema;
+use Twarchiver::DBActions ':main';
 use HTML::EasyTags;
 use DateTime::Format::Strptime;
+use DateTime;
+use List::MoreUtils qw(uniq);
+use URI;
+use Text::CSV;
 
 use constant CONS_KEY      => 'duo83UgzZ99BRPpf56pUnA';
 use constant CONS_SEC      => '6Si7yg4S1USpVFFYpL6N8Bc3MftddMXEQYefbn9U3w';
-use constant STORAGE_PATHS => ( dirname($0), 'data', 'auth-tokens' );
-use constant STATUS_STORAGE => (dirname($0), 'data', 'statuses');
 
 use constant TWITTER_BASE   => 'http://twitter.com/';
 use constant TWITTER_SEARCH => 'http://twitter.com/search';
 use constant ACTIONS => qw/retweeted favorited/;
-
+use constant DATE_FORMAT => "%d %b %Y %X";
 use Exporter 'import';
-our @EXPORT = qw/get_twitter restore_tokens save_tokens store_statuses restore_statuses_for get_db get_user_record/;
+
+our @EXPORT = qw/
+    show_tweets_including authorise needs_authorisation
+    make_user_home_link get_month_name_for get_tweets_as_textfile
+    get_tweets_as_spreadsheet download_latest_tweets_for
+    make_content ACTIONS DATE_FORMAT make_year_group
+    make_mention_sidebar_item make_hashtag_sidebar_item 
+    make_url_sidebar_item make_tag_sidebar_item make_popular_sidebar
+/;
 
 my $html = HTML::EasyTags->new();
 my $dt_parser = DateTime::Format::Strptime->new( 
     pattern => '%a %b %d %T %z %Y' );
-
-my %cookies;
-my $schema;
 
 my $span_re           = qr/<.?span.*?>/;
 my $mentions_re       = qr/(\@(?:$span_re|\w+)+\b)/;
@@ -47,57 +54,13 @@ my %urliser_for = (
     hashtags => sub {return get_hashtag_url(shift)},
 );
 
-my $count_order = {$b->get_column('count') <=> $a->get_column('count')};
-
-sub add_tags_to_tweets {
-    my @tags = @{shift};
-    my @tweets = @{shift};
-    my $response = {};
-    for my $tweet_id (@tweets) {
-        my $tweet = get_db()->resultset('Tweet')
-                            ->find({tweet_id => $tweet_id});
-        push @{$response->{errors}}, "Could not find tweet $tweet_id";
-        for my $tag (@tags) {
-            if ($tweet->tags->search({text => $tag})->count) {
-                push @{$response->{errors}}, 
-                    "Tweet $tweet_id is already tagged with $tag";
-            } else {
-                $tweet->add_to_tags({text => $tag});
-                push @{$response->{$tweet_id}{added}}, $tag;
-            }
-        }
-        $tweet->update;
-    }
-    return $response;
-}
-
-sub remove_tags_from_tweets {
-    my @tags = @{shift};
-    my @tweets = @{shift};
-    my $response = {};
-    for my $tweet_id (@tweets) {
-        my $tweet = get_db()->resultset('Tweet')
-                            ->find({tweet_id => $tweet_id});
-        push @{$response->{errors}}, "Could not find tweet $tweet_id";
-        for my $tag (@tags) {
-            if ($tweet->tags->search({text => $tag})->count) {
-                my $tag = $tweet->tags->find({text => $tag});
-                my $link = $tag->tweet_tags->find({tweet => $tweet});
-                $link->delete;
-                push @{$response->{$tweet_id}{removed}}, $tag;
-            } else {
-                push @{$response->{errors}}, 
-                    "Could not find tag '$tag' on tweet $tweet_id";
-            }
-        }
-        $tweet->update;
-    }
-    return $response;
-}
-
 =head2 show_tweets_including
 
-Function: return a page loading tweets with a particular search term.
+Function:  return a page loading tweets with a particular search term.
+Arguments: (Str) Twitter screen name
+           (Str) The search term to search by
+           (Bool) Whether to search case insensitively or not
+Returns: The html page
 
 =cut
 
@@ -203,7 +166,7 @@ sub make_tweet_li {
 
     my $list_item = join( "\n",
         $html->div_start( onclick => "toggleForm('$id');", ),
-        $html->h2($status->created_at->strftime("%d %b %Y %X")),
+        $html->h2($status->created_at->strftime(DATE_FORMAT)),
         $html->p($text),
         $html->div_start( 
             id => $id . '-tags', 
@@ -314,7 +277,7 @@ sub authorise {
     my $user   = shift;
     my $cb_url = request->uri_for( request->path );
     debug("callback url is $cb_url");
-    try {
+    eval {
         my $twitter = get_twitter();
         my $url = $twitter->get_authorization_url( callback => $cb_url );
         debug( "request token is " . $twitter->request_token );
@@ -322,28 +285,13 @@ sub authorise {
         set_cookie secret => $twitter->request_token_secret;
         redirect($url);
         return false;
-    }
-    catch {
-        error($_);
-        send_error("Authorisation failed, $_");
     };
-}
-
-=head2 get_db
-
-Function: Get a connection to the database
-Returns:  A DBIx::Class::Schema instance
-
-=cut
-
-sub get_db {
-    unless ($schema) {
-        $schema = Twarchiver::Schema->connect(
-            "dbi:SQLite:dbname=".setting('database'));
+    if (my $err = $@) {
+        error($err);
+        send_error("Authorisation failed, $err");
     }
-
-    return $schema;
 }
+
 
 =head2 get_month_name_for(month_number)
 
@@ -353,8 +301,8 @@ Returns:   A string with the corresponding month name
 
 =cut
 
-my %name_of_month;
 sub get_month_name_for {
+    state %name_of_month;
     my $month_number = shift;
     unless (%name_of_month) {
         %name_of_month = map 
@@ -385,39 +333,7 @@ sub get_twitter {
     return Net::Twitter->new(%args);
 }
 
-=head2 get_all_tweets_for( screen_name, [condition] )
 
-Function:  get tweets from database for a specific user
-Arguments: the user's twitter screen name
-           (optionally) a condition to search by
-Returns:   <List Context> A list of the users statuses (Row objects) 
-           <Scalar|Void> A result set of the same.
-
-=cut
-    
-sub get_all_tweets_for {
-    my $user      = shift;
-    my $condition = shift;
-    my $user_rec = get_user_record($user);
-    return $user_rec->tweets->search( $condition,
-                        {order_by => {-desc => 'tweet_id'}},
-                    );
-}
-
-=head2 get_since_id_for( screen_name )
-
-Function:  get the id of the most recent tweet for this user
-Arguments: The user's twitter screen name
-Returns:   The id (scalar)
-
-=cut
-
-sub get_since_id_for {
-    my $user = shift;
-    my $user_rec = get_user_record($user);
-    my $since_id = $user_rec->tweets->get_column('tweet_id')->max;
-    return $since_id;
-}
 
 =head2 download_latest_tweets_for( screen_name )
 
@@ -431,7 +347,7 @@ sub download_latest_tweets {
     my $user = shift;
     my @tokens = restore_tokens($user);
     my $twitter = get_twitter(@tokens);
-    my $since = get_since_for($user);
+    my $since = get_since_id_for($user);
 
     if ( $twitter->authorized ) {
         for ( my $page = 1 ; ; ++$page ) {
@@ -447,70 +363,7 @@ sub download_latest_tweets {
     }
 }
 
-=head2 store_twitter_statuses( list_of_tweets )
 
-Function:  Store the tweets in the database
-Arguments: The list of twitter statuses returned from the Twitter API
-
-=cut
-
-sub store_twitter_statuses {
-    my @statuses = @_;
-    my $db = get_db;
-    for (@statuses) {
-        my $tweet_rec = get_tweet_record(
-            $_->{id}, $_->{user}{screen_name});
-        $tweet_rec->update({
-            text            => $_->{text},
-            retweeted_count => $_->{retweeted_count},
-            favorited_count => $_->{favorited_count},
-            created_at => $dt_parser->parse_datetime($_->{created_at}),
-        });
-        my $text = $_->{text};
-
-        my @mentions = $text =~ /$mentions_re/g;
-        for my $mention (@mentions) {
-            $tweet_rec->add_to_mentions({screen_name => $mention});
-        }
-        my @hashtags = $text =~ /$hashtags_re/g;
-        for my $hashtag (@hashtags) {
-            $tweet_rec->add_to_hashtags({topic => $hashtag});
-        }
-        my @urls = $tweet_text =~ /$urls_re/g;
-        for my $url (@urls) {
-            $tweet_rec->add_to_urls({address => $url});
-        }
-        $tweet_rec->update;
-    }
-}
-
-=head2 restore_tokens( username)
-
-Function: Get the tokens for this user back from the database
-Returns:  The access tokens
-
-=cut
-
-sub restore_tokens {
-    my $user = shift;
-    my $user_rec = get_user_record($user);
-
-    my @tokens = (
-        $user_rec->access_token,
-        $user_rec->access_token_secret,
-    );
-
-    return unless (@tokens == 2);
-    return @tokens;
-}
-
-=head2 [ResultRow] get_user_record( screen_name )
-
-Function:  Get the db record for the given user
-Arguments: The user's twitter screen name
-Returns:   A DBIx::Class User result row object
-
-=cut
 
 sub make_popular_sidebar {
     my $username = shift;
@@ -559,105 +412,6 @@ sub make_popular_link {
     );
 }
 
-sub get_popular_summary {
-    my $username = shift;
-    my $action = shift;
-    my $col = $action . '_count';
-    return get_user_record($username)->tweets->search(undef,
-                    {
-                        'select' => [
-                            $col
-                            {count => $col,
-                            -as   => 'occurs'},
-                        ],
-                        as => [$col, 'occurs'],
-                        distinct => 1,
-                        'order_by' => {-desc => 'occurs'},
-                    });
-}
-
-sub get_years_for {
-    my $user = shift;
-    my @years = uniq map {$_->created_at->year} 
-                    $user_one->search_related('tweets',
-                        { created_at => {'!=' => undef}},
-                        { order_by => {-desc => 'created_at'}}
-                    )->all;
-    return @years;
-}
-
-sub get_months_in {
-    my $username = shift;
-    my $year = shift;
-    my $user = get_user_record($username);
-    my $year_start = DateTime->new(year => $year, month => 1, day => 1);
-    my $year_end =  DateTime->new(year => $year, month => 12, day => 31);
-
-    my @months = uniq map {$_->created_at->month} 
-        $user->search_related('tweets',
-            {created_at => {'!=' => undef}})
-        ->search({created_at => {'>=' => $year_start}})
-        ->search({created_at => {'<=' => $year_end}})
-        ->all;
-    return @months;
-}
-
-sub get_user_record {
-    my $user = shift;
-    my $db = get_db();
-    my $user_rec = $db->resultset('User')->find_or_create(
-        {
-            screen_name => $user,
-        },
-        {
-            prefetch => 'tweets'
-        }
-    );
-    return $user_rec;
-}
-sub get_urls_for {
-    my $user = shift;
-    return get_tweet_features_for_user($user, 
-        'Url', 'address', 'tweet_urls');
-}
-
-sub get_mentions_for {
-    my $user = shift;
-    return get_tweet_features_for_user($user, 
-        'Mention', 'screen_name', 'tweet_mentions');
-}
-sub get_hashtags_for {
-    my $user = shift;
-    return get_tweet_features_for_user($user, 
-        'Hashtag', 'topic', 'tweet_hashtags');
-}
-
-sub get_tags_for {
-    my $user = shift;
-    return get_tweet_features_for_user($user, 
-        'Tag', 'text', 'tweet_tags');
-}
-
-sub get_tweet_features_for_user {
-    my ($user, $source, $main_col, $bridge_table) = @_;
-    my $search = get_db()->resultset($source)->search(
-        {   
-            'user.screen_name' => $user
-        },
-        {   
-            'select' => [
-                $main_col, 
-                {count => $main_col, -as => 'number'}
-            ],
-            'as' => [$main_col, 'count'],
-            join => {$bridge_table => { tweet => 'user'}},
-            distinct => 1,
-            'order_by' => {-desc => 'number'},
-        }
-    );
-    return $search;
-}
-
 sub make_year_group {
     my ($username, $year) = @_;
     my @months = get_months_in($username, $year);
@@ -669,38 +423,6 @@ sub make_year_group {
     return $list_item;
 }
 
-sub get_tweets_with_tag {
-    my ($username, $tag) = @_;
-    my $user = get_user_record($username);
-    return $user->tweets->search(
-        {'tag.text' => $tag},
-        {'join' => {tweet_tags => 'tag'}}
-    );
-}
-
-sub get_popular_tweets {
-    my ($username, $action, $count) = @_;
-    my $column = $action . '_count';
-    my $condition = ($count) 
-        ? {$column => $count}
-        : {$column => {'>' => 0}};
-    my $user = get_user_record($username);
-    return $user->tweets->search($condition);
-}
-
-sub get_tweets_in_month {
-    my ($username, $year, $month) = @_;
-    my $user = get_user_record($username);
-    my $start_of_month = DateTime->new(
-        year => $year, month => $month, day => 1);
-    my $end_of_month = DateTime->new(
-        year => $year, month => $month, day => 1
-    )->add( months => 1 );
-        
-    return $user->tweets
-                ->search({created_at => {'>=' => $start_of_month})
-                ->search({created_at => {'<=' => $end_of_month});
-}
 
 sub make_user_home_link {
     my $user = params->{username};
@@ -861,7 +583,7 @@ sub get_tweets_as_spreadsheet {
     );
     return join ("\n", map {
         $csv->combine( 
-            $_->created_at->strftime(date_format),
+            $_->created_at->strftime(DATE_FORMAT),
             $_->text
         );
         $csv->string()
@@ -899,45 +621,5 @@ $tags
     return $result;
 }
 
-=head2 [ResultRow] get_tweet_record( tweet_id, screen_name )
-
-Function:  Get the tweet with the given id by the given user, or add
-           one to the user's list of tweets.
-Arguments: The tweet id, and the screen name of the tweeter
-Returns:   A DBIx::Class Tweet row object
-
-=cut 
-
-sub get_tweet_record {
-    my ($id, $screen_name) = @_;
-    my $db = get_db();
-    my $user_rec = get_user_record($screen_name);
-    my $tweet_rec = $user_rec->tweets->find(
-        {'tweet_id' => $id,}
-    );
-    unless ($tweet_rec) {
-        $tweet_rec = $user_rec->add_to_tweets({
-                tweet_id => $id,
-        });
-    }
-    return $tweet_rec;
-}
-
-=head2 save_tokens( username, access_token, access_token_secret)
-
-Function: Store the given tokens in the database in the given
-          user's record
-
-=cut
-
-sub save_tokens {
-    my ( $user, $token, $secret ) = @_;
-    my $user_rec = get_user_record($user);
-
-    $user_rec->update({
-            access_token => $token,
-            access_token_secret => $secret,
-    });
-}
 
 true;
