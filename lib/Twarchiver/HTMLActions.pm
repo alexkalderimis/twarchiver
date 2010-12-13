@@ -46,7 +46,6 @@ our %EXPORT_TAGS = (
 );
 
 my $html = HTML::EasyTags->new();
-my $dt_parser = DateTime::Format::Strptime->new( pattern => '%a %b %d %T %z %Y' );
 
 my $span_re     = qr/<.?span.*?>/;
 my $mentions_re = qr/(\@(?:$span_re|\w+)+\b)/;
@@ -65,38 +64,25 @@ my %urliser_for = (
     hashtags => sub { return get_hashtag_url(shift) },
 );
 
-=head2 show_tweets_including
+=head2 make_highlit_content( searchterm, @tweets )
 
-Function:  return a page loading tweets with a particular search term.
-Arguments: (Str) Twitter screen name
-           (Str) The search term to search by
-           (Bool) Whether to search case insensitively or not
-Returns: The html page
+Function:  return the content for a set of tweets with the searchterms
+           highlit in the text. 
+Arguments: (Str|Re) The searchterm
+           (@ResultRows) The tweets to display
+Returns: The html page, with terms surrounded by a span tag set:
+         'text text<span class="key-term">key term</span>text text'
 
 =cut
 
-sub show_tweets_including {
-    my ( $user, $searchterm, $is_case_insensitive ) = @_;
-
-    return authorise($user) if needs_authorisation($user);
-
-    my $title = 'Statuses from '
-      . $html->a(
-        href => request->uri_for( join( '/', 'show', $user ) ),
-        text => $user,
-      ) . " mentioning $searchterm";
-    my $content_url = URI->new( join( '/', $user, 'search' ) );
-
-    $content_url->query_form(
-        searchterm => $searchterm,
-        i          => $is_case_insensitive,
-    );
-
-    template 'statuses' => {
-        content_url => "$content_url",
-        title       => $title,
-        username    => $user,
-    };
+sub make_highlit_content {
+    my ($searchterm, @tweets) = @_;
+    for (0 .. $#tweets) {
+        my $tweet = $tweets[$_];
+        ( $tweet->{highlighted_text} = $tweet->text ) 
+            =~ s{$re}{<span class="key-term">$&</span>}g;
+    }
+    return make_content(@tweets);
 }
 
 =head2 [String] make_content( tweets )
@@ -343,7 +329,7 @@ Returns:  A Net::Twitter instance
 sub get_twitter {
     my @tokens = @_;
     my %args   = (
-        traits          => [qw/OAuth API::REST/],
+        traits          => [qw/OAuth API::REST InflateObjects/],
         consumer_key    => CONS_KEY,
         consumer_secret => CONS_SEC,
     );

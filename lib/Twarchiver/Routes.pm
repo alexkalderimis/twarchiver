@@ -11,19 +11,50 @@ get '/' => sub {
 
 get '/show/:username/to/:mention' => sub {
     my $user    = params->{username};
-    my $mention = '@' . params->{mention};
-    show_tweets_including( $user, $mention, 0 );
+    my $mention = params->{mention};
+    return authorise($user) if needs_authorisation($user);
 
-get '/show/:username/on/:hashtag' => sub {
-    my $user    = params->{username};
-    my $hashtag = params->{hashtag};
-    show_tweets_including( $user, $hashtag, 0 );
+    my $content_url = join('/', $user, 'to', $mention);
+    my $title = sprintf "Statuses from %s mentioning %s",
+        make_user_home_link(), $mention;
+
+    template 'statuses' => {
+        content_url => $content_url,
+        title       => $title,
+        username    => $user,
+    }
 };
 
-get '/show/:username/url' => sub {
-    my $user = params->{username};
-    my $url  = params->{address};
-    show_tweets_including( $user, $url, 0 );
+get '/show/:username/on/:topic' => sub {
+    my $user    = params->{username};
+    my $topic = params->{hashtag};
+    return authorise($user) if needs_authorisation($user);
+
+    my $content_url = join('/', $user, 'on', $topic);
+    my $title = sprintf "Statuses from %s about %s",
+        make_user_home_link(), $topic;
+
+    template 'statuses' => {
+        content_url => $content_url,
+        title       => $title,
+        username    => $user,
+    }
+};
+
+get qr{/show/(\w+)/url/([\w\./_-]+)} => sub {
+    my ($user, $address) = splat;
+    
+    return authorise($user) if needs_authorisation($user);
+
+    my $content_url = join('/', $user, 'url', $address);
+    my $title = sprintf "Statuses from %s with a link to %s",
+        make_user_home_link(), $topic;
+
+    template 'statuses' => {
+        content_url => $content_url,
+        title       => $title,
+        username    => $user,
+    }
 };
 
 get '/show/:username/tag/:tag' => sub {
@@ -86,20 +117,26 @@ get '/show/:username/:year/:month' => sub {
     };
 };
 
-get '/show/:username/:action' => sub {
+get '/show/:username/retweeted' => sub {
     my $username = params->{username};
     my $action = params->{action};
     my $count = params->{count};
     pass and return false unless (grep {$_ eq $action} ACTIONS);
     return authorise($username) if needs_authorisation($username);
-    my $content_url = join('/', $username, $action);
+    my $content_url = join('/', $username, 'retweeted');
 
-    my $title = sprintf "Statuses by %s which have been %s",
-        make_user_home_link(), $action;
+    my $title = sprintf "Statuses by %s which have been retweeted",
+        make_user_home_link();
 
     if ($count) {
         $content_url .= "?count=$count";
-        $title .= " $count times";
+        if     ($count  == 1) {
+            $title .= " once";
+        } elsif ($count == 2) {
+            $title .= " twice";
+        } else {
+            $title .= " $count times";
+        }
     }
 
     template 'statuses' => {
@@ -129,8 +166,28 @@ get '/download/:username.:format' => sub {
 get '/search/:username' => sub {
     my $user       = params->{username};
     my $searchterm = params->{searchterm};
-    show_tweets_including( $user, $searchterm, true );
-};
+    my $case_insensitive = params->{i};
+
+    return authorise($user) if needs_authorisation($user);
+
+    my $title = 'Statuses from '
+      . $html->a(
+        href => request->uri_for( join( '/', 'show', $user ) ),
+        text => $user,
+      ) . " matching $searchterm";
+    my $content_url = URI->new( join( '/', $user, 'search' ) );
+
+    $content_url->query_form(
+        searchterm => $searchterm,
+        i          => $case_insensitive,
+    );
+
+    template 'statuses' => {
+        content_url => "$content_url",
+        title       => $title,
+        username    => $user,
+    };
+}
 
 =head2 /load/content/:username/search/:searchterm?i=isCaseInsensitive
 
@@ -154,17 +211,55 @@ get '/load/content/:username/tag/:tag' => sub {
     return $content;
 };
 
-get '/load/content/:username/:action' => sub {
-    my $user   = params->{username};
-    my $action = params->{action};
-    my $count  = params->{count};
-    pass and return false unless (grep {$_ eq $action} ACTIONS);
+get '/load/content/:username/to/:mention' => sub {
+    my $user    = params->{username};
+    my $mention = '@' . params->{mention};
 
     return $html->p("Not Authorised") if ( needs_authorisation($user) );
 
     download_latest_tweets_for($user);
 
-    my @tweets = get_popular_tweets($user, $action, $count);
+    my @tweets  = get_tweets_with_mention($user, $mention);
+    my $content = make_highlit_content($mention, @tweets);
+    return $content;
+};
+
+get '/load/content/:username/on/:topic' => sub {
+    my $user  = params->{username};
+    my $topic = '#' . params->{topic};
+
+    return $html->p("Not Authorised") if ( needs_authorisation($user) );
+
+    download_latest_tweets_for($user);
+
+    my @tweets  = get_tweets_with_hashtag($user, $topic);
+    my $content = make_highlit_content($topic, @tweets);
+    return $content;
+};
+
+get qr{/load/content/(\w+)/url/([\w\./_-]+)} => sub {
+    my ($user, $address) = splat;
+    $address = 'http://' . $address;
+
+    return $html->p("Not Authorised") if ( needs_authorisation($user) );
+
+    download_latest_tweets_for($user);
+
+    my @tweets  = get_tweets_with_url($user, $address);
+    my $content = make_highlit_content($address, @tweets);
+    return $content;
+};
+
+
+get '/load/content/:username/retweeted' => sub {
+    my $user   = params->{username};
+    my $count  = params->{count};
+
+    return $html->p("Not Authorised") if ( needs_authorisation($user) );
+
+    download_latest_tweets_for($user);
+
+    my @tweets  = get_retweeted_tweets($user, $action, $count);
     my $content = make_content(@tweets);
     return $content;
 };
@@ -188,14 +283,12 @@ get '/load/content/:username/search' => sub {
     my @tweets;
     while ( my $tweet = $rs->next() ) {
         if ( $tweet->text =~ $re ) {
-            ( $_->{highlighted_text} = $_->text ) 
-                =~ s{$re}{<span class="key-term">$&</span>}g;
             push @tweets, $tweet;
         }
     }
     debug( "Got " . scalar(@tweets) . " tweets with searchterm" );
 
-    my $content = make_content(@tweets);
+    my $content = make_highlit_content($re, @tweets);
     return $content;
 };
 
@@ -256,12 +349,7 @@ get '/load/tags/for/:username' => \&get_tags_sidebar;
 
 get '/load/retweeteds/for/:username' => sub {
     my $username = params->{username};
-    return make_popular_sidebar($username, 'retweeted' x 2);
-}
-
-get '/load/favourites/for/:username' => sub {
-    my $username = params->{username};
-    return make_popular_sidebar($username, 'favorited', 'favourited');
+    return make_retweeted_sidebar($username);
 }
 
 =head2 /load/content/:username
@@ -298,13 +386,15 @@ get '/load/summary/:username' => sub {
     my $username = params->{username};
     my $user     = get_user_record($username);
     my %data;
-    $data{tweet_total}    = $user->tweets->count;
-    $data{mention_total}  = get_mentions_for($username)->count;
-    $data{hashtags_total} = get_hashtags_for($username)->count;
-    $data{tags_total}     = get_tags_for($username)->count;
-    $data{urls_total}     = get_urls_for($username)->count;
-    $data{tweeting_since} = $user->created_at->dmy();
-    $data{up_til}         = $user->tweets->get_column('created_at')->max;
+    $data{tweet_total}     = $user->tweets->count;
+    $data{favorited_total} = $user->tweets->search(
+                             { favorited => {'>' => 0}})->count;
+    $data{mention_total}   = get_mentions_for($username)->count;
+    $data{hashtags_total}  = get_hashtags_for($username)->count;
+    $data{tags_total}      = get_tags_for($username)->count;
+    $data{urls_total}      = get_urls_for($username)->count;
+    $data{tweeting_since}  = $user->created_at->dmy();
+    $data{up_til}          = $user->tweets->get_column('created_at')->max;
     return to_json( \%data );
 };
 
