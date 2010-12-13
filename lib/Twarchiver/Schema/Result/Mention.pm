@@ -35,7 +35,7 @@ __PACKAGE__->table("mention");
 __PACKAGE__->add_columns(
   "mention_id",
   { data_type => "integer", is_auto_increment => 1, is_nullable => 0 },
-  "screen_name",
+  "mention_name",
   { data_type => "text", is_nullable => 0 },
 );
 __PACKAGE__->set_primary_key("mention_id");

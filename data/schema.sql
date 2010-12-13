@@ -28,7 +28,7 @@ CREATE TABLE tweet_mention (
 
 CREATE TABLE mention (
     mention_id INTEGER PRIMARY KEY,
-    screen_name TEXT NOT NULL
+    mention_name TEXT NOT NULL
 );
 
 CREATE TABLE tweet_hashtag (
@@ -50,7 +50,7 @@ CREATE TABLE tweet_tag (
 
 CREATE TABLE tag (
     tag_id INTEGER PRIMARY KEY,
-    text TEXT NOT NULL
+    tag_text TEXT NOT NULL
 );
 
 CREATE TABLE tweet_url (

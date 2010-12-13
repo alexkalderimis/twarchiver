@@ -38,8 +38,8 @@ fixtures_ok sub {
                     favorited_count => 50_000,
                     created_at => $now,
                     tweet_mentions => [
-                        {mention => {screen_name => 'Mention One'}},
-                        {mention => {screen_name => 'Mention Two'}},
+                        {mention => {mention_name => 'Mention One'}},
+                        {mention => {mention_name => 'Mention Two'}},
                     ],
                     tweet_urls => [
                         {url => {address => 'Url One'}},
@@ -51,8 +51,8 @@ fixtures_ok sub {
                         {hashtag => {topic => 'Topic Three'}},
                     ],
                     tweet_tags => [
-                        {tag => {text => 'Tag One'}},
-                        {tag => {text => 'Tag Two'}},
+                        {tag => {tag_text => 'Tag One'}},
+                        {tag => {tag_text => 'Tag Two'}},
                     ],
 
                 },
@@ -69,9 +69,9 @@ fixtures_ok sub {
                         day => $now->day,
                     ),
                     tweet_mentions => [
-                        {mention => {screen_name => 'Mention Two'}},
-                        {mention => {screen_name => 'Mention Three'}},
-                        {mention => {screen_name => 'Mention Four'}},
+                        {mention => {mention_name => 'Mention Two'}},
+                        {mention => {mention_name => 'Mention Three'}},
+                        {mention => {mention_name => 'Mention Four'}},
                     ],
                     tweet_urls => [
                         {url => {address => 'Url Three'}},
@@ -83,9 +83,9 @@ fixtures_ok sub {
                         {hashtag => {topic => 'Topic Four'}},
                     ],
                     tweet_tags => [
-                        {tag => {text => 'Tag Three'}},
-                        {tag => {text => 'Tag Four'}},
-                        {tag => {text => 'Tag One'}},
+                        {tag => {tag_text => 'Tag Three'}},
+                        {tag => {tag_text => 'Tag Four'}},
+                        {tag => {tag_text => 'Tag One'}},
                     ],
 
                 },
@@ -116,8 +116,8 @@ fixtures_ok sub {
                     favorited_count => 70_000,
                     created_at => $now,
                     tweet_mentions => [
-                        {mention => {screen_name => 'Mention Five'}},
-                        {mention => {screen_name => 'Mention Six'}},
+                        {mention => {mention_name => 'Mention Five'}},
+                        {mention => {mention_name => 'Mention Six'}},
                     ],
                     tweet_urls => [
                         {url => {address => 'Url Five'}},
@@ -128,8 +128,8 @@ fixtures_ok sub {
                         {hashtag => {topic => 'Topic Six'}},
                     ],
                     tweet_tags => [
-                        {tag => {text => 'Tag Five'}},
-                        {tag => {text => 'Tag Six'}},
+                        {tag => {tag_text => 'Tag Five'}},
+                        {tag => {tag_text => 'Tag Six'}},
                     ],
 
                 },
@@ -145,9 +145,9 @@ fixtures_ok sub {
                         day => $now->day,
                     ),
                     tweet_mentions => [
-                        {mention => {screen_name => 'Mention Seven'}},
-                        {mention => {screen_name => 'Mention Eight'}},
-                        {mention => {screen_name => 'Mention One'}},
+                        {mention => {mention_name => 'Mention Seven'}},
+                        {mention => {mention_name => 'Mention Eight'}},
+                        {mention => {mention_name => 'Mention One'}},
                     ],
                     tweet_urls => [
                         {url => {address => 'Url Seven'}},
@@ -158,9 +158,9 @@ fixtures_ok sub {
                         {hashtag => {topic => 'Topic Eight'}},
                     ],
                     tweet_tags => [
-                        {tag => {text => 'Tag Seven'}},
-                        {tag => {text => 'Tag Eight'}},
-                        {tag => {text => 'Tag One'}},
+                        {tag => {tag_text => 'Tag Seven'}},
+                        {tag => {tag_text => 'Tag Eight'}},
+                        {tag => {tag_text => 'Tag One'}},
                     ],
 
                 },
@@ -210,7 +210,7 @@ is $tweet->mentions->count, 2
 
 lives_ok( 
     sub {
-        $tweet->add_to_mentions({screen_name => "Added One"})
+        $tweet->add_to_mentions({mention_name => "Added One"})
     },
     "Can add mentions"
 );
@@ -223,7 +223,7 @@ is Mention->search()->count, 9
 
 lives_ok( 
     sub {
-        $tweet->add_to_mentions({screen_name => "Mention Three"})
+        $tweet->add_to_mentions({mention_name => "Mention Three"})
     },
     "Can add mentions"
 );
@@ -269,21 +269,21 @@ $tweet = Tweet->find({text => "Tweet Six"});
 
 is $tweet->tags->count, 3, "Can find tags ok";
 is_deeply(
-    [$tweet->tags->get_column("text")->all],
+    [$tweet->tags->get_column("tag_text")->all],
     ["Tag Seven", "Tag Eight", "Tag One"],
     "And they have the right topics",
 );
 is Tag->count, 8, "We have the right total tag count";
 
 lives_ok(
-    sub {$tweet->add_to_tags({text => "Tag Two"})},
+    sub {$tweet->add_to_tags({tag_text => "Tag Two"})},
     "Can add a tag"
 );
 is $tweet->tags->count, 4, "Now have three tags";
 
 is Tag->count, 8, "Adding an existing tag doesn't change the overall count";
 
-ok my $tag = $tweet->tags->find({text => "Tag Two"})
+ok my $tag = $tweet->tags->find({tag_text => "Tag Two"})
     => "Can find the added tag";
 
 ok my $link = $tag->tweet_tags->find({
@@ -293,7 +293,7 @@ $link->delete;
 
 is Tag->count, 8, "Deleting a link doesn't delete the tag";
 
-ok ! ($tag = $tweet->tags->find({text => "Tag Two"}))
+ok ! ($tag = $tweet->tags->find({tag_text => "Tag Two"}))
     => "The tweet is no longer tagged with the unlinked tag";
 
 is $tweet->tags->count, 3, "Back to two tags";
@@ -301,7 +301,7 @@ is $tweet->tags->count, 3, "Back to two tags";
 is Tweet->search({retweeted_count => {'>=' => 1}})->count, 5
     => "There are the right number of retweets";
 
-my @retweet_counts = grep {defined}
+my @retweeted_counts = grep {defined}
         map {$_->retweeted_count} 
         Tweet->search(
             undef, 
@@ -312,10 +312,10 @@ my @retweet_counts = grep {defined}
         );
 
 is_deeply(
-    [ @retweet_counts ],
+    [ @retweeted_counts ],
     [ 100_000, 200_000, 300_000 ],
     "Can summarise the retweet counts"
-) or diag(explain(\@retweet_counts));
+) or diag(explain(\@retweeted_counts));
 
 is Tweet->search({retweeted_count => 200_000})->count, 3
     => "And we can get the right number of retweets by count";
@@ -364,6 +364,12 @@ is $user_one->tweets->find(7)->text, "Tweet Four"
 is User->find_or_create({screen_name => "User One"})->id, 
     $user_one->id(),
     "get_user_record logic test";
+
+ok my $new_user = User->find_or_create({screen_name => "New User"})
+    => "Can create a user using find_or_create";
+
+is $new_user->screen_name, "New User"
+    => "Which has the right name";
     
 is_deeply(
     [$user_one->access_token, $user_one->access_token_secret],
@@ -448,11 +454,11 @@ is $first_tweet->text, "Tweet One"
 is $first_tweet->mentions->count, 4
     => "Make content logic test: get references of tweets";
 
-is $first_tweet->mentions->first->screen_name, "Mention One"
+is $first_tweet->mentions->first->mention_name, "Mention One"
     => "Make content logic test: get attributes of references";
 
 is_deeply(
-    [$first_tweet->tags->get_column("text")->all],
+    [$first_tweet->tags->get_column("tag_text")->all],
     ["Tag One", "Tag Two"],
     "Make content logic test: get tags as a list"
 );
@@ -484,7 +490,7 @@ is_deeply(
 my @statuses = map {$_->text}
                $user_one->tweets
                         ->search(
-                            {'tag.text' => "Tag One"},
+                            {'tag.tag_text' => "Tag One"},
                             {'join' => {tweet_tags => 'tag'}}
                         )->all;
 
