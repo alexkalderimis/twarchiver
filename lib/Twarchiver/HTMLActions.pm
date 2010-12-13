@@ -1,6 +1,8 @@
 package Twarchiver::HTMLActions;
 use Dancer ':syntax';
 
+use feature ':5.10';
+
 our $VERSION = '0.1';
 
 use Net::Twitter;
@@ -32,17 +34,18 @@ our @EXPORT_OK = qw/
   make_url_sidebar_item make_tag_sidebar_item make_popular_sidebar
   linkify_text make_tweet_li request_tokens_for has_been_authorised
   make_popular_link make_month_link tweet_to_text
+  make_highlit_content
   /;
 
 our %EXPORT_TAGS = (
-    ':routes' => qw/
+    'routes' => [qw/
       show_tweets_including authorise needs_authorisation
       make_user_home_link get_month_name_for get_tweets_as_textfile
       get_tweets_as_spreadsheet download_latest_tweets_for
       make_content ACTIONS make_year_group
       make_mention_sidebar_item make_hashtag_sidebar_item
       make_url_sidebar_item make_tag_sidebar_item make_popular_sidebar
-      /,
+      /],
 );
 
 my $html = HTML::EasyTags->new();
@@ -52,7 +55,7 @@ my $mentions_re = qr/(\@(?:$span_re|\w+)+\b)/;
 my $hashtags_re = qr/(\#(?:$span_re|[\w-]+)+)/;
 my $urls_re     = qr{(http://(?:$span_re|[\w\./]+)+\b)};
 
-my $re_for = (
+my %re_for = (
     urls     => $urls_re,
     mentions => $mentions_re,
     hashtags => $hashtags_re,
@@ -80,7 +83,7 @@ sub make_highlit_content {
     for (0 .. $#tweets) {
         my $tweet = $tweets[$_];
         ( $tweet->{highlighted_text} = $tweet->text ) 
-            =~ s{$re}{<span class="key-term">$&</span>}g;
+            =~ s{$searchterm}{<span class="key-term">$&</span>}g;
     }
     return make_content(@tweets);
 }
@@ -361,7 +364,7 @@ sub download_latest_tweets {
             $args->{since_id} = $since if $since;
             my $statuses = $twitter->user_timeline($args);
             last unless @$statuses;
-            store_twitter_statuses(@stats);
+            store_twitter_statuses(@$statuses);
         }
     } else {
         die "Not authorised.";
@@ -644,7 +647,7 @@ Return:   '<a href="http://twitter.com/mention">@mention</a>'
 
 sub make_mention_link {
     my $screen_name = shift;
-    $mention =~ s/$span_re//g;
+    $screen_name =~ s/$span_re//g;
     return $html->a(
         href => get_mention_url($screen_name),
         text => $screen_name,
@@ -721,11 +724,10 @@ Function: Transform a tweet into a text string, with date, text and tags
 
 sub tweet_to_text {
     my $tweet = shift;
-    my $year  = $tweet->created_at->year;
-    my $month = $tweet->created_at->month_name;
+    my $created_at  = $tweet->created_at->strftime(DATE_FORMAT);
     my $text  = $tweet->text;
     my @tags  = $tweet->tags->get_column('text');
-    $tags =
+    my $tags =
       (@tags)
       ? 'Tags: ' . join( ', ', @tags )
       : '';

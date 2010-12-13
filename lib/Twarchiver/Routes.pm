@@ -4,6 +4,10 @@ use Dancer ':syntax';
 use Dancer::Plugin::Ajax;
 use Twarchiver::DBActions ':routes';
 use Twarchiver::HTMLActions ':routes';
+use HTML::EasyTags;
+
+my $digits = qr/^\d+$/;
+my $html = HTML::EasyTags->new();
 
 get '/' => sub {
     template 'index' => {page_title => 'twarchiver'};
@@ -48,7 +52,7 @@ get qr{/show/(\w+)/url/([\w\./_-]+)} => sub {
 
     my $content_url = join('/', $user, 'url', $address);
     my $title = sprintf "Statuses from %s with a link to %s",
-        make_user_home_link(), $topic;
+        make_user_home_link(), $address;
 
     template 'statuses' => {
         content_url => $content_url,
@@ -161,7 +165,7 @@ get '/download/:username.:format' => sub {
     } else {
         send_error "Unknown format requested: $format";
     }
-}
+};
 
 get '/search/:username' => sub {
     my $user       = params->{username};
@@ -187,7 +191,7 @@ get '/search/:username' => sub {
         title       => $title,
         username    => $user,
     };
-}
+};
 
 =head2 /load/content/:username/search/:searchterm?i=isCaseInsensitive
 
@@ -259,7 +263,7 @@ get '/load/content/:username/retweeted' => sub {
 
     download_latest_tweets_for($user);
 
-    my @tweets  = get_retweeted_tweets($user, $action, $count);
+    my @tweets  = get_retweeted_tweets($user, $count);
     my $content = make_content(@tweets);
     return $content;
 };
@@ -271,7 +275,9 @@ get '/load/content/:username/search' => sub {
 
     return $html->p("Not Authorised") if ( needs_authorisation($user) );
 
-    eval { $re = ($is_case_insensitive) ? qr/$searchterm/i : qr/$searchterm/; };
+    my $re = eval { ($is_case_insensitive) 
+                        ? qr/$searchterm/i 
+                        : qr/$searchterm/; };
     if ($@) {
         $re =
           ($is_case_insensitive)
@@ -301,56 +307,56 @@ get '/load/timeline/for/:username' => sub {
     } else {
         return $html->p("No tweets found");
     }
-}
+};
 
 get '/load/mentions/for/:username' => sub {
     my $username = params->{username};
     my @mentions = get_mentions_for($username);
     if (@mentions) {
         return $html->li_group([
-            map {make_mention_sidebar_item($_) @mentions}]);
+            map {make_mention_sidebar_item($_)} @mentions]);
     } else {
         return $html->p("No mentions found");
     }
-}
+};
 
-get '/load/hashtags/for/:username' => \&get_hashtags_sidebar;
+get '/load/hashtags/for/:username' => sub {
     my $username = params->{username};
-    my @mentions = get_hashtags_for($username);
-    if (@mentions) {
+    my @hashtags = get_hashtags_for($username);
+    if (@hashtags) {
         return $html->li_group([
-            map {make_hashtag_sidebar_item($_) @hashtags}]);
+            map {make_hashtag_sidebar_item($_)} @hashtags]);
     } else {
         return $html->p("No hashtags found");
     }
-}
+};
 
-get '/load/urls/for/:username' => \&get_urls_sidebar;
+get '/load/urls/for/:username' => sub {
     my $username = params->{username};
     my @urls = get_urls_for($username);
     if (@urls) {
         return $html->li_group([
-            map {make_url_sidebar_item($_) @urls}]);
+            map {make_url_sidebar_item($_)} @urls]);
     } else {
         return $html->p("No urls found");
     }
-}
+};
 
-get '/load/tags/for/:username' => \&get_tags_sidebar;
+get '/load/tags/for/:username' => sub {
     my $username = params->{username};
     my @tags = get_tags_for($username);
     if (@tags) {
         return $html->li_group([
-            map make_tag_sidebar_item($username, $_) @tags]);
+            map {make_tag_sidebar_item($username, $_)} @tags]);
     } else {
         return $html->p("No Tags Found");
     }
-}
+};
 
 get '/load/retweeteds/for/:username' => sub {
     my $username = params->{username};
     return make_retweeted_sidebar($username);
-}
+};
 
 =head2 /load/content/:username
 
@@ -379,7 +385,7 @@ get '/load/content/:username/:year/:month' => sub {
     my @tweets = get_tweets_in_month($user, $year, $month);
     my $content = make_content(@tweets);
     return $content;
-}
+};
 
 
 get '/load/summary/:username' => sub {
@@ -402,7 +408,7 @@ ajax '/addtags' => sub {
     my $user      = params->{username};
     my @tags      = split( /,/, params->{tags} );
     my @tweet_ids = split( /,/, params->{tweetIds} );
-    my $response  = add_tags_to_tweets([[@tags], [@tweet_ids]);
+    my $response  = add_tags_to_tweets([@tags], [@tweet_ids]);
     return to_json($response);
 };
 
@@ -410,7 +416,7 @@ ajax '/removetags' => sub {
     my $user      = params->{username};
     my @tags      = split( /,/, params->{tags} );
     my @tweet_ids = split( /,/, params->{tweetIds} );
-    my $response  = remove_tags_from_tweets([[@tags], [@tweet_ids]);
+    my $response  = remove_tags_from_tweets([@tags], [@tweet_ids]);
     return to_json($response);
 };
 
