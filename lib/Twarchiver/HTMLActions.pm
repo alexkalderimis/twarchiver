@@ -13,6 +13,7 @@ use DateTime;
 use List::MoreUtils qw(uniq);
 use URI;
 use Text::CSV;
+use Carp qw/confess/;
 
 use constant {
     CONS_KEY       => 'duo83UgzZ99BRPpf56pUnA',
@@ -34,6 +35,7 @@ our @EXPORT_OK = qw/
   make_url_sidebar_item make_tag_sidebar_item make_popular_sidebar
   linkify_text make_tweet_li request_tokens_for has_been_authorised
   make_popular_link make_month_link tweet_to_text
+  get_mention_url get_hashtag_url
   make_highlit_content
   /;
 
@@ -46,6 +48,18 @@ our %EXPORT_TAGS = (
       make_mention_sidebar_item make_hashtag_sidebar_item
       make_url_sidebar_item make_tag_sidebar_item make_popular_sidebar
       /],
+    'all' => [qw/
+        show_tweets_including authorise needs_authorisation
+        make_user_home_link get_month_name_for get_tweets_as_textfile
+        get_tweets_as_spreadsheet download_latest_tweets_for
+        make_content ACTIONS DATE_FORMAT make_year_group
+        make_mention_sidebar_item make_hashtag_sidebar_item
+        make_url_sidebar_item make_tag_sidebar_item make_popular_sidebar
+        linkify_text make_tweet_li request_tokens_for has_been_authorised
+        make_popular_link make_month_link tweet_to_text
+        get_mention_url get_hashtag_url
+        make_highlit_content
+    /]
 );
 
 my $html = HTML::EasyTags->new();
@@ -132,7 +146,7 @@ sub linkify_text {
         for my $thing (@things) {
             ( my $cleaned_thing = $thing ) =~ s/$span_re//g;
             $link_for{$thing} = $html->a(
-                href => urliser->($cleaned_thing),
+                href => $urliser->($cleaned_thing),
                 text => $thing,
             );
         }
@@ -566,12 +580,13 @@ sub make_hashtag_sidebar_item {
 =head2 get_hashtag_url( topic )
 
 Function: get the link to a twitter search on the given topic
-Returns:  'http://twitter.com?q=topic'
+Returns:  'http://twitter.com/search?q=topic'
 
 =cut
 
 sub get_hashtag_url {
     my $topic = shift;
+    confess "Topic is undefined" unless (defined $topic);
     my $uri   = URI->new(TWITTER_SEARCH);
     $uri->query_form( q => $topic );
     return "$uri";
@@ -635,7 +650,9 @@ Return:   'http://twitter.com/mention'
 
 sub get_mention_url {
     my $mention = shift;
-    return TWITTER_BASE . substr( $mention, 1 );
+    confess "Mention is undefined" unless (defined $mention);
+    $mention = substr( $mention, 1 ) if ($mention =~ /^\@/);
+    return TWITTER_BASE . $mention;
 }
 
 =head2 make_mention_link( mentioned_name )
