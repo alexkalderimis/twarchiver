@@ -329,6 +329,11 @@ Returns:   A string with the corresponding month name
 sub get_month_name_for {
     state %name_of_month;
     my $month_number = shift;
+    confess "No month number provided to get_month_name_for" 
+        unless $month_number;
+    confess "Bad argument to get_month_name_for: expected a number from 1 - 12, but got '$month_number'" 
+        unless (grep {$month_number eq $_} 1 .. 12);
+    
     unless (%name_of_month) {
         %name_of_month =
           map { $_ => DateTime->new( year => 2010, month => $_ )->month_name } 1 .. 12;

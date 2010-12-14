@@ -121,4 +121,22 @@ subtest 'Test linkify text' => sub {
     }
 };
 
-
+subtest 'Test get_month_name_for' => sub {
+    my @month_names = (qw/
+        January February March April May June July
+        August September October November December
+    /);
+    for (0 .. $#month_names) {
+        is get_month_name_for($_ + 1), $month_names[$_]
+            => "Can get month name for month " . ($_ + 1);
+    }
+    for ('', undef, 0) {
+        throws_ok(sub {get_month_name_for($_)}, qr/No month number/
+            => "Catches no month number");
+    }
+    for (-1, 13, 1_000_000, 'not a number') {
+        throws_ok(sub {get_month_name_for($_)}, qr/expected a number/
+            => "Catches number of of bounds: $_"
+        );
+    }
+};
