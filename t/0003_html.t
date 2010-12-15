@@ -1,4 +1,3 @@
-
 use strict;
 use warnings;
 use Test::Most 'bail';
@@ -8,6 +7,7 @@ use Test::MockObject;
 use lib 'lib';
 use lib 't/lib';
 
+use Test::Object allow_setting => 1;
 use Twarchiver::DBActions ':all';
 
 my $params = {username => 'FAKE_USER'};
@@ -258,13 +258,81 @@ subtest 'Test make_month_link' => sub {
 };
 
 subtest 'Test make_url_report_link' => sub {
-    my $expected = 'Foo';
+    my $expected = "\n" . '<a href="show/FAKE_USER/url?address=Foo" class="sidebarinternallink">(linked to 1 times)</a>';
     is make_url_report_link('Foo', 1), $expected
         => "Can make a simple url report link";
+    $expected = "\n" . '<a href="show/FAKE_USER/url?address=http%3A%2F%2Fwww.a.url.com" class="sidebarinternallink">(linked to 42 times)</a>';
+    is make_url_report_link('http://www.a.url.com', 42), $expected
+        => "Can make a more complex report link";
+    $expected = "\n" . '<a href="show/FAKE_USER/url?address=http%3A%2F%2Fwww.a.url.com%3Fq%3Dsome%2520query" class="sidebarinternallink">(linked to 42 times)</a>';
+    is make_url_report_link('http://www.a.url.com?q=some%20query', 42), 
+        $expected => "Can make a rather complex report link";
+    throws_ok(
+        sub {make_url_report_link('foo', undef)},
+        qr/no count/,
+        "Catches lack of count"
+    );
+    lives_ok(
+        sub {make_url_report_link('foo', 0)},
+        "but is ok with a count of 0"
+    );
+    throws_ok(
+        sub {make_url_report_link('', 10)},
+        qr/no address/,
+        "Catches lack of address"
+    );
+    
 };
 
 subtest 'Test make_url_sidebar_item'  => sub {
-    my $expected = 'Foo';
-    is make_url_sidebar_item('Foo'), $expected
-        => "Can make a simple url link";
+    my $expected = "\n" . '<a href="http://a.url.com/path">http://a.url.com/path</a> ' . "\n" . '<a href="show/FAKE_USER/url?address=http%3A%2F%2Fa.url.com%2Fpath" class="sidebarinternallink">(linked to count times)</a>';
+    my $mock_url_rec = Test::Object->new({
+            address => 'http://a.url.com/path',
+            get_column => 3,
+        });
+    is make_url_sidebar_item($mock_url_rec), $expected
+        => "Can make a url sidebar item";
+    throws_ok(
+        sub {make_url_sidebar_item('Foo')},
+        qr/Problem making url sidebar.*Foo/,
+        "Catches problems and confesses errors"
+    );
+};
+
+subtest 'Test make_tag_link' => sub {
+    my $expected = "\n" . '<a href="show/user/tag/tagtext">tagtext (7)</a>';
+
+    is make_tag_link('user', 'tagtext', 7), $expected
+        => "Can make an internal tag link";
+
+    throws_ok(
+        sub {make_tag_link(undef, 'foo', 10)},
+        qr/No username/,
+        "Catches lack of username"
+    );
+    throws_ok(
+        sub {make_tag_link('foo', '', 10)},
+        qr/No tag/,
+        "Catches lack of tag"
+    );
+    throws_ok(
+        sub {make_tag_link('foo', 'bar', 0)},
+        qr/No count/,
+        "Catches lack of count - and thus a duff link"
+    );
+    
+};
+
+subtest 'Test make_tag_sidebar_item' => sub {
+
+    my $expected = "\n" . '<a href="show/FAKE_USER/tag/tagtext">tagtext (count)</a>'; 
+
+    my $mock_tag = Test::Object->new(text => 'tagtext');
+    is make_tag_sidebar_item($mock_tag), $expected
+        => "Can make a tag sidebar item";
+    throws_ok(
+        sub {make_tag_sidebar_item('Foo')},
+        qr/Problem making tag sidebar item.*Foo/,
+        "Catches problems, and confesses"
+    );
 };

@@ -37,6 +37,8 @@ our @EXPORT_OK = qw/
   make_retweet_link make_month_link tweet_to_text
   get_mention_url get_hashtag_url
   make_highlit_content
+  make_url_report_link
+  make_tag_link
   /;
 
 our %EXPORT_TAGS = (
@@ -59,6 +61,8 @@ our %EXPORT_TAGS = (
         make_retweet_link make_month_link tweet_to_text
         get_mention_url get_hashtag_url
         make_highlit_content
+        make_url_report_link
+        make_tag_link
     /]
 );
 
@@ -517,9 +521,15 @@ Returns:  <a href="this">this</a><a href="/show/user/url?address=this">(linked t
 
 sub make_url_sidebar_item {
     my $url = shift;
-    return sprintf( "%s %s",
+    my $result = eval { sprintf( "%s %s",
         $html->a( href => $url->address, text => $url->address ),
-        make_url_report_link( $url->topic, $url->get_column("count"), ) );
+        make_url_report_link( $url->address, $url->get_column("count"), )
+        );
+    };
+    if (my $e = $@) {
+        confess "Problem making url sidebar: $e";
+    }
+    return $result;
 }
 
 =head2 make_url_report_link( address, count )
@@ -531,6 +541,8 @@ Returns:  '<a href="/show/user/url?address=this">(linked to 7 times)</a>'
 
 sub make_url_report_link {
     my ( $address, $count ) = @_;
+    confess "no address" unless $address;
+    confess "no count" unless defined $count;
     my $uri = URI->new( request->uri_for( join( '/', 'show', params->{username}, 'url' ) ) );
     $uri->query_form( address => $address );
 
@@ -541,7 +553,7 @@ sub make_url_report_link {
     );
 }
 
-=head2 make_tag_sidebar_item( user, TagResultRow ) 
+=head2 make_tag_sidebar_item( TagResultRow ) 
 
 Function: make the list item for the sidebar tag list
 Returns:  '<a href="/show/user/tag/tagtext">tagtext (7)</a>'
@@ -549,20 +561,28 @@ Returns:  '<a href="/show/user/tag/tagtext">tagtext (7)</a>'
 =cut 
 
 sub make_tag_sidebar_item {
-    my $username = shift;
     my $tag      = shift;
-    return make_tag_link( $username, $tag->text, $tag->get_column('count') );
+    my $result = eval { make_tag_link( 
+        params->{username}, $tag->text, $tag->get_column('count') );
+    };
+    if (my $e = $@) {
+        confess "Problem making tag sidebar item: $e";
+    }
+    return $result;
 }
 
 =head2 make_tag_link( user, tagtext, count )
 
 Function: Make the link for the given tag
-Returns: '<a href="/show/user/tag/tagtext">tagtext (7)</a>'
+Returns: '<a href="show/user/tag/tagtext">tagtext (7)</a>'
 
 =cut
 
 sub make_tag_link {
     my ( $username, $tag, $count ) = @_;
+    for ([0, 'username'], [1, 'tag'], [2, 'count']) {
+        confess "No ", $_->[1] unless $_[$_->[0]];
+    };
     return $html->a(
         href => request->uri_for(
             join(
