@@ -483,7 +483,8 @@ Returns:  '<a href="/show/username">username</a>'
 =cut
 
 sub make_user_home_link {
-    my $user = params->{username};
+    my $user = shift || params->{username};
+    confess "No username provided" unless $user;
     my $link = $html->a(
         href => request->uri_for( join( '/', 'show', $user ) ),
         text => $user,
