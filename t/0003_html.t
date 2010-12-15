@@ -10,13 +10,15 @@ use lib 't/lib';
 
 use Twarchiver::DBActions ':all';
 
+my $params = {username => 'FAKE_USER'};
+
 BEGIN {
     my $mock = Test::MockObject->new();
     my $mock_request = Test::MockObject->new();
     $mock_request->mock(uri_for => sub {return $_[1]});
     $mock->fake_module('Dancer',
         settings => sub {return ':memory:'},
-        params   => sub {return {username => 'FAKE_USER'}},
+        params   => sub {return $params},
         request  => sub {return $mock_request},
     );
 }
@@ -213,4 +215,31 @@ EXP
     chomp $expected;
     is make_retweeted_sidebar('UserOne'), $expected,
         => "Makes a retweeted sidebar";
+    $expected = <<'EXP';
+
+<li>
+<a href="show/FAKE_USER/retweeted">All Retweeted Statuses (0)</a></li>
+EXP
+    chomp $expected;
+    is make_retweeted_sidebar('NonExistingUser'), $expected
+        => "Makes a retweeted sidebar without data";
+};
+
+subtest 'Test make_user_home_link' => sub {
+    my $expected = "\n" . '<a href="show/FAKE_USER">FAKE_USER</a>';
+    is make_user_home_link(), $expected
+        => "Can get the user's home link";
+    $expected = "\n" . '<a href="show/UserOne">UserOne</a>';
+    is make_user_home_link("UserOne"), $expected
+        => "... and with an explicitly specified user";
+    my $username = delete $params->{username};
+    throws_ok(sub {make_user_home_link}, qr/No username/
+        => "... and catches missing username");
+    $params->{username} = $username;
+};
+
+subtest 'Test make_month_link' => sub {
+    my $expected = "\n" . '<a href="show/UserOne/2010/1">January (3 tweets)</a>';
+    is make_month_link('UserOne', 2010, 1), $expected
+        => "Can make a month link";
 };
