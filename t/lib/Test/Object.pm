@@ -18,6 +18,17 @@ sub import {
     }
 }
 
+sub new {
+    my $class = shift;
+    my @args = @_;
+    if (@args == 1 && ref $args[0] eq 'HASH') {
+        return bless $args[0], $class;
+    } else {
+        my %args = @args;
+        return bless \%args, $class;
+    }
+}
+
 sub AUTOLOAD {
     my $field = our $AUTOLOAD;
     $field =~ s/.*\:\://;
