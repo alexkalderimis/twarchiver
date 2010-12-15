@@ -239,7 +239,32 @@ subtest 'Test make_user_home_link' => sub {
 };
 
 subtest 'Test make_month_link' => sub {
-    my $expected = "\n" . '<a href="show/UserOne/2010/1">January (3 tweets)</a>';
+    my $expected = "\n" . 
+            '<a href="show/UserOne/2010/1">January (3 tweets)</a>';
     is make_month_link('UserOne', 2010, 1), $expected
-        => "Can make a month link";
+        => "Can make a month link - 3 results";
+    $expected = "\n" . 
+            '<a href="show/UserTwo/2010/1">January (0 tweets)</a>';
+    is make_month_link('UserTwo', 2010, 1), $expected
+        => "Can make a month link - 0 results";
+    $expected = "\n" . 
+            '<a href="show/UserOne/2009/12">December (2 tweets)</a>';
+    is make_month_link('UserOne', 2009, 12), $expected
+        => "Can make a month link - 2 results";
+    $expected = "\n" . 
+            '<a href="show/UserOne/1066/8">August (0 tweets)</a>';
+    is make_month_link('UserOne', 1066, 8), $expected
+        => "Can make a month link - even for unreasonable dates";
+};
+
+subtest 'Test make_url_report_link' => sub {
+    my $expected = 'Foo';
+    is make_url_report_link('Foo', 1), $expected
+        => "Can make a simple url report link";
+};
+
+subtest 'Test make_url_sidebar_item'  => sub {
+    my $expected = 'Foo';
+    is make_url_sidebar_item('Foo'), $expected
+        => "Can make a simple url link";
 };
