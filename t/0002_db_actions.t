@@ -309,7 +309,6 @@ is_deeply(
     $retweeted_summary, 
     [
         ['2','3'],
-        ['0','2'],
         ['1','2'],
         ['4','2'],
         ['3','1']
@@ -318,8 +317,8 @@ is_deeply(
 ) or diag explain $retweeted_summary;
 
 is sum(map {$_->[1]} @$retweeted_summary), 
-   get_user_record('UserOne')->tweets->count,
-   "The number of tweets on each case sums to the total number of tweets";
+   get_retweeted_tweets('UserOne')->count,
+   "The number of tweets on each case sums to the total number of retweeted tweets";
 
 is_deeply(
     [get_years_for('UserOne')],
