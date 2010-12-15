@@ -556,7 +556,7 @@ sub make_url_report_link {
 =head2 make_tag_sidebar_item( TagResultRow ) 
 
 Function: make the list item for the sidebar tag list
-Returns:  '<a href="/show/user/tag/tagtext">tagtext (7)</a>'
+Returns:  '<a href="show/user/tag/tagtext">tagtext (7)</a>'
 
 =cut 
 
