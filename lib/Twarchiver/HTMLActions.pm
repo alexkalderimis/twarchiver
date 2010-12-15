@@ -32,9 +32,9 @@ our @EXPORT_OK = qw/
   get_tweets_as_spreadsheet download_latest_tweets_for
   make_content ACTIONS DATE_FORMAT make_year_group
   make_mention_sidebar_item make_hashtag_sidebar_item
-  make_url_sidebar_item make_tag_sidebar_item make_popular_sidebar
+  make_url_sidebar_item make_tag_sidebar_item make_retweeted_sidebar
   linkify_text make_tweet_li request_tokens_for has_been_authorised
-  make_popular_link make_month_link tweet_to_text
+  make_retweet_link make_month_link tweet_to_text
   get_mention_url get_hashtag_url
   make_highlit_content
   /;
@@ -46,7 +46,7 @@ our %EXPORT_TAGS = (
       get_tweets_as_spreadsheet download_latest_tweets_for
       make_content ACTIONS make_year_group
       make_mention_sidebar_item make_hashtag_sidebar_item
-      make_url_sidebar_item make_tag_sidebar_item make_popular_sidebar
+      make_url_sidebar_item make_tag_sidebar_item make_retweeted_sidebar
       /],
     'all' => [qw/
         show_tweets_including authorise needs_authorisation
@@ -54,9 +54,9 @@ our %EXPORT_TAGS = (
         get_tweets_as_spreadsheet download_latest_tweets_for
         make_content ACTIONS DATE_FORMAT make_year_group
         make_mention_sidebar_item make_hashtag_sidebar_item
-        make_url_sidebar_item make_tag_sidebar_item make_popular_sidebar
+        make_url_sidebar_item make_tag_sidebar_item make_retweeted_sidebar
         linkify_text make_tweet_li request_tokens_for has_been_authorised
-        make_popular_link make_month_link tweet_to_text
+        make_retweet_link make_month_link tweet_to_text
         get_mention_url get_hashtag_url
         make_highlit_content
     /]
@@ -396,26 +396,28 @@ Function: Make a sidebar summarising retweeted and favourited tweets
 
 =cut
 
-sub make_popular_sidebar {
+sub make_retweeted_sidebar {
     my $username = shift;
-    my $action   = shift;
-    my $column   = $action . '_count';
-    my $linkname = shift;
+    my $column   = 'retweeted_count';
     my $user     = get_user_record($username);
-    my $total    = $user->tweets->search( { $action . '_count' => { '>' => 0 } } )->count;
+    my $total    = $user->tweets
+                        ->search( { $column => { '>' => 0 } } )
+                        ->count;
     my $list     = $html->li_group(
         [
             $html->a(
-                href => request->uri_for( join( '/', 'show', $username, $linkname ) ),
-                text => "All $linkname statuses ($total)",
+                href => request->uri_for( 
+                    join('/', 'show', params->{username}, 'retweeted')),
+                text => "All Retweeted Statuses ($total)",
             )
         ]
     );
     if ($total) {
-        my @rows = get_popular_summary( $username, $action );
+        my @rows = get_retweet_summary( $username );
         $list .= $html->li_group(
             [
-                map { make_popular_link( $_->$column, $_->get_column("occurs"), $action ) }
+                map { make_retweet_link( 
+                        $_->$column, $_->get_column("occurs")) }
                   @rows
             ]
         );
@@ -423,29 +425,33 @@ sub make_popular_sidebar {
     return $list;
 }
 
-=head2 make_popular_link(no_times_done, occurances, action)
+=head2 make_retweet_link( no_times_done, occurances )
 
 Function: Make a link for the popular sidebar. 
 Returns:  '<a href="/show/user/retweeted?count=2">Retweeted twice (7)</a>'
 
 =cut 
 
-sub make_popular_link {
-    my $actioned_count   = shift;
+sub make_retweet_link {
+    my $retweet_count   = shift;
     my $number_of_tweets = shift;
-    my $action           = my $text = shift;
-    $text =~ s/^./uc($&)/e;
-    if ( $actioned_count == 1 ) {
+    confess "retweet count '$retweet_count' is not a number" 
+        unless $retweet_count =~ /^\d+$/;
+    confess "number of tweets '$number_of_tweets' is not a number"
+        unless $number_of_tweets =~ /^\d+$/;
+
+    my $text = 'Retweeted ';
+    if ( $retweet_count == 1 ) {
         $text .= "once";
-    } elsif ( $actioned_count == 2 ) {
+    } elsif ( $retweet_count == 2 ) {
         $text .= "twice";
     } else {
-        $text .= "$actioned_count times";
+        $text .= "$retweet_count times";
     }
-    $text .= "($number_of_tweets)";
+    $text .= " ($number_of_tweets)";
 
-    my $uri = URI->new( request->uri_for( join( '/', 'show', params->{username}, $action ) ) );
-    $uri->query_form( count => $actioned_count );
+    my $uri = URI->new( request->uri_for( join( '/', 'show', params->{username}, 'retweeted' ) ) );
+    $uri->query_form( count => $retweet_count );
     return $html->a(
         href => $uri,
         text => $text,

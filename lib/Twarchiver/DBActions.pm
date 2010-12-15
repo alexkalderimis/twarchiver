@@ -518,7 +518,10 @@ Returns:   <List Context> DBIx::Class result rows
 sub get_retweet_summary {
     my $username = shift;
     my $col = 'retweeted_count';
-    return get_user_record($username)->tweets->search(undef,
+    return get_user_record($username)->tweets->search(
+                    {
+                        $col => {'>' =>  0},
+                    },
                     {
                         'select' => [
                             $col,

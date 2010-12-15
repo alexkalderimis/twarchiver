@@ -3,12 +3,23 @@ use strict;
 use warnings;
 use Test::Most 'bail';
 use Test::Exception;
+use Test::MockObject;
 
-require Dancer;
 use lib 'lib';
 use lib 't/lib';
 
 use Twarchiver::DBActions ':all';
+
+BEGIN {
+    my $mock = Test::MockObject->new();
+    my $mock_request = Test::MockObject->new();
+    $mock_request->mock(uri_for => sub {return $_[1]});
+    $mock->fake_module('Dancer',
+        settings => sub {return ':memory:'},
+        params   => sub {return {username => 'FAKE_USER'}},
+        request  => sub {return $mock_request},
+    );
+}
 
 BEGIN {
     use_ok('Twarchiver::HTMLActions' => ':all')
@@ -139,4 +150,67 @@ subtest 'Test get_month_name_for' => sub {
             => "Catches number of of bounds: $_"
         );
     }
+};
+
+subtest 'Test make_retweet_link' => sub {
+
+    my $pt1 = "\n"
+            . '<a href="show/FAKE_USER/retweeted?count=';
+    my $pt2 = '">Retweeted ';
+    my $pt3 = ' (';
+    my $pt4 = ')</a>';
+
+    is(
+        make_retweet_link(3, 3),
+        $pt1 . 3 . $pt2 . '3 times' . $pt3 . 3 . $pt4,
+        => "Makes a retweet link"
+    );
+
+    is(
+        make_retweet_link(5, 6),
+        $pt1 . 5 . $pt2 . '5 times' . $pt3 . 6 . $pt4,
+        "Puts the numbers in the right place"
+    );
+
+    is(
+        make_retweet_link(1, 10),
+        $pt1 . 1 . $pt2 . 'once' . $pt3 . 10 . $pt4,
+        "Make a retweet link for retweeted once"
+    );
+
+    is(
+        make_retweet_link(2, 11),
+        $pt1 . 2 . $pt2 . 'twice' . $pt3 . 11 . $pt4,
+        "Make a retweet link for retweeted twice"
+    );
+
+    throws_ok(
+        sub {make_retweet_link('abc', 1)},
+        qr/count.*not a number/,
+        "Catches count is not a number",
+    );
+    throws_ok(
+        sub {make_retweet_link(1, 'abc')},
+        qr/tweets.*not a number/,
+        "Catches occurs is not a number",
+    );
+};
+
+subtest 'Test make_retweeted_sidebar' => sub {
+    my $expected = <<'EXP';
+
+<li>
+<a href="show/FAKE_USER/retweeted">All Retweeted Statuses (8)</a></li>
+<li>
+<a href="show/FAKE_USER/retweeted?count=2">Retweeted twice (3)</a></li>
+<li>
+<a href="show/FAKE_USER/retweeted?count=1">Retweeted once (2)</a></li>
+<li>
+<a href="show/FAKE_USER/retweeted?count=4">Retweeted 4 times (2)</a></li>
+<li>
+<a href="show/FAKE_USER/retweeted?count=3">Retweeted 3 times (1)</a></li>
+EXP
+    chomp $expected;
+    is make_retweeted_sidebar('UserOne'), $expected,
+        => "Makes a retweeted sidebar";
 };
