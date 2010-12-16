@@ -31,6 +31,7 @@ sub new {
 
 sub AUTOLOAD {
     my $field = our $AUTOLOAD;
+    my @args = @_;
     $field =~ s/.*\:\://;
     my $self = shift;
     if ($field eq 'DESTROY') {
@@ -39,6 +40,9 @@ sub AUTOLOAD {
         }
     } else {
         my $value = shift;
+        if (ref $self->{$field} eq 'CODE') {
+            return $self->{$field}->(@args);
+        }
         if ($value) {
             if ($allow_setting) {
                 $self->{$field} = $value;

@@ -41,6 +41,9 @@ our @EXPORT_OK = qw/
   make_tag_link
   make_hashtag_link
   make_hashtag_report_link
+  make_mention_link
+  make_mention_report_link
+  get_twitter
   /;
 
 our %EXPORT_TAGS = (
@@ -67,6 +70,9 @@ our %EXPORT_TAGS = (
         make_tag_link
         make_hashtag_link
         make_hashtag_report_link
+        make_mention_link
+        make_mention_report_link
+        get_twitter
     /]
 );
 
@@ -256,6 +262,8 @@ Throws:    An exception if the user authorises a different twitter user.
 
 sub request_tokens_for {
     my ( $user, $verifier ) = @_;
+    confess "No user" unless $user;
+    confess "No verifier" unless $verifier;
     debug("Got verifier: $verifier");
 
     my $twitter = get_twitter();
@@ -263,7 +271,7 @@ sub request_tokens_for {
     $twitter->request_token_secret( cookies->{secret}->value );
     my @bits = $twitter->request_access_token( verifier => $verifier );
 
-    send_error("names don't match - got $bits[3]")
+    confess("names don't match - got $bits[3]")
       unless ( $bits[3] eq $user );
     save_tokens( @bits[ 3, 0, 1 ] );
     return true;
@@ -300,15 +308,13 @@ sub has_been_authorised {
     return restore_tokens($user);
 }
 
-=head2 authorise( username )
+=head2 authorise()
 
 Function: redirect the user to twitter to authorise us.
-Arguments: The twitter username
 
 =cut
 
 sub authorise {
-    my $user   = shift;
     my $cb_url = request->uri_for( request->path );
     debug("callback url is $cb_url");
     eval {
@@ -366,8 +372,11 @@ sub get_twitter {
     if ( @tokens == 2 ) {
         @args{qw/access_token access_token_secret/} = @tokens;
     }
-
-    return Net::Twitter->new(%args);
+    my $twitter = eval { Net::Twitter->new(%args)};
+    if (my $e = $@) {
+        confess "Problem making twitter connection: $e";
+    }
+    return $twitter;
 }
 
 =head2 download_latest_tweets_for( screen_name )
@@ -679,15 +688,25 @@ sub make_hashtag_report_link {
 =head2 make_mention_sidebar_item( MentionResultRow )
 
 Function: make the li item for the sidebar
-Returns:  '<a href="http://twitter.com/mention">@mention</a><a href="/show/user/to/mention">(7 mentions)</a>'
+Returns:  '<a href="http://twitter.com/mention">@mention</a> <a href="show/user/to/mention" class="sidebarinternallink">(7 mentions)</a>'
 
 =cut
 
 sub make_mention_sidebar_item {
     my $mention = shift;
-    return sprintf( "%s %s",
-        make_mention_link( $mention->screen_name ),
-        make_mention_report_link( $mention->screen_name, $mention->get_column("count"), ) );
+    my $result = eval {
+        sprintf( "%s %s",
+            make_mention_link( $mention->mention_name ),
+            make_mention_report_link( 
+                $mention->mention_name, 
+                $mention->get_column("count"), 
+            ) 
+        );
+    };
+    if (my $e = $@) {
+        confess "Problem making mention sidebar item: $e";
+    }
+    return $result;
 }
 
 =head2 get_mention_url( screen_name )
@@ -713,6 +732,7 @@ Return:   '<a href="http://twitter.com/mention">@mention</a>'
 
 sub make_mention_link {
     my $screen_name = shift;
+    confess "No mention" unless $screen_name;
     $screen_name =~ s/$span_re//g;
     return $html->a(
         href => get_mention_url($screen_name),
@@ -724,15 +744,21 @@ sub make_mention_link {
 =head2 make_mention_report_link( mentioned_name, count )
 
 Function: make a link for the given mention
-Returns:  '<a href="/show/user/to/mentioned_name">(7 mentions)</a>'
+Returns:  '<a href="show/user/to/mentioned_name" class="sidebarinternallink">(7 mentions)</a>'
 
 =cut
 
 sub make_mention_report_link {
     my ( $screen_name, $count ) = @_;
+    for ([0, 'mention'], [1, 'count']) {
+        confess "No ", $_->[1] unless $_[$_->[0]];
+    }
     return $html->a(
         href => request->uri_for(
-            join( '/', 'show', params->{username}, 'to', substr( $screen_name, 1 ) )
+            join( '/', 
+                'show', params->{username}, 'to', 
+                substr( $screen_name, 1 ) 
+            )
         ),
         text  => "($count mentions)",
         class => 'sidebarinternallink',
@@ -747,7 +773,7 @@ Returns:  A text string
 =cut
 
 sub get_tweets_as_textfile {
-    my @tweets = shift;
+    my @tweets = @_;
 
     content_type 'text/plain';
 
@@ -776,7 +802,12 @@ sub get_tweets_as_spreadsheet {
     return join(
         "\n",
         map {
-            $csv->combine( $_->created_at->strftime(DATE_FORMAT), $_->text );
+            $csv->combine(
+                $_->created_at->strftime(DATE_FORMAT), 
+                $_->text,
+                $_->retweeted_count,
+                join(':', $_->tags->get_column('tag_text')->all),
+            );
             $csv->string()
           } @tweets
     );
@@ -792,7 +823,7 @@ sub tweet_to_text {
     my $tweet = shift;
     my $created_at  = $tweet->created_at->strftime(DATE_FORMAT);
     my $text  = $tweet->text;
-    my @tags  = $tweet->tags->get_column('text');
+    my @tags  = $tweet->tags->get_column('tag_text')->all;
     my $tags =
       (@tags)
       ? 'Tags: ' . join( ', ', @tags )

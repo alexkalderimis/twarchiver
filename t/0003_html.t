@@ -1,25 +1,55 @@
-use strict;
 use warnings;
 use Test::Most 'bail';
 use Test::Exception;
 use Test::MockObject;
+use Carp qw/confess/;
 
 use lib 'lib';
 use lib 't/lib';
 
-use Test::Object allow_setting => 1;
+use Test::Object (
+    allow_setting => 1,
+    confess_non_existant_fields => 0
+);
 use Twarchiver::DBActions ':all';
 
 my $params = {username => 'FAKE_USER'};
+my $authdata = {};
+my $token = Test::Object->new(
+    value => 'COOKIE_REQ_TOK'
+);
+my $secret = Test::Object->new(
+    value => 'COOKIE_SECRET'
+);
 
 BEGIN {
     my $mock = Test::MockObject->new();
     my $mock_request = Test::MockObject->new();
     $mock_request->mock(uri_for => sub {return $_[1]});
+    $mock_request->mock(path => sub {return 'TEST_PATH'});
     $mock->fake_module('Dancer',
         settings => sub {return ':memory:'},
         params   => sub {return $params},
         request  => sub {return $mock_request},
+        set_cookie => sub {$authdata->{$_[0]} = $_[1]},
+        redirect => sub {$authdata->{redirect} = shift;},
+        send_error => sub {confess @_},
+        cookies => sub {return {token => $token, secret => $secret}},
+    );
+}
+
+my $token_req_data = {};
+my %extra_twitter_attr = ();
+BEGIN {
+    my $mock = Test::MockObject->new();
+    $mock->fake_module('Net::Twitter',
+        new => sub { 
+            shift; 
+            my $ret = Test::Object->new(@_, 
+                %extra_twitter_attr);
+            die 'Foo' if ($ret->access_token eq 'Foo');
+            return $ret; 
+        },
     );
 }
 
@@ -391,3 +421,252 @@ subtest 'Test make_hashtag_sidebar_item' => sub {
         "Catches problems and confesses errors"
     );
 };
+
+subtest 'Test make_mention_link' => sub {
+    my $expected = "\n" . 
+        '<a href="http://twitter.com/mention">@mention</a>';
+        
+    is make_mention_link('@mention'), $expected
+        => "Can make a simple mention link";
+    
+    is make_mention_link('@men<span class="someclass">ti</span>on'), 
+        $expected => "Can make a dirty mention link";
+
+    throws_ok(
+        sub {make_mention_link('')},
+        qr/No mention/,
+        "Catches lack of mention"
+    );
+
+};
+
+subtest 'Test make_mention_report_link' => sub {
+    my $expected = "\n" . 
+        '<a href="show/FAKE_USER/to/mentioned_name" class="sidebarinternallink">(7 mentions)</a>';
+
+    is make_mention_report_link('@mentioned_name', 7), $expected
+        => "Can a simple mention report link";
+
+    throws_ok(
+        sub {make_mention_report_link('', 7)},
+        qr/No mention/,
+        "Catches lack of mention"
+    );
+    throws_ok(
+        sub {make_mention_report_link('Foo', 0)},
+        qr/No count/,
+        "Catches zero count"
+    );
+    throws_ok(
+        sub {make_mention_report_link('Foo', undef)},
+        qr/No count/,
+        "Catches undef count"
+    );
+};
+
+subtest 'Test make_mention_sidebar_item' => sub {
+    my $expected = "\n" . 
+      '<a href="http://twitter.com/mentioned_name">@mentioned_name</a> ' 
+      . "\n" 
+      . '<a href="show/FAKE_USER/to/mentioned_name" class="sidebarinternallink">(count mentions)</a>';
+
+    my $mock_mention = Test::Object->new(mention_name => '@mentioned_name');
+
+    is make_mention_sidebar_item($mock_mention), $expected
+        => "Can make a mention sidebar item";
+
+    throws_ok(
+        sub {make_mention_sidebar_item('Foo')},
+        qr/Problem making mention sidebar item.*Foo/,
+        "Catches problems and confesses errors"
+    );
+};
+
+subtest 'Test tweet_to_text' => sub {
+    my $tweet_1 = get_tweet_record('UserOne', 987654321);
+
+    my $expected =
+        'Time:   01 Feb 2010 12:00:00 AM' . "\n" .
+        'This is the first #example tweet from the test' . "\n" . 
+        'data set for @twarchiver';
+
+    is tweet_to_text($tweet_1), $expected . "\n" x 2
+        => "Can make a text representation of a tweet";
+
+    $tweet_1->add_to_tags({
+            tag_text => "An added example tag",
+        });
+    $tweet_1->add_to_tags({
+            tag_text => "Eine zugefügte Bemerkung"
+        });
+    $expected .= "\n"
+      . 'Tags: An added example tag, Eine zugefügte' . "\n" 
+      . '      Bemerkung';
+
+    is tweet_to_text($tweet_1), $expected .  "\n"
+        => "Can make a text representation of a tweet with tags";
+};
+
+
+subtest 'Test get_tweets_as_textfile' => sub {
+    my @tweets = get_all_tweets_for('UserOne');
+
+    my $expected = qx{cat t/etc/tests_tweets.txt};
+    chomp $expected;
+
+    is get_tweets_as_textfile(@tweets), $expected
+        => "Can get tweets as text file";
+};
+
+subtest 'Test get_tweets_as_spreadsheet' => sub {
+    my @tweets = get_all_tweets_for('UserOne');
+
+    my $expected = qx{cat t/etc/test_tweets.csv};
+    chomp $expected;
+
+    is get_tweets_as_spreadsheet(',', @tweets), $expected
+        => "Can get tweets as csv";
+
+    $expected = qx{cat t/etc/test_tweets.tsv};
+    chomp $expected;
+
+
+    is get_tweets_as_spreadsheet("\t", @tweets), $expected
+        => "Can get tweets as tsv";
+};
+
+subtest 'Test get_twitter' => sub {
+    my $expected = {
+        traits => [qw/OAuth API::REST InflateObjects/],
+        consumer_key => Twarchiver::HTMLActions->CONS_KEY,
+        consumer_secret => Twarchiver::HTMLActions->CONS_SEC,
+    };
+
+    is_deeply get_twitter, $expected
+        => "Passes the right default arguments to the twitter constructor"
+            or diag explain get_twitter;
+
+    $expected->{access_token} = 'FAKE_TOKEN';
+    $expected->{access_token_secret} = 'FAKE_SECRET';
+
+    is_deeply get_twitter('FAKE_TOKEN', 'FAKE_SECRET') , $expected
+        => "Passes the right token arguments to the twitter constructor";
+
+
+    throws_ok(
+        sub {get_twitter('Foo', 'FAKE_SECRET')},
+        qr/Problem making twitter connection.*Foo/,
+        "Catches errors and confesses"
+    );
+};
+
+subtest 'Test authorise' => sub {
+   my $expected = {
+       token => 'TEST_REQ_TOKEN',
+       secret => 'REQ_TOK_SECRET',
+       redirect => 'callback',
+   };
+   %extra_twitter_attr = (
+        request_token => 'TEST_REQ_TOKEN',
+        request_token_secret => 'REQ_TOK_SECRET',
+    );
+
+   ok ! authorise, "Authorise returns false";
+   is_deeply($authdata, $expected, 
+       "But it does the right things behind the scenes")
+        or diag explain $authdata;
+};
+
+subtest 'Test request_tokens_for' => sub {
+    %extra_twitter_attr = (
+        request_access_token => sub {
+            my $self = shift;
+            return (
+                $self->request_token,
+                $self->request_token_secret, 
+                '', 'FAKE_USER'
+            );
+        },
+    );
+
+    ok request_tokens_for('FAKE_USER', '12345')
+        => "Returns true on success";
+
+    is_deeply(
+        [restore_tokens('FAKE_USER')],
+        ['COOKIE_REQ_TOK', 'COOKIE_SECRET'],
+        "Tokens are stored in the db correctly"
+    );
+
+    throws_ok(
+        sub {request_tokens_for('FAKE_USER')},
+        qr/No verifier/,
+        "Catches lack of verifier"
+    );
+
+    throws_ok(
+        sub {request_tokens_for()},
+        qr/No user/,
+        "Catches lack of user"
+    );
+    throws_ok(
+        sub {request_tokens_for('DIFFERENT_USER', 12345)},
+        qr/names don't match/,
+        "Catches non-matching twitter names"
+    );
+};
+
+subtest 'Test has_been_authorised & needs_authorisation' => sub {
+    %extra_twitter_attr = (
+        request_access_token => sub {
+            my $self = shift;
+            return (
+                $self->request_token,
+                $self->request_token_secret, 
+                '', 'UNAUTHORISED_USER'
+            );
+        },
+    );
+    ok has_been_authorised('FAKE_USER')
+        => "Returns true for authorised user";
+    ok ! needs_authorisation('FAKE_USER')
+        => "The opposite for needs_authorisation";
+
+    ok ! has_been_authorised('UNAUTHORISED_USER')
+        => "Returns false for unauthorised user";
+    ok needs_authorisation('UNAUTHORISED_USER')
+        => "The opposite for needs_authorisation";
+
+    $params->{oauth_verifier} = 12345;
+
+    ok has_been_authorised('UNAUTHORISED_USER')
+        => "Returns true when the user gets verified";
+    ok ! needs_authorisation('UNAUTHORISED_USER')
+        => "The opposite for needs_authorisation";
+
+    %extra_twitter_attr = (
+        request_access_token => sub {
+            my $self = shift;
+            return (
+                $self->request_token,
+                $self->request_token_secret, 
+                '', 'UNAUTHORISED_USER'
+            );
+        },
+    );
+
+    throws_ok(
+        sub {has_been_authorised('MISMATCHING_NAME')},
+        qr/names don't match/,
+        "Gets the errors from request_tokens_for"
+    );
+    throws_ok(
+        sub {needs_authorisation('MISMATCHING_NAME')},
+        qr/names don't match/,
+        "The same for needs_authorisation"
+    );
+
+};
+    
+
+

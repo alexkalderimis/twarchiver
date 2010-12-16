@@ -1,0 +1,72 @@
+Time:   01 Feb 2010 12:00:00 AM
+This is the first #example tweet from the test
+data set for @twarchiver
+Tags: An added example tag, Eine zugefügte
+      Bemerkung
+
+
+Time:   31 Jan 2010 11:59:59 PM
+This is the second #example tweet from the test
+data set for @twarchiver, it is about #fish
+
+
+
+Time:   15 Jan 2010 11:59:59 PM
+This is the third #example tweet from the test
+data set for twarchiver, it is not about #fish,
+but about #elephants
+
+
+
+Time:   01 Jan 2010 12:00:00 AM
+This is the fourth #example tweet from the #test-
+data set for @twarchiver, go to
+http://animals.com to see lots of animals
+
+
+
+Time:   31 Dec 2009 11:59:59 PM
+This is the fifth #example tweet from the #test-
+data set for @twarchiver, mentioning @animals,
+just not @fish
+
+
+
+Time:   01 Dec 2009 12:00:00 AM
+This is the sixth #example tweet from the #test-
+data set for @twarchiver, fav sites =
+http://animals.com and http://not.animals.com
+
+
+
+Time:   01 Jun 2009 12:00:00 AM
+This is the seventh #example tweet from the
+#test-data set for twarchiver - go @elephants,
+fav sites = http://elephants.com and
+http://fish.com
+
+
+
+Time:   01 Jan 2009 12:00:00 AM
+This is the eighth #example tweet from the #test-
+data set for @twarchiver - all about #africa
+here! go @baboons and @meerkats, fav sites =
+http://africa.com and http://elephants.com
+
+
+
+Time:   31 May 2008 12:00:00 AM
+This is the ninth #example tweet from the #test-
+data set for @twarchiver - all about #america
+here! Fan of those @bisons and @turkeys.
+http://american.wildlife
+
+
+
+Time:   30 May 2008 12:00:00 AM
+This is the tenth #example tweet from the #test-
+data set for @twarchiver - all about #oceans
+here! Those @elephants of the sea, @whales!
+http://animals.com http://oceans.com
+
+
