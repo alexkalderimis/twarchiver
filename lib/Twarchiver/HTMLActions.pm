@@ -39,6 +39,8 @@ our @EXPORT_OK = qw/
   make_highlit_content
   make_url_report_link
   make_tag_link
+  make_hashtag_link
+  make_hashtag_report_link
   /;
 
 our %EXPORT_TAGS = (
@@ -63,6 +65,8 @@ our %EXPORT_TAGS = (
         make_highlit_content
         make_url_report_link
         make_tag_link
+        make_hashtag_link
+        make_hashtag_report_link
     /]
 );
 
@@ -598,15 +602,21 @@ sub make_tag_link {
 =head2 make_hashtag_sidebar_item( HashtagResultRow )
 
 Function: Make the list item for the hashtag sidebar
-Returns:  '<a href="http://twitter.com?q=topic">topic</a><a href="/show/user/on/hashtag">(7 hashtags)</a>'
+Returns:  '<a href="http://twitter.com/search?q=topic">topic</a><a href="/show/user/on/hashtag">(7 hashtags)</a>'
 
 =cut
 
 sub make_hashtag_sidebar_item {
     my $hashtag = shift;
-    return sprintf( "%s %s",
+    my $elements = eval{ sprintf( "%s %s",
         make_hashtag_link( $hashtag->topic ),
-        make_hashtag_report_link( $hashtag->topic, $hashtag->get_column("count"), ) );
+        make_hashtag_report_link( 
+            $hashtag->topic, $hashtag->get_column("count"), ) );
+    };
+    if (my $e = $@) {
+        confess "Problem making hashtag sidebar item: $e";
+    }
+    return $elements;
 }
 
 =head2 get_hashtag_url( topic )
@@ -627,12 +637,13 @@ sub get_hashtag_url {
 =head2 make_hashtag_link( topic )
 
 Function: make a link for this topic to the appropriate twitter url
-Returns:  '<a href="http://twitter.com?q=topic">topic</a>'
+Returns:  '<a href="http://twitter.com/search?q=topic">topic</a>'
 
 =cut
 
 sub make_hashtag_link {
     my $topic = shift;
+    confess "No topic" unless $topic;
     $topic =~ s/$span_re//g;
 
     return $html->a(
@@ -644,15 +655,21 @@ sub make_hashtag_link {
 =head2 make_hashtag_report_link( hashtag, count )
 
 Function: make a link for the given mention
-Returns:  '<a href="/show/user/on/hashtag">(7 hashtags)</a>'
+Returns:  '<a href="show/user/on/hashtag">(7 hashtags)</a>'
 
 =cut
 
 sub make_hashtag_report_link {
     my ( $topic, $count ) = @_;
+    for ([0, 'topic'], [1, 'count']) {
+        confess "No ", $_->[1] unless $_[$_->[0]];
+    }
+    confess "Topic is not a hashtag: got $topic"
+        unless ($topic =~ /^#/);
     return $html->a(
-        href => request->uri_for(
-            join( '/', 'show', params->{username}, 'on', substr( $topic, 1 ) )
+        href => URI->new(
+            request->uri_for(
+            join( '/', 'show', params->{username}, 'on', substr( $topic, 1 ) ) )
         ),
         text  => "($count hashtags)",
         class => 'sidebarinternallink',

@@ -336,3 +336,58 @@ subtest 'Test make_tag_sidebar_item' => sub {
         "Catches problems, and confesses"
     );
 };
+
+subtest 'Test make_hashtag_link' => sub {
+    my $expected = "\n" . '<a href="http://twitter.com/search?q=topic">topic</a>';
+
+    is make_hashtag_link('topic'), $expected
+        => "Can make a simple hashtag external link";
+    is make_hashtag_link('top<span class="highlightingspan">ic</span>'), 
+        $expected => "Can make a hashtag external link from a dirty topic";
+    throws_ok(
+        sub {make_hashtag_link(undef)},
+        qr/No topic/,
+        "Catches lack of topic"
+    );
+
+};
+
+subtest 'Test make_hashtag_report_link' => sub {
+    my $expected = "\n" . '<a href="show/FAKE_USER/on/THIS_TOPIC" class="sidebarinternallink">(1 hashtags)</a>';
+
+    is make_hashtag_report_link('#THIS_TOPIC', 1), $expected
+        => "Can make a simple hashtag report link";
+    $expected = "\n" . '<a href="show/FAKE_USER/on/THIS%20TOPIC" class="sidebarinternallink">(42 hashtags)</a>';
+    is make_hashtag_report_link('#THIS TOPIC', 42), $expected
+        => "Can make a hashtag report link with funky characters";
+    throws_ok(
+        sub {make_hashtag_report_link(undef, 42)},
+        qr/No topic/,
+        "Catches lack of topic"
+    );
+    throws_ok(
+        sub {make_hashtag_report_link('topic', 0)},
+        qr/No count/,
+        "Catches lack of count"
+    );
+    throws_ok(
+        sub {make_hashtag_report_link('topic', 42)},
+        qr/Topic is not a hashtag: got topic/,
+        "Catches unhashed topics",
+    );
+};
+
+subtest 'Test make_hashtag_sidebar_item' => sub {
+    my $expected = "\n" .
+        '<a href="http://twitter.com/search?q=%23topic">#topic</a> ' . "\n" 
+        . '<a href="show/FAKE_USER/on/topic" class="sidebarinternallink">(count hashtags)</a>';
+    my $mock_tag = Test::Object->new(topic => "#topic");
+    is make_hashtag_sidebar_item($mock_tag), $expected
+        => "Can make a hashtag sidebar item";
+
+    throws_ok(
+        sub {make_hashtag_sidebar_item('Foo')},
+        qr/Problem making hashtag sidebar item.*Foo/,
+        "Catches problems and confesses errors"
+    );
+};
