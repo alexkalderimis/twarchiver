@@ -171,14 +171,37 @@ sub linkify_text {
     return $text;
 }
 
+=head2 [String] get_linkified_text( text )
+
+Function:  Put links in the given text for any found urls, mentions
+           or hashtags. 
+Arguments: the text string to put links into.
+Returns:   The linkified text
+
+=cut
+
+sub get_linkified_text {
+    my $text = shift;
+    # Triple filtered for extra purity
+    $text = linkify_text( 'urls',     $text );
+    $text = linkify_text( 'mentions', $text );
+    $text = linkify_text( 'hashtags', $text );
+    return $text;
+}
+
 =head2 [String] make_tweet_li( tweet )
 
-Function: Return the li element that displays the tweet. This element is
-          made up of:
+Function: Return the inner html of the li element that 
+displays the tweet. This element is made up of:
+
+    # The display box
 
           div > h2            -timestamp
               > p             -text
               > div > ul > li -tags
+
+    # The tagger form
+
           form > p > input    -textbox
                    > input    -add button
                    > input    -remove button
@@ -189,66 +212,169 @@ Returns:   An html string with the above structure.
 =cut
 
 sub make_tweet_li {
-    my $status = shift;
-    return '' unless $status;
-    my $text = $status->{highlighted_text} || $status->text;
+    my $tweet = shift;
+    return '' unless $tweet;
 
-    # Triple filtered for extra purity
-    $text = linkify_text( 'urls',     $text );
-    $text = linkify_text( 'mentions', $text );
-    $text = linkify_text( 'hashtags', $text );
+    my $tweet_box    = make_tweet_display_box($tweet);
+    my $tagging_form = make_tweet_tagger_form($tweet);
 
-    my $id = $status->tweet_id;
+    return $tweet_box . $tagging_form;
+}
 
-    my $list_item = join(
-        "\n",
-        $html->div_start( onclick => "toggleForm('$id');", ),
-        $html->h2( $status->created_at->strftime(DATE_FORMAT) ),
-        $html->p($text),
-        $html->div_start(
-            id    => $id . '-tags',
-            class => 'tags-list'
-        ),
-        $html->ul(
-            { id => "tagList-$id" },
-            (
-                ( $status->tags->count )
-                ? $html->li_group( [ $status->tags->get_column("text")->all ] )
-                : ''
-            )
-        ),
-        $html->div_end,
-        $html->div_end,
-        $html->form_start(
-            style  => 'display: none;',
-            class  => 'tag-form',
-            method => 'post',
-            id     => $id
-        ),
-        $html->p(
-                "Tag:" 
-              . $html->input( type => 'text', id => "tag-$id" )
-              . $html->input(
-                value   => 'Add',
-                type    => 'button',
-                onclick => sprintf(
-                    "javascript:addTags('%s', '%s');", 
-                    $status->user->screen_name, $id
-                ),
-              )
-              . $html->input(
-                value   => 'Remove',
-                type    => 'button',
-                onclick => sprintf(
-                    "javascript:removeTags('%s', '%s');",
-                    $status->user->screen_name, $id
-                ),
-              ),
-        ),
-        $html->form_end(),
+
+=head2 [String] make_tweet_display_box( tweet )
+
+Function: Return the div element that displays the tweet. This element is
+          made up of:
+
+          div > h2            -Heading: timestamp
+              > p             -Body:    text - with links
+              > div > ul > li -Tag Box: list of tags
+
+Arguments: A DBIx::Class Tweet result row object
+Returns:   An html string with the above structure.
+
+=cut
+
+sub make_tweet_display_box {
+    my $tweet     = shift;
+
+    my $id        = $tweet->tweet_id;
+    my $text      = get_linkified_text(
+        $tweet->{highlighted_text} || $tweet->text
+    );
+    
+    my $div_start = $html->div_start( 
+        onclick => "toggleForm('$id');" 
+    );
+    my $heading   = $html->h2( 
+        $tweet->created_at->strftime(DATE_FORMAT) 
+    );
+    my $body      = $html->p($text);
+    my $tag_box   = make_tag_list_box($tweet);
+    my $div_end   = $html->div_end;
+    return $div_start . $heading . $body . $tag_box . $div_end;
+}
+
+=head2 [String] make_tag_list_box( tweet )
+
+Function: Return the div element that displays the list
+          of tags. The element is made up of:
+
+            div > ul > li -list of tags
+
+Arguments: A DBIx::Class Tweet result row object
+Returns:   An html string with the above structure.
+
+=cut
+
+sub make_tag_list_box {
+    my $tweet = shift;
+    my $id = $tweet->tweet_id;
+    my $div_start = $html->div_start(
+        id    => $id . '-tags',
+        class => 'tags-list'
+    );
+    my $tags_list = $html->ul(
+        { id => "tagList-$id" },
+        make_tags_list($tweet)
+    );
+    my $div_end = $html->div_end;
+    return $div_start . $tags_list . $div_end;
+}
+
+=head2 [String] make_tags_list( tweet )
+
+Function: Return the group of li elements containing the tweets tags.
+          The string is a set of '<li></li>' tag pairs with content.
+
+          li
+
+Arguments: A DBIx::Class Tweet result row object
+Returns:   An html string with the above structure.
+
+=cut
+
+sub make_tags_list {
+    my $tweet = shift;
+    if ($tweet->tags->count) {
+        my @tags = $tweet->tags->get_column("tag_text")->all;
+        return $html->li_group([@tags]);
+    } else {
+        return '';
+    }
+}
+
+=head2 [String] make_tweet_tagger_form( tweet )
+
+Function: Return the form element used to add and remove tags
+          from the tweet. The element has the following structure:
+
+          form > p > input    -textbox
+                   > input    -add button
+                   > input    -remove button
+
+Arguments: A DBIx::Class Tweet result row object
+Returns:   An html string with the above structure.
+
+=cut
+
+sub make_tweet_tagger_form {
+    my $tweet = shift;
+    my $id    = $tweet->tweet_id;
+
+    my $form_start = $html->form_start(
+        style  => 'display: none;',
+        class  => 'tag-form',
+        method => 'post',
+        id     => $id
+    );
+    my $form_body = make_tagger_form_body($tweet);
+
+    my $form_end = $html->form_end;
+
+    return $form_start . $form_body . $form_end;
+}
+
+=head2 [String] make_tagger_form_body( tweet )
+
+Function: Return the input elements that make up the 
+          working part of the tagger form.
+          The element has the following structure:
+
+          p > input    -textbox
+            > input    -add button
+            > input    -remove button
+
+Arguments: A DBIx::Class Tweet result row object
+Returns:   An html string with the above structure.
+
+=cut
+
+sub make_tagger_form_body {
+    my $tweet = shift;
+    my $user = $tweet->user->screen_name;
+    my $id = $tweet->tweet_id;
+
+    my $text_box = $html->input( 
+        type    => 'text', 
+        id      => "tag-$id" 
+    );
+    my $add_button = $html->input(
+        value   => 'Add',
+        type    => 'button',
+        onclick => "javascript:addTags('$user', '$id');",
+    );
+    my $remove_button = $html->input(
+        value   => 'Remove',
+        type    => 'button',
+        onclick => "javascript:removeTags('$user', '$id');",
     );
 
-    return $list_item;
+    my $form_body = $html->p(
+        "Tag:" . $text_box . $add_button . $remove_button
+    );
+    return $form_body;
 }
 
 =head2 [Bool] request_tokens_for(username, verifier)
