@@ -668,5 +668,224 @@ subtest 'Test has_been_authorised & needs_authorisation' => sub {
 
 };
     
+subtest 'Test make_tagger_form_body' => sub {
+    my $tweet = get_tweet_record('UserOne', 987654321);
 
+    my $expected = <<'EXP';
+
+<p>Tag:
+<input type="text" id="tag-987654321" />
+<input type="button" value="Add" onclick="javascript:addTags('UserOne', '987654321');" />
+<input type="button" value="Remove" onclick="javascript:removeTags('UserOne', '987654321');" /></p>
+EXP
+    chomp $expected;
+
+    is make_tagger_form_body($tweet), $expected
+        => "Can make the body of a tagger form";
+};
+
+subtest 'Test make_tweet_tagger_form' => sub {
+    my $tweet = get_tweet_record('UserOne', 987654321);
+
+    my $expected = <<'EXP';
+
+<form method="post" style="display: none;" class="tag-form" id="987654321">
+<p>Tag:
+<input type="text" id="tag-987654321" />
+<input type="button" value="Add" onclick="javascript:addTags('UserOne', '987654321');" />
+<input type="button" value="Remove" onclick="javascript:removeTags('UserOne', '987654321');" /></p>
+</form>
+EXP
+    chomp $expected;
+
+    is make_tweet_tagger_form($tweet), $expected
+        => "Can make the a tagger form";
+};
+
+subtest 'Test make_tags_list' => sub {
+    my $tweet = get_tweet_record('UserOne', 987654321);
+
+    my $expected = <<'EXP';
+
+<li>An added example tag</li>
+<li>Eine zugefügte Bemerkung</li>
+EXP
+    chomp $expected;
+
+    is make_tags_list($tweet), $expected
+        => "Can make a tweet tag list";
+
+    my $tweet_without_tags = get_tweet_record('UserOne', 987654320);
+
+    $expected = '';
+
+    is make_tags_list($tweet_without_tags), $expected
+        => "Can make a tweet tag list when there are no tags";
+
+};
+
+subtest 'Test make_tag_list_box' => sub {
+    my $tweet = get_tweet_record('UserOne', 987654321);
+
+    my $expected = <<'EXP';
+
+<div class="tags-list" id="987654321-tags">
+<ul id="tagList-987654321">
+<li>An added example tag</li>
+<li>Eine zugefügte Bemerkung</li></ul>
+</div>
+EXP
+    chomp $expected;
+
+    is make_tag_list_box($tweet), $expected
+        => "Can make a tweet tag list box";
+
+    $expected = <<'EXP';
+
+<div class="tags-list" id="987654320-tags">
+<ul id="tagList-987654320"></ul>
+</div>
+EXP
+    chomp $expected;
+
+    my $tweet_without_tags = get_tweet_record('UserOne', 987654320);
+
+    is make_tag_list_box($tweet_without_tags), $expected
+        => "Can make a tweet tag list box without tags";
+};
+
+subtest 'Test make_tweet_display_box' => sub {
+    my $tweet = get_tweet_record('UserOne', 987654321);
+
+    my $expected = <<'EXP';
+
+<div onclick="toggleForm('987654321');">
+<h2>01 Feb 2010 12:00:00 AM</h2>
+<p>This is the first 
+<a href="http://twitter.com/search?q=%23example">#example</a> tweet from the test data set for 
+<a href="http://twitter.com/twarchiver">@twarchiver</a></p>
+<div class="tags-list" id="987654321-tags">
+<ul id="tagList-987654321">
+<li>An added example tag</li>
+<li>Eine zugefügte Bemerkung</li></ul>
+</div>
+</div>
+EXP
+    chomp $expected;
+
+    is make_tweet_display_box($tweet), $expected
+        => "Can make a tweet display box";
+
+    my $tweet_without_tags = get_tweet_record('UserOne', 987654320);
+
+    $expected = <<'EXP';
+
+<div onclick="toggleForm('987654320');">
+<h2>31 Jan 2010 11:59:59 PM</h2>
+<p>This is the second 
+<a href="http://twitter.com/search?q=%23example">#example</a> tweet from the test data set for 
+<a href="http://twitter.com/twarchiver">@twarchiver</a>, it is about 
+<a href="http://twitter.com/search?q=%23fish">#fish</a></p>
+<div class="tags-list" id="987654320-tags">
+<ul id="tagList-987654320"></ul>
+</div>
+</div>
+EXP
+    chomp $expected;
+
+    is make_tweet_display_box($tweet_without_tags), $expected
+        => "Can make a tweet display box without tags";
+
+};
+
+subtest 'Test make_tweet_li'  => sub {
+    my $tweet = get_tweet_record('UserOne', 987654321);
+
+    my $expected = <<'EXP';
+
+<div onclick="toggleForm('987654321');">
+<h2>01 Feb 2010 12:00:00 AM</h2>
+<p>This is the first 
+<a href="http://twitter.com/search?q=%23example">#example</a> tweet from the test data set for 
+<a href="http://twitter.com/twarchiver">@twarchiver</a></p>
+<div class="tags-list" id="987654321-tags">
+<ul id="tagList-987654321">
+<li>An added example tag</li>
+<li>Eine zugefügte Bemerkung</li></ul>
+</div>
+</div>
+<form method="post" style="display: none;" class="tag-form" id="987654321">
+<p>Tag:
+<input type="text" id="tag-987654321" />
+<input type="button" value="Add" onclick="javascript:addTags('UserOne', '987654321');" />
+<input type="button" value="Remove" onclick="javascript:removeTags('UserOne', '987654321');" /></p>
+</form>
+EXP
+    chomp $expected;
+
+    is make_tweet_li($tweet), $expected
+        => "Can make a tweet li inner html";
+
+    my $tweet_without_tags = get_tweet_record('UserOne', 987654320);
+
+    $expected = <<'EXP';
+
+<div onclick="toggleForm('987654320');">
+<h2>31 Jan 2010 11:59:59 PM</h2>
+<p>This is the second 
+<a href="http://twitter.com/search?q=%23example">#example</a> tweet from the test data set for 
+<a href="http://twitter.com/twarchiver">@twarchiver</a>, it is about 
+<a href="http://twitter.com/search?q=%23fish">#fish</a></p>
+<div class="tags-list" id="987654320-tags">
+<ul id="tagList-987654320"></ul>
+</div>
+</div>
+<form method="post" style="display: none;" class="tag-form" id="987654320">
+<p>Tag:
+<input type="text" id="tag-987654320" />
+<input type="button" value="Add" onclick="javascript:addTags('UserOne', '987654320');" />
+<input type="button" value="Remove" onclick="javascript:removeTags('UserOne', '987654320');" /></p>
+</form>
+EXP
+    chomp $expected;
+
+    is make_tweet_li($tweet_without_tags), $expected
+        => "Can make a tweet li inner html";
+
+    is make_tweet_li(), ''
+        => "Returns an empty string for no tweet";
+
+    throws_ok(
+        sub {make_tweet_li('Foo')},
+        qr/Problem making tweet list item.*Foo/,
+        "Catches errors and confesses"
+    );
+}; 
+
+subtest 'Test make_content' => sub {
+
+    my @tweets = ();
+
+    my $expected = "\n" . '<p>No tweets found</p>';
+
+    is make_content(@tweets), $expected
+        => "Returns a sensible message when there are no tweets";
+
+    my @tweets = get_all_tweets_for('UserOne');
+    
+    $expected = qx{cat t/etc/tests_tweets.html};
+    chomp $expected;
+
+    is make_content(@tweets), $expected
+        => "Can make content with a list of tweets";
+};
+
+subtest 'Test make_highlit_content' => sub {
+    my @tweets = get_tweets_in_month('UserOne', 2010, 1);
+
+    my $expected = 'Foo';
+
+    is make_highlit_content('tweet', @tweets), $expected
+        => "Can highlight search terms in content";
+};
 

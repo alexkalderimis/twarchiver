@@ -44,6 +44,11 @@ our @EXPORT_OK = qw/
   make_mention_link
   make_mention_report_link
   get_twitter
+  make_tweet_display_box
+  make_tweet_tagger_form
+  make_tagger_form_body
+  make_tags_list
+  make_tag_list_box
   /;
 
 our %EXPORT_TAGS = (
@@ -73,6 +78,11 @@ our %EXPORT_TAGS = (
         make_mention_link
         make_mention_report_link
         get_twitter
+        make_tweet_display_box
+        make_tweet_tagger_form
+        make_tags_list
+        make_tagger_form_body
+        make_tag_list_box
     /]
 );
 
@@ -214,11 +224,16 @@ Returns:   An html string with the above structure.
 sub make_tweet_li {
     my $tweet = shift;
     return '' unless $tweet;
+    my $return_value = eval {
+        my $tweet_box    = make_tweet_display_box($tweet);
+        my $tagging_form = make_tweet_tagger_form($tweet);
 
-    my $tweet_box    = make_tweet_display_box($tweet);
-    my $tagging_form = make_tweet_tagger_form($tweet);
-
-    return $tweet_box . $tagging_form;
+        return $tweet_box . $tagging_form;
+    };
+    if (my $e = $@) {
+        confess "Problem making tweet list item: $e";
+    }
+    return $return_value;
 }
 
 
