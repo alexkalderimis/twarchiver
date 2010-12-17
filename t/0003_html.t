@@ -695,7 +695,7 @@ subtest 'Test download_latest_tweets_for' => sub {
         sub {download_latest_tweets_for('UserOne')},
         "Lives downloading tweets for a user with existing tweets"
     );
-    my $expected = {count => 100, page => 1, since_id => 987654321};
+    $expected = {count => 100, page => 1, since_id => 987654321};
     is_deeply $test_data, $expected, "Passed the right args to twitter";
 };
 
@@ -902,7 +902,7 @@ subtest 'Test make_content' => sub {
     is make_content(@tweets), $expected
         => "Returns a sensible message when there are no tweets";
 
-    my @tweets = get_all_tweets_for('UserOne');
+    @tweets = get_all_tweets_for('UserOne');
     
     $expected = qx{cat t/etc/tests_tweets.html};
     chomp $expected;
