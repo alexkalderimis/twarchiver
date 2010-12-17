@@ -668,6 +668,37 @@ subtest 'Test has_been_authorised & needs_authorisation' => sub {
 
 };
     
+subtest 'Test download_latest_tweets_for' => sub {
+
+    throws_ok(
+        sub {download_latest_tweets_for('NeverAuthorised')},
+        qr/Not authorised/,
+        "Unauthorised users don't get tweets"
+    );
+    my $test_data;
+    %extra_twitter_attr = (
+        user_timeline => sub {
+            shift;
+            $test_data = shift;
+            return [];
+        },
+        authorized => 1,
+    );
+    lives_ok(
+        sub {download_latest_tweets_for('NeverAuthorised')},
+        "Lives downloading tweets for an authorised user"
+    );
+    my $expected = {count => 100, page => 1};
+    is_deeply $test_data, $expected, "Passed the right args to twitter";
+
+    lives_ok(
+        sub {download_latest_tweets_for('UserOne')},
+        "Lives downloading tweets for a user with existing tweets"
+    );
+    my $expected = {count => 100, page => 1, since_id => 987654321};
+    is_deeply $test_data, $expected, "Passed the right args to twitter";
+};
+
 subtest 'Test make_tagger_form_body' => sub {
     my $tweet = get_tweet_record('UserOne', 987654321);
 
@@ -883,9 +914,38 @@ subtest 'Test make_content' => sub {
 subtest 'Test make_highlit_content' => sub {
     my @tweets = get_tweets_in_month('UserOne', 2010, 1);
 
-    my $expected = 'Foo';
+    my $expected = qx{cat t/etc/tests_highlit_tweets.html};
+    chomp $expected;
 
-    is make_highlit_content('tweet', @tweets), $expected
+    is make_highlit_content('twe', @tweets), $expected
         => "Can highlight search terms in content";
+
+    $expected = qx{cat t/etc/tests_highlit_mentions.html};
+    chomp $expected;
+
+    is make_highlit_content('arch', @tweets), $expected
+        => "Can highlight search terms without breaking links in mentions";
+
+    $expected = qx{cat t/etc/tests_highlit_hashtags.html};
+    chomp $expected;
+
+    is make_highlit_content('amp', @tweets), $expected
+        => "Can highlight search terms without breaking links in hashtags";
+
+    $expected = qx{cat t/etc/tests_highlit_urls.html};
+    chomp $expected;
+
+    is make_highlit_content('ani', @tweets), $expected
+        => "Can highlight search terms without breaking links in urls";
+
+    $expected = qx{cat t/etc/tests_highlit_all.html};
+    chomp $expected;
+
+    is make_highlit_content('\w+e\w+', @tweets), $expected
+        => "Can do it everywhere - and using regexen too";
 };
+
+
+
+
 

@@ -528,7 +528,7 @@ Arguments: The user's twitter screen name
 
 =cut
 
-sub download_latest_tweets {
+sub download_latest_tweets_for {
     my $user    = shift;
     my @tokens  = restore_tokens($user);
     my $twitter = get_twitter(@tokens);
