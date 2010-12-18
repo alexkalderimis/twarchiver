@@ -3,15 +3,31 @@ package Twarchiver::Routes::TweetAnalysis;
 use Dancer ':syntax';
 use Dancer::Plugin::Ajax;
 use HTML::EasyTags;
+use URI;
 
 use Twarchiver::Functions::DBAccess    ':routes';
 use Twarchiver::Functions::PageContent ':routes';
 use Twarchiver::Functions::TwitterAPI  ':routes';
 use Twarchiver::Functions::Util        ':routes';
+use Twarchiver::Functions::Export 'export_tweets_in_format';
 
 my $digits = qr/^\d+$/;
 my $html = HTML::EasyTags->new();
 
+
+get '/show/:username/to/*.*' => sub {
+    my ($mention, $format) = splat;
+    $format = lc $format;
+
+    if ($format eq 'html') {
+        redirect '/show/' . params->{username} . /to/ . $mention;
+    } else {
+        my $username = params->{username};
+        my $mention = '@' . $mention;
+        my @tweets  = get_tweets_with_mention($username, $mention);
+        return export_tweets_in_format($format, @tweets);
+    }
+};
 
 get '/show/:username/to/:mention' => sub {
     my $user    = params->{username};
@@ -29,9 +45,12 @@ sub return_tweet_analysis_page {
     my $content_url = shift;
     my $title = shift;
     my $username = shift;
-    my $text_url = request->uri_for(request->path . '.txt', params);
-    my $tsv_url  = request->uri_for(request->path . '.tsv', params);
-    my $csv_url  = request->uri_for(request->path . '.csv', params);
+    my $params = shift;
+    my $text_url = request->uri_for(request->path . '.txt', $params);
+    my $tsv_url  = request->uri_for(request->path . '.tsv', $params);
+    my $csv_url  = request->uri_for(request->path . '.csv', $params);
+    my $profile_image = get_user_record($username)->profile_image_url
+                        || '/images/squirrel_icon64.gif';
     return template statuses => {
         content_url => $content_url,
         title => $title,
@@ -39,33 +58,9 @@ sub return_tweet_analysis_page {
         text_export_url => $text_url,
         tsv_export_url => $tsv_url,
         csv_export_url => $csv_url,
+        profile_image => $profile_image,
     };
 }
-
-get '/show/:username/to/:mention.:format' => sub {
-    my $format = lc params->{format};
-
-    if ($format eq 'html') {
-        redirect '/show/' . params->{username} . /to/ . params->{mention};
-    } else {
-        my $username = params->{username};
-        my $mention = '@' . params->{mention};
-        my @tweets  = get_tweets_with_mention($username, $mention);
-        return export_tweets_in_format($format, @tweets);
-    }
-};
-
-get '/show/:username/on/:topic' => sub {
-    my $user    = params->{username};
-    my $topic = params->{hashtag};
-    return authorise($user) if needs_authorisation($user);
-
-    my $content_url = join('/', $user, 'on', $topic);
-    my $title = sprintf "Statuses from %s about %s",
-        make_user_home_link(), $topic;
-
-    return_tweet_analysis_page($content_url, $title, $user);
-};
 
 get '/show/:username/on/:topic.:format' => sub {
     my $format = lc params->{format};
@@ -81,18 +76,30 @@ get '/show/:username/on/:topic.:format' => sub {
     }
 };
 
+get '/show/:username/on/:topic' => sub {
+    my $user    = params->{username};
+    my $topic = params->{topic};
+    return authorise($user) if needs_authorisation($user);
+
+    my $content_url = join('/', $user, 'on', $topic);
+    my $title = sprintf "Statuses from %s about %s",
+        make_user_home_link(), $topic;
+
+    return_tweet_analysis_page($content_url, $title, $user);
+};
+
 get '/show/:username/url' => sub {
     my $username = params->{username};
     my $address  = params->{address};
     
-    return authorise($user) if needs_authorisation($user);
+    return authorise($username) if needs_authorisation($username);
 
-    my $content_url = URI->new(join('/', $user, 'url');
+    my $content_url = URI->new(join('/', $username, 'url'));
     $content_url->query_form(address => $address);
     my $title = sprintf "Statuses from %s with a link to %s",
         make_user_home_link(), $address;
 
-    return_tweet_analysis_page($content_url, $title, $user);
+    return_tweet_analysis_page($content_url, $title, $username);
 };
 
 get '/show/:username/url.:format' => sub {
@@ -105,19 +112,33 @@ get '/show/:username/url.:format' => sub {
     } else {
         my $username = params->{username}; 
         my $address = params->{address};
+        my @tweets;
         if ($address) {
-            my @tweets  = get_tweets_with_url($username, $address);
-            return export_tweets_in_format($format, @tweets);
-        else {
+            @tweets  = get_tweets_with_url($username, $address);
+        } else {
             my @addresses = get_urls_for($username)
                                 ->get_column('address')
                                 ->all;
-            my @tweets = map {get_tweets_with_url($username, $_)->all}
+            @tweets = map {get_tweets_with_url($username, $_)->all}
                             @addresses;
-            return export_tweets_in_format($format, @tweets);
+        }
+        return export_tweets_in_format($format, @tweets);
     }
 };
 
+get '/show/:username/tag/*.*' => sub {
+    my ($tag, $format) = splat;
+    $format = lc $format;
+
+    if ($format eq 'html') {
+        redirect '/show/' . params->{username} . /tag/ . $tag;
+    } else {
+        my $username = params->{username};
+        
+        my @tweets  = get_tweets_with_tag($username, $tag);
+        return export_tweets_in_format($format, @tweets);
+    }
+};
 get '/show/:username/tag/:tag' => sub {
     my $user = params->{username};
     my $tag  = params->{tag};
@@ -131,19 +152,6 @@ get '/show/:username/tag/:tag' => sub {
     return_tweet_analysis_page($content_url, $title, $user);
 };
 
-get '/show/:username/tag/:tag.:format' => sub {
-    my $format = lc params->{format};
-
-    if ($format eq 'html') {
-        redirect '/show/' . params->{username} . /tag/ . params->{tag};
-    } else {
-        my $username = params->{username};
-        
-        my $tag = params->{tag};
-        my @tweets  = get_tweets_with_tag($username, $tag);
-        return export_tweets_in_format($format, @tweets);
-    }
-};
 
 =head2 /show/:username
 
@@ -151,6 +159,17 @@ Function: return a page loading all the statuses from a user
 
 =cut
 
+get '/show/*.*' => sub {
+    my ($username, $format) = splat;
+    $format = lc $format;
+
+    if ($format eq 'html') {
+        redirect '/show/' . $username;
+    } else {
+        my @tweets  = get_all_tweets_for($username);
+        return export_tweets_in_format($format, @tweets);
+    }
+};
 get '/show/:username' => sub {
     my $user = params->{username};
 
@@ -162,19 +181,19 @@ get '/show/:username' => sub {
     return_tweet_analysis_page($content_url, $title, $user);
 };
 
-get '/show/:username.:format' => sub {
-    my $format = lc params->{format};
+
+get '/show/:username/:year/:month.:format' => sub {
+    my $format = params->{format};
+    $format = lc $format;
+    my ($username, $year, $month) = @{{(params)}}{qw/username year month/};
 
     if ($format eq 'html') {
-        redirect '/show/' . params->{username};
+        redirect '/show/' . join('/', $username, $year, $month);
     } else {
-        my $username = params->{username};
-        
-        my @tweets  = get_all_tweets_for($username);
+        my @tweets  = get_tweets_in_month($username, $year, $month);
         return export_tweets_in_format($format, @tweets);
     }
 };
-
 get '/show/:username/:year/:month' => sub {
     my $username = params->{username};
     my $year = params->{year};
@@ -193,27 +212,26 @@ get '/show/:username/:year/:month' => sub {
     return_tweet_analysis_page($content_url, $title, $username);
 };
 
-get '/show/:username/:year/:month.:format' => sub {
+get '/show/:username/retweeted.:format' => sub {
+    my $username = params->{username};
     my $format = lc params->{format};
-    my ($username, $year, $month) = @{{(params)}}{qw/username year month/};
+    my $count = params->{count};
 
     if ($format eq 'html') {
-        redirect '/show/' . join('/', $username, $year, $month);
+        my $path = "/show/$username/retweeted";
+        redirect request->uri_for( $path, params );
     } else {
-        my $username = params->{username};
-        
-        my @tweets  = get_tweets_in_month($username, $year, $month);
+        my @tweets  = get_retweeted_tweets($username, $count);
         return export_tweets_in_format($format, @tweets);
     }
 };
 
 get '/show/:username/retweeted' => sub {
     my $username = params->{username};
-    my $action   = params->{action};
     my $count    = params->{count};
-    pass and return false unless (grep {$_ eq $action} ACTIONS);
     return authorise($username) if needs_authorisation($username);
     my $content_url = join('/', $username, 'retweeted');
+    my $params = {count => $count};
 
     my $title = sprintf "Statuses by %s which have been retweeted",
         make_user_home_link();
@@ -229,7 +247,7 @@ get '/show/:username/retweeted' => sub {
         }
     }
 
-    return_tweet_analysis_page($content_url, $title, $username);
+    return_tweet_analysis_page($content_url, $title, $username, $params);
 };
 
 get '/download/:username.:format' => sub {
@@ -238,6 +256,22 @@ get '/download/:username.:format' => sub {
 
     my @tweets = get_all_tweets_for($user);
     return export_tweets_in_format($format, @tweets);
+};
+
+get '/search/:username.:format' => sub {
+    my $format = lc params->{format};
+    my ($username, $st, $i) = @{{(params)}}{qw/username searchterm i/};
+    if ($format eq 'html') {
+        my $url = URI->new('/search/' . $username);
+        $url->query_form(
+            searchterm => $st,
+            i          => $i
+        );
+        redirect $url;
+    } else {
+        my ($re, @tweets) = get_tweets_matching_search($username, $st, $i);
+        export_tweets_in_format($format, @tweets);
+    }
 };
 
 get '/search/:username' => sub {
@@ -260,22 +294,6 @@ get '/search/:username' => sub {
     );
 
     return_tweet_analysis_page($content_url, $title, $user);
-};
-
-get '/search/:username.:format' => sub {
-    my $format = lc params->{format};
-    my ($username, $st, $i) = @{{(params)}}{qw/username searchterm i/};
-    if ($format eq 'html') {
-        my $url = URI->new('/search/' . $username);
-        $url->query_form(
-            searchterm => $st,
-            i          => $i
-        );
-        redirect $url;
-    } else {
-        my ($re, @tweets) = get_tweets_matching_search($username, $st, $i);
-        export_tweets_in_format($format, @tweets);
-    }
 };
 
 =head2 /load/content/:username/search/:searchterm?i=isCaseInsensitive
@@ -326,9 +344,9 @@ get '/load/content/:username/on/:topic' => sub {
     return $content;
 };
 
-get qr{/load/content/(\w+)/url/([\w\./_-]+)} => sub {
-    my ($user, $address) = splat;
-    $address = 'http://' . $address;
+get '/load/content/:username/url' => sub {
+    my $user = params->{username};
+    my $address = params->{address};
 
     return $html->p("Not Authorised") if ( needs_authorisation($user) );
 
@@ -407,7 +425,7 @@ get '/load/timeline/for/:username' => sub {
 
 get '/load/mentions/for/:username' => sub {
     my $username = params->{username};
-    my @mentions = get_mentions_for($username);
+    my @mentions = get_mentions_for($username)->all;
     if (@mentions) {
         return $html->li_group([
             map {make_mention_sidebar_item($_)} @mentions]);
@@ -418,7 +436,7 @@ get '/load/mentions/for/:username' => sub {
 
 get '/load/hashtags/for/:username' => sub {
     my $username = params->{username};
-    my @hashtags = get_hashtags_for($username);
+    my @hashtags = get_hashtags_for($username)->all;
     if (@hashtags) {
         return $html->li_group([
             map {make_hashtag_sidebar_item($_)} @hashtags]);
@@ -429,7 +447,7 @@ get '/load/hashtags/for/:username' => sub {
 
 get '/load/urls/for/:username' => sub {
     my $username = params->{username};
-    my @urls = get_urls_for($username);
+    my @urls = get_urls_for($username)->all;
     if (@urls) {
         return $html->li_group([
             map {make_url_sidebar_item($_)} @urls]);
@@ -440,10 +458,10 @@ get '/load/urls/for/:username' => sub {
 
 get '/load/tags/for/:username' => sub {
     my $username = params->{username};
-    my @tags = get_tags_for($username);
+    my @tags = get_tags_for($username)->all;
     if (@tags) {
         return $html->li_group([
-            map {make_tag_sidebar_item($username, $_)} @tags]);
+            map {make_tag_sidebar_item($_)} @tags]);
     } else {
         return $html->p("No Tags Found");
     }
@@ -496,7 +514,7 @@ get '/load/summary/:username' => sub {
     $data{tag_count}       = get_tags_for($username)->count;
     $data{urls_total}      = get_urls_for($username)->count;
     $data{beginning}       = $user->created_at->dmy();
-    $data{most_recent}     = $user->tweets->get_column('created_at')->max;
+    $data{most_recent}     = get_most_recent_tweet_by($username)->created_at->dmy();
     return to_json( \%data );
 };
 
