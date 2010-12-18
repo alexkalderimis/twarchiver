@@ -35,6 +35,10 @@ our %EXPORT_TAGS = (
         has_been_authorised
         needs_authorisation
         request_tokens_for 
+    /],
+    'routes' => [qw/
+    authorise needs_authorisation
+    download_latest_tweets_for
     /]
 );
 
@@ -54,8 +58,11 @@ sub request_tokens_for {
     debug("Got verifier: $verifier");
 
     my $twitter = get_twitter();
-    $twitter->request_token( cookies->{token}->value );
-    $twitter->request_token_secret( cookies->{secret}->value );
+    debug(to_dumper(cookies));
+    my ($tok, $sec) = split(/___/, cookies->{tok_sec}->value);
+    debug("tok: $tok, sec: $sec");
+    $twitter->request_token( $tok );
+    $twitter->request_token_secret( $sec );
     my @bits = $twitter->request_access_token( verifier => $verifier );
 
     confess("names don't match - got $bits[3]")
@@ -108,8 +115,10 @@ sub authorise {
         my $twitter = get_twitter();
         my $url = $twitter->get_authorization_url( callback => $cb_url );
         debug( "request token is " . $twitter->request_token );
-        set_cookie(token  => $twitter->request_token);
-        set_cookie(secret => $twitter->request_token_secret);
+        debug( "req tok secret is " .$twitter->request_token_secret );
+        #set_cookie(secret => $twitter->request_token_secret);
+        set_cookie(tok_sec  => $twitter->request_token . '___' . $twitter->request_token_secret);
+        debug( to_dumper(cookies) );
         redirect($url);
         return false;
     };
@@ -158,6 +167,14 @@ sub download_latest_tweets_for {
     my $since   = get_since_id_for($user);
 
     if ( $twitter->authorized ) {
+        my $users = $twitter->lookup_users({screen_name => $user});
+        confess "Couldn't get user info" 
+            unless ($users && ref $users eq 'ARRAY' && @$users);
+        confess ("More than one user matches the screen name $user: ",
+                to_dumper($users))
+            if (@$users > 1);
+        store_user_info($users->[0]);
+
         for ( my $page = 1 ; ; ++$page ) {
             debug("Getting page $page of twitter statuses");
             my $args = { count => 100, page => $page };
