@@ -23,6 +23,8 @@ use Exporter 'import';
 our @EXPORT_OK = qw/
   get_hashtag_url
   get_mention_url 
+  get_normal_login_message_box
+  get_failed_login_message_box
   linkify_text make_tweet_li 
   make_content 
   make_hashtag_link
@@ -50,10 +52,21 @@ our @EXPORT_OK = qw/
 
 our %EXPORT_TAGS = (
     'routes' => [qw/
+        make_user_home_link
+        make_content
+        make_highlit_content
+        make_year_group
+        make_mention_sidebar_item
+        make_hashtag_sidebar_item
+        make_tag_sidebar_item 
+        make_url_sidebar_item 
+        make_retweeted_sidebar
       /],
     'all' => [qw/
         get_hashtag_url
         get_mention_url 
+        get_normal_login_message_box
+        get_failed_login_message_box
         linkify_text make_tweet_li 
         make_content 
         make_hashtag_link
@@ -77,6 +90,10 @@ our %EXPORT_TAGS = (
         make_url_sidebar_item 
         make_user_home_link 
         make_year_group
+    /],
+    'login' => [qw/
+        get_normal_login_message_box
+        get_failed_login_message_box
     /]
 );
 
@@ -169,7 +186,7 @@ sub linkify_text {
             );
         }
         while ( my ( $lhs, $rhs ) = each %link_for ) {
-            $text =~ s/$lhs/$rhs/g;
+            $text =~ s/\Q$lhs\E/$rhs/g;
         }
     }
     return $text;
@@ -249,6 +266,7 @@ sub make_tweet_display_box {
     my $tweet     = shift;
 
     my $id        = $tweet->tweet_id;
+    debug("id is $id");
     my $text      = get_linkified_text(
         $tweet->{highlighted_text} || $tweet->text
     );
@@ -262,7 +280,7 @@ sub make_tweet_display_box {
     my $body      = $html->p($text);
     my $tag_box   = make_tag_list_box($tweet);
     my $div_end   = $html->div_end;
-    return $div_start . $heading . $body . $tag_box . $div_end;
+    return $div_start . $heading . $body . $div_end . $tag_box;
 }
 
 =head2 [String] make_tag_list_box( tweet )
@@ -285,7 +303,10 @@ sub make_tag_list_box {
         class => 'tags-list'
     );
     my $tags_list = $html->ul(
-        { id => "tagList-$id" },
+        {   
+            id => "tagList-$id",
+            class => 'tags-ul',
+        },
         make_tags_list($tweet)
     );
     my $div_end = $html->div_end;
@@ -308,10 +329,31 @@ sub make_tags_list {
     my $tweet = shift;
     if ($tweet->tags->count) {
         my @tags = $tweet->tags->get_column("tag_text")->all;
-        return $html->li_group([@tags]);
+        my @li_elems = map {
+            make_tweet_tags_list_item(
+                $tweet->user->screen_name, $_, $tweet->tweet_id)} @tags;
+        return $html->li_group([@li_elems]);
     } else {
         return '';
     }
+}
+
+sub make_tweet_tags_list_item {
+    my $username = shift;
+    my $tag_text = shift;
+    my $tweet_id = shift;
+    my $deleterId = $tweet_id . '-' . $tag_text;
+    my $span = $html->span(
+        { onclick => "toggleElem('$deleterId')"},
+        $tag_text);
+    my $deleter = $html->a(
+        style => 'display: none',
+        href => '#',
+        onclick => "removeTag('$username', '$tweet_id', '$tag_text')",
+        text => 'delete',
+        id => $deleterId,
+    );
+    return $span . '   ' . $deleter;
 }
 
 =head2 [String] make_tweet_tagger_form( tweet )
@@ -555,7 +597,7 @@ Returns:  '<a href="show/user/tag/tagtext">tagtext (7)</a>'
 sub make_tag_sidebar_item {
     my $tag      = shift;
     my $result = eval { make_tag_link( 
-        params->{username}, $tag->text, $tag->get_column('count') );
+        params->{username}, $tag->tag_text, $tag->get_column('count') );
     };
     if (my $e = $@) {
         confess "Problem making tag sidebar item: $e";
@@ -743,5 +785,26 @@ sub make_mention_report_link {
         class => 'sidebarinternallink',
     );
 }
+
+sub get_failed_login_message_box {
+    my $reason = shift;
+    my $message_text;
+    if ($reason eq 'incorrect') {
+        $message_text = "The login details you provided are incorrect. Please check your spelling (and make sure you don't have Caps-Lock on!";
+    } elsif ($reason eq 'exists') {
+        $message_text = "This user already exists. Please login instead."
+    }
+    my $content = $html->p(
+        {class => 'failed'},
+        $message_text
+    );
+    return $content;
+}
+
+sub get_normal_login_message_box {
+    return $html->p(
+        "Please enter your username and password below. Your username should be the same as your twitter screen name, but your password should be " . $html->strong("unique") . " to this site"
+    );
+};
 
 true;
