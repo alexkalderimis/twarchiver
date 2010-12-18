@@ -21,6 +21,7 @@ our @EXPORT_OK = qw/
     get_tweets_as_textfile 
     get_tweets_as_spreadsheet 
     tweet_to_text
+    export_tweets_in_format
   /;
 
 our %EXPORT_TAGS = (
@@ -28,8 +29,30 @@ our %EXPORT_TAGS = (
         get_tweets_as_textfile 
         get_tweets_as_spreadsheet 
         tweet_to_text
+        export_tweets_in_format
     /]
 );
+
+=head2 get_tweets_in_format ( format, @tweets )
+
+Function: Transform a list of tweets into a given format
+Returns:  A text string
+
+=cut
+
+sub export_tweets_in_format {
+    my ($format, @tweets) = @_;
+
+    if ( $format eq 'txt' ) {
+        get_tweets_as_textfile(@tweets);
+    } elsif ( $format eq 'tsv' ) {
+        get_tweets_as_spreadsheet( "\t", @tweets );
+    } elsif ( $format eq 'csv' ) {
+        get_tweets_as_spreadsheet( ',', @tweets );
+    } else {
+        send_error "Unknown format requested: $format";
+    }
+}
 
 =head2 get_tweets_as_textfile( @tweets )
 
