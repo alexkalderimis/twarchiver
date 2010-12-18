@@ -35,6 +35,8 @@ our @EXPORT_OK = qw/
     get_tweets_with_tag get_tweets_in_month get_retweeted_tweets
     get_months_in get_years_for get_retweet_summary
     get_tweets_with_mention get_tweets_with_hashtag get_tweets_with_url
+    store_user_info
+    get_most_recent_tweet_by
 /;
 our %EXPORT_TAGS = (
     'all' => [qw/
@@ -45,12 +47,16 @@ our %EXPORT_TAGS = (
     get_tweets_with_tag get_tweets_in_month get_retweeted_tweets
     get_months_in get_years_for get_retweet_summary
     get_tweets_with_mention get_tweets_with_hashtag get_tweets_with_url
+    store_user_info
+    get_most_recent_tweet_by
     /],
     'routes' => [qw/
     get_all_tweets_for get_tweets_with_tag get_retweeted_tweets 
     get_years_for get_mentions_for get_hashtags_for get_urls_for
     get_tags_for get_tweets_in_month get_user_record  
     add_tags_to_tweets remove_tags_from_tweets
+    get_most_recent_tweet_by get_tweets_with_tag 
+    get_tweets_with_mention get_tweets_with_hashtag get_tweets_with_url
     /],
     'pagecontent' => [qw/
     get_user_record get_retweet_summary get_months_in 
@@ -58,6 +64,7 @@ our %EXPORT_TAGS = (
     /],
     twitterapi => [qw/
     save_tokens restore_tokens store_twitter_statuses get_since_id_for
+    store_user_info
     /]
 );
 
@@ -77,6 +84,7 @@ Returns:  A DBIx::Class::Schema instance
 sub get_db {
     state $schema;
     unless ($schema) {
+        Dancer::debug( "Connecting to " . Dancer::setting('database') );
         $schema = Twarchiver::Schema->connect(
             "dbi:SQLite:dbname=". Dancer::setting('database'),
             undef, undef,
@@ -97,15 +105,20 @@ Returns:   A DBIx::Class User result row object
 
 sub get_user_record {
     my $user = shift;
+    my $id   = shift;
+    my $condition  = {
+        screen_name => $user,
+    };
     my $db = get_db();
     my $user_rec = $db->resultset('User')->find_or_create(
-        {
-            screen_name => $user,
-        },
+        $condition,
         {
             prefetch => 'tweets'
         }
     );
+    if ($id) {
+        $user_rec->update({user_id => $id});
+    }
     return $user_rec;
 }
 
@@ -124,7 +137,7 @@ sub get_all_tweets_for {
     my $condition = shift;
     my $user_rec = get_user_record($user);
     return $user_rec->tweets->search( $condition,
-                        {order_by => {-desc => 'tweet_id'}},
+                        {order_by => {-desc => 'created_at'}},
                     );
 }
 
@@ -138,9 +151,24 @@ Returns:   The id (scalar)
 
 sub get_since_id_for {
     my $user = shift;
+    my $most_recent_tweet = get_most_recent_tweet_by($user);
+    if ($user) {
+        return $most_recent_tweet->tweet_id;
+    } else {
+        return;
+    }
+}
+
+sub get_most_recent_tweet_by {
+    my $user = shift;
     my $user_rec = get_user_record($user);
-    my $since_id = $user_rec->tweets->get_column('tweet_id')->max;
-    return $since_id;
+    if ($user_rec->tweets->count) {
+        my $since = $user_rec->tweets->get_column('created_at')->max;
+        my $most_recent = $user_rec->tweets
+                                ->find({created_at => $since});
+    } else {
+        return;
+    }
 }
 
 =head2 [ResultRow] get_tweet_record( tweet_id, screen_name )
@@ -201,6 +229,16 @@ sub store_twitter_statuses {
         }
         $tweet_rec->update;
     }
+}
+
+sub store_user_info {
+    my $user = shift;
+    my $user_rec = get_user_record($user->screen_name, $user->id);
+    $user_rec->update({
+            created_at => $user->created_at,
+            profile_image_url => $user->profile_image_url,
+            profile_bkg_url   => $user->profile_background_image_url,
+        });
 }
 
 =head2 save_tokens( username, access_token, access_token_secret)
@@ -418,8 +456,7 @@ Returns:   <List Context> DBIx::Class result rows
 
 sub get_tweets_with_tag {
     my ($username, $tag) = @_;
-    my $user = get_user_record($username);
-    return $user->tweets->search(
+    return get_all_tweets_for($username)->search(
         {'tag.tag_text' => $tag},
         {'join' => {tweet_tags => 'tag'}}
     );
@@ -437,8 +474,7 @@ Returns:   <List Context> DBIx::Class result rows
 
 sub get_tweets_with_mention {
     my ($username, $mention) = @_;
-    my $user = get_user_record($username);
-    return $user->tweets->search(
+    return get_all_tweets_for($username)->search(
         {'mention.mention_name'    => $mention },
         {'join' => {tweet_mentions => 'mention'}}
     );
@@ -457,7 +493,7 @@ Returns:   <List Context> DBIx::Class result rows
 sub get_tweets_with_hashtag {
     my ($username, $hashtag) = @_;
     my $user = get_user_record($username);
-    return $user->tweets->search(
+    return get_all_tweets_for($username)->search(
         {'hashtag.topic'           => $hashtag },
         {'join' => {tweet_hashtags => 'hashtag'}}
     );
@@ -476,7 +512,7 @@ Returns:   <List Context> DBIx::Class result rows
 sub get_tweets_with_url {
     my ($username, $address) = @_;
     my $user = get_user_record($username);
-    return $user->tweets->search(
+    return get_all_tweets_for($username)->search(
         {'url.address'           => $address },
         {'join' => {tweet_urls => 'url'}}
     );
@@ -499,8 +535,7 @@ sub get_retweeted_tweets {
     my $condition = ($count) 
         ? {$column => $count}
         : {$column => {'>' => 0}};
-    my $user = get_user_record($username);
-    return $user->tweets->search($condition);
+    return get_all_tweets_for($username)->search($condition);
 }
 
 =pod 
