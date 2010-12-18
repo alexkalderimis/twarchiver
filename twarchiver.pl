@@ -2,8 +2,8 @@
 
 use Dancer;
 use lib 'lib';
-use Twarchiver::Routes;
-
+use Twarchiver::Routes::Home;
+use Twarchiver::Routes::TweetAnalysis;
 
 set show_errors => 1;
 dance;

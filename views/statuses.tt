@@ -50,9 +50,9 @@
                 </div>
             </li>
             <li>
-                <h3><a href="#" onclick="javascript:toggleDiv('favouriteds');">Favourited Statuses</a></h3>
-                <div id="favouriteds" style="display: none;">
-                    <ul id="favedLinksList"><li>Loading<li></ul>
+                <h3><a href="#" onclick="javascript:toggleDiv('withurls');">Statuses with Links</a></h3>
+                <div id="withurls" style="display: none;">
+                    <ul id="urls-list"><li>Loading<li></ul>
                 </div>
             </li>
             <li>
@@ -65,20 +65,20 @@
                     </span></li>
                     <li>Number of Tweets: <span id="tweet_count">
                     </span></li>
-                    <li>Number of mentions: <span id="no_of_mentions">
+                    <li>Number of mentions: <span id="mention_count">
                     </span></li>
-                    <li>Number of Hashtags: <span id="no_of_hashtags">
+                    <li>Number of Hashtags: <span id="hashtag_count">
                     </span></li>
-                    <li>Number of Tags: <span id="tagCounter">
+                    <li>Number of Tags: <span id="tag_count">
+                    </span></li>
+                    <li>Retweeted tweets: <span id="retweet_count">
                     </span></li>
                 </ul>
-
           </li>
         </ul>
-
       </div>
 
-      <div id="content">
+      <div id="main">
         <div id="header" style="background-image: url(<% profile_image %>);">
           <h1><% title %></h1>
  <!--         <h2><% sub_title %></h2>
@@ -87,40 +87,25 @@
 
             <div id="menu">
             <ul>
-                <li><a href="#" onclick="javascript:toggleDiv('about-content')">Summary</a></li>
                 <li><a href="#" onclick="javascript:toggleDiv('export')">Export</a></li>
                 <li><a href="#" onclick="javascript:toggleDiv('search')">Search</a></li>
                 <li><a href="#" onclick="javascript:toggleDiv('masstagger')">Tag these Tweets</a></li>
             </ul>
             </div>
-        <div id="getting-started">
+        <div id="tweet-analysis">
 
-          <div id="about-content" style="display: none;">
-            <table>
-                <tbody>
-                <tr>
-                    <td>Number of tweets</td>
-                    <td><tt><% tweet_number %></tt></td>
-                </tr>
-                <tr>
-                    <td>From</td>
-                    <td><tt><% from %></tt></td>
-                </tr>
-                <tr>
-                    <td>To</td>
-                    <td><tt><% to %></tt></td>
-                </tr>
-                </tbody>
-            </table>
-          </div>
           <div id="export" style="display: none;">
             <ul>
-                <li><a href="/download/<% username %>.txt">Download as text file</a></li>
-                <li><a href="/download/<% username %>.tsv">Download as tab separated value file</a></li>
+                <li><a href="<% text_export_url %>">Download these tweets as text file</a></li>
+                <li><a href="/download/<% username %>.txt">Download all tweets as text file</a></li>
+                <li><a href="<% tsv_export_url %>">Download these tweets as tab separated value file</a></li>
+                <li><a href="/download/<% username %>.tsv">Download all tweets as tab separated value file</a></li>
+                <li><a href="<% csv_export_url %>">Download these tweets as comma separated value file</a></li>
+                <li><a href="/download/<% username %>.csv">Download all tweets as comma separated value file</a></li>
             </ul>
           </div>
           <div id="search" style="display: none;">
-            <form method="get" action="<% search_url %>"/>
+            <form method="get" action="/search/<% username %>"/>
                 <p>Search Term:
                     <input type="text" name="searchterm" size="30" />
                     <input type="submit" value="Find" />
@@ -143,10 +128,13 @@
 
     <script> 
         // Asynchronously load the content
-        $("#content").load("/load/content/<% content_url %>", null, function() {;
-            $.get("/load/summary/<% content_url %>", null, 
-                loadSummary, "json");
-            updateSideBars(<% content_url %>);
-        }).throbber(image: "/images/ajax-loader.gif");
+        $.throbberShow({
+            image : "/images/ajax-loader.gif",
+            parent : '#content',
+            ajax   : false
+        });
+        $("#content").load("/load/content/<% content_url %>", null, function() {
+            updateSideBars('<% username %>');
+        });
     </script>
 
