@@ -21,7 +21,7 @@ __PACKAGE__->table("tweet");
 
 =head2 tweet_id
 
-  data_type: 'integer'
+  data_type: 'text'
   is_auto_increment: 1
   is_nullable: 0
 
@@ -66,7 +66,7 @@ __PACKAGE__->table("tweet");
 __PACKAGE__->load_components(qw/InflateColumn::DateTime/);
 __PACKAGE__->add_columns(
   "tweet_id",
-  { data_type => "integer", is_auto_increment => 1, is_nullable => 0 },
+  { data_type => "text", is_nullable => 0 },
   "text",
   { data_type => "text", is_nullable => 0 },
   "retweeted",
