@@ -1,5 +1,5 @@
 CREATE TABLE tweet (
-    tweet_id INTEGER PRIMARY KEY,
+    tweet_id TEXT PRIMARY KEY,
     text TEXT NOT NULL,
     retweeted BOOLEAN,
     retweeted_count INTEGER,
@@ -17,7 +17,8 @@ CREATE TABLE user (
     profile_image_url TEXT,
     profile_bkg_url TEXT,
     access_token TEXT,
-    access_token_secret TEXT
+    access_token_secret TEXT,
+    passhash TEXT
 );
 
 CREATE TABLE tweet_mention (

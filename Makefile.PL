@@ -42,6 +42,8 @@ tags:
     ctags -f tags --recurse --totals \
          --exclude=blib \
          --exclude=.svn \
+         --exclude=.git \
+         --exclude='*swp' \
          --exclude='*~' \
          --languages=Perl --langmap=Perl:+.t \
 MAKE_FRAG

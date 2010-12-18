@@ -1,17 +1,17 @@
-package Twarchiver::Routes;
+package Twarchiver::Routes::TweetAnalysis;
 
 use Dancer ':syntax';
 use Dancer::Plugin::Ajax;
-use Twarchiver::DBActions ':routes';
-use Twarchiver::HTMLActions ':routes';
 use HTML::EasyTags;
+
+use Twarchiver::Functions::DBAccess    ':routes';
+use Twarchiver::Functions::PageContent ':routes';
+use Twarchiver::Functions::TwitterAPI  ':routes';
+use Twarchiver::Functions::Util        ':routes';
 
 my $digits = qr/^\d+$/;
 my $html = HTML::EasyTags->new();
 
-get '/' => sub {
-    template 'index' => {page_title => 'twarchiver'};
-};
 
 get '/show/:username/to/:mention' => sub {
     my $user    = params->{username};
@@ -22,10 +22,36 @@ get '/show/:username/to/:mention' => sub {
     my $title = sprintf "Statuses from %s mentioning %s",
         make_user_home_link(), $mention;
 
-    template 'statuses' => {
+    return_tweet_analysis_page($content_url, $title, $user);
+};
+
+sub return_tweet_analysis_page {
+    my $content_url = shift;
+    my $title = shift;
+    my $username = shift;
+    my $text_url = request->uri_for(request->path . '.txt', params);
+    my $tsv_url  = request->uri_for(request->path . '.tsv', params);
+    my $csv_url  = request->uri_for(request->path . '.csv', params);
+    return template statuses => {
         content_url => $content_url,
-        title       => $title,
-        username    => $user,
+        title => $title,
+        username => $username,
+        text_export_url => $text_url,
+        tsv_export_url => $tsv_url,
+        csv_export_url => $csv_url,
+    };
+}
+
+get '/show/:username/to/:mention.:format' => sub {
+    my $format = lc params->{format};
+
+    if ($format eq 'html') {
+        redirect '/show/' . params->{username} . /to/ . params->{mention};
+    } else {
+        my $username = params->{username};
+        my $mention = '@' . params->{mention};
+        my @tweets  = get_tweets_with_mention($username, $mention);
+        return export_tweets_in_format($format, @tweets);
     }
 };
 
@@ -38,26 +64,57 @@ get '/show/:username/on/:topic' => sub {
     my $title = sprintf "Statuses from %s about %s",
         make_user_home_link(), $topic;
 
-    template 'statuses' => {
-        content_url => $content_url,
-        title       => $title,
-        username    => $user,
+    return_tweet_analysis_page($content_url, $title, $user);
+};
+
+get '/show/:username/on/:topic.:format' => sub {
+    my $format = lc params->{format};
+
+    if ($format eq 'html') {
+        redirect '/show/' . params->{username} . /on/ . params->{topic};
+    } else {
+        my $username = params->{username};
+        
+        my $hashtag = '#' . params->{topic};
+        my @tweets  = get_tweets_with_hashtag($username, $hashtag);
+        return export_tweets_in_format($format, @tweets);
     }
 };
 
-get qr{/show/(\w+)/url/([\w\./_-]+)} => sub {
-    my ($user, $address) = splat;
+get '/show/:username/url' => sub {
+    my $username = params->{username};
+    my $address  = params->{address};
     
     return authorise($user) if needs_authorisation($user);
 
-    my $content_url = join('/', $user, 'url', $address);
+    my $content_url = URI->new(join('/', $user, 'url');
+    $content_url->query_form(address => $address);
     my $title = sprintf "Statuses from %s with a link to %s",
         make_user_home_link(), $address;
 
-    template 'statuses' => {
-        content_url => $content_url,
-        title       => $title,
-        username    => $user,
+    return_tweet_analysis_page($content_url, $title, $user);
+};
+
+get '/show/:username/url.:format' => sub {
+    my $format = lc params->{format};
+
+    if ($format eq 'html') {
+        my $url = URI->new('/show/' . params->{username} . '/url');
+        $url->query_form(address => params->{address});
+        redirect $url;
+    } else {
+        my $username = params->{username}; 
+        my $address = params->{address};
+        if ($address) {
+            my @tweets  = get_tweets_with_url($username, $address);
+            return export_tweets_in_format($format, @tweets);
+        else {
+            my @addresses = get_urls_for($username)
+                                ->get_column('address')
+                                ->all;
+            my @tweets = map {get_tweets_with_url($username, $_)->all}
+                            @addresses;
+            return export_tweets_in_format($format, @tweets);
     }
 };
 
@@ -71,11 +128,21 @@ get '/show/:username/tag/:tag' => sub {
     my $title = sprintf "Statuses from %s tagged with %s",
         make_user_home_link(), $tag;
 
-    template 'statuses' => {
-        content_url => $content_url,
-        title       => $title,
-        username    => $user,
-    };
+    return_tweet_analysis_page($content_url, $title, $user);
+};
+
+get '/show/:username/tag/:tag.:format' => sub {
+    my $format = lc params->{format};
+
+    if ($format eq 'html') {
+        redirect '/show/' . params->{username} . /tag/ . params->{tag};
+    } else {
+        my $username = params->{username};
+        
+        my $tag = params->{tag};
+        my @tweets  = get_tweets_with_tag($username, $tag);
+        return export_tweets_in_format($format, @tweets);
+    }
 };
 
 =head2 /show/:username
@@ -92,11 +159,20 @@ get '/show/:username' => sub {
     my $title       = "Status Archive for $user";
     my $content_url = $user;
 
-    template 'statuses' => {
-        content_url => $content_url,
-        title       => $title,
-        username    => $user,
-    };
+    return_tweet_analysis_page($content_url, $title, $user);
+};
+
+get '/show/:username.:format' => sub {
+    my $format = lc params->{format};
+
+    if ($format eq 'html') {
+        redirect '/show/' . params->{username};
+    } else {
+        my $username = params->{username};
+        
+        my @tweets  = get_all_tweets_for($username);
+        return export_tweets_in_format($format, @tweets);
+    }
 };
 
 get '/show/:username/:year/:month' => sub {
@@ -114,17 +190,27 @@ get '/show/:username/:year/:month' => sub {
     my $title = sprintf "Statuses by %s from %s %s",
         make_user_home_link(), get_month_name_for($month), $year;
 
-    template 'statuses' => {
-        content_url => $content_url,
-        title => $title,
-        username => $username,
-    };
+    return_tweet_analysis_page($content_url, $title, $username);
+};
+
+get '/show/:username/:year/:month.:format' => sub {
+    my $format = lc params->{format};
+    my ($username, $year, $month) = @{{(params)}}{qw/username year month/};
+
+    if ($format eq 'html') {
+        redirect '/show/' . join('/', $username, $year, $month);
+    } else {
+        my $username = params->{username};
+        
+        my @tweets  = get_tweets_in_month($username, $year, $month);
+        return export_tweets_in_format($format, @tweets);
+    }
 };
 
 get '/show/:username/retweeted' => sub {
     my $username = params->{username};
-    my $action = params->{action};
-    my $count = params->{count};
+    my $action   = params->{action};
+    my $count    = params->{count};
     pass and return false unless (grep {$_ eq $action} ACTIONS);
     return authorise($username) if needs_authorisation($username);
     my $content_url = join('/', $username, 'retweeted');
@@ -143,11 +229,7 @@ get '/show/:username/retweeted' => sub {
         }
     }
 
-    template 'statuses' => {
-        content_url => $content_url,
-        title => $title,
-        username => $username,
-    };
+    return_tweet_analysis_page($content_url, $title, $username);
 };
 
 get '/download/:username.:format' => sub {
@@ -155,16 +237,7 @@ get '/download/:username.:format' => sub {
     my $format = params->{format};
 
     my @tweets = get_all_tweets_for($user);
-
-    if ( $format eq 'txt' ) {
-        get_tweets_as_textfile(@tweets);
-    } elsif ( $format eq 'tsv' ) {
-        get_tweets_as_spreadsheet( "\t", @tweets );
-    } elsif ( $format eq 'csv' ) {
-        get_tweets_as_spreadsheet( ',', @tweets );
-    } else {
-        send_error "Unknown format requested: $format";
-    }
+    return export_tweets_in_format($format, @tweets);
 };
 
 get '/search/:username' => sub {
@@ -186,11 +259,23 @@ get '/search/:username' => sub {
         i          => $case_insensitive,
     );
 
-    template 'statuses' => {
-        content_url => "$content_url",
-        title       => $title,
-        username    => $user,
-    };
+    return_tweet_analysis_page($content_url, $title, $user);
+};
+
+get '/search/:username.:format' => sub {
+    my $format = lc params->{format};
+    my ($username, $st, $i) = @{{(params)}}{qw/username searchterm i/};
+    if ($format eq 'html') {
+        my $url = URI->new('/search/' . $username);
+        $url->query_form(
+            searchterm => $st,
+            i          => $i
+        );
+        redirect $url;
+    } else {
+        my ($re, @tweets) = get_tweets_matching_search($username, $st, $i);
+        export_tweets_in_format($format, @tweets);
+    }
 };
 
 =head2 /load/content/:username/search/:searchterm?i=isCaseInsensitive
@@ -275,6 +360,19 @@ get '/load/content/:username/search' => sub {
 
     return $html->p("Not Authorised") if ( needs_authorisation($user) );
 
+    download_latest_tweets_for($user);
+
+    my ($re, @tweets) = get_tweets_matching_search(
+                $user, $searchterm, $is_case_insensitive);
+
+    my $content = make_highlit_content($re, @tweets);
+    return $content;
+};
+
+sub get_tweets_matching_search {
+    my $user = shift;
+    my $searchterm = shift;
+    my $is_case_insensitive = shift;
     my $re = eval { ($is_case_insensitive) 
                         ? qr/$searchterm/i 
                         : qr/$searchterm/; };
@@ -284,7 +382,6 @@ get '/load/content/:username/search' => sub {
           ? qr/\Q$searchterm\E/i
           : qr/\Q$searchterm\E/;
     }
-    download_latest_tweets_for($user);
     my $rs = get_all_tweets_for($user);
     my @tweets;
     while ( my $tweet = $rs->next() ) {
@@ -293,10 +390,9 @@ get '/load/content/:username/search' => sub {
         }
     }
     debug( "Got " . scalar(@tweets) . " tweets with searchterm" );
+    return ($re, @tweets);
+}
 
-    my $content = make_highlit_content($re, @tweets);
-    return $content;
-};
 
 get '/load/timeline/for/:username' => sub {
     my $username = params->{username};
@@ -392,15 +488,15 @@ get '/load/summary/:username' => sub {
     my $username = params->{username};
     my $user     = get_user_record($username);
     my %data;
-    $data{tweet_total}     = $user->tweets->count;
-    $data{favorited_total} = $user->tweets->search(
-                             { favorited => {'>' => 0}})->count;
-    $data{mention_total}   = get_mentions_for($username)->count;
-    $data{hashtags_total}  = get_hashtags_for($username)->count;
-    $data{tags_total}      = get_tags_for($username)->count;
+    $data{tweet_count}     = $user->tweets->count;
+    $data{retweet_count}   = $user->tweets->search(
+                             { retweeted_count => {'>' => 0}})->count;
+    $data{mention_count}   = get_mentions_for($username)->count;
+    $data{hashtag_count}   = get_hashtags_for($username)->count;
+    $data{tag_count}       = get_tags_for($username)->count;
     $data{urls_total}      = get_urls_for($username)->count;
-    $data{tweeting_since}  = $user->created_at->dmy();
-    $data{up_til}          = $user->tweets->get_column('created_at')->max;
+    $data{beginning}       = $user->created_at->dmy();
+    $data{most_recent}     = $user->tweets->get_column('created_at')->max;
     return to_json( \%data );
 };
 
