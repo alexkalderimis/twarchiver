@@ -60,6 +60,11 @@ __PACKAGE__->table("user");
   data_type: 'text'
   is_nullable: 1
 
+=head2 passhash
+
+  data_type: 'text'
+  is_nullable: 1
+
 =cut
 
 __PACKAGE__->load_components(qw/InflateColumn::DateTime/);
@@ -80,6 +85,9 @@ __PACKAGE__->add_columns(
   { data_type => "text", is_nullable => 1 },
   "access_token_secret",
   { data_type => "text", is_nullable => 1 },
+  "passhash",
+  { data_type => "text", is_nullable => 1 },
+
 );
 __PACKAGE__->set_primary_key("user_id");
 
