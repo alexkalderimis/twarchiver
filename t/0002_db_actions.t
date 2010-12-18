@@ -14,7 +14,7 @@ use lib 't/lib';
 Dancer::set(database => ':memory:');
 
 BEGIN {
-    use_ok( 'Twarchiver::DBActions' => ':all')
+    use_ok( 'Twarchiver::Functions::DBAccess' => ':all')
         or BAIL_OUT("Could not use module");
 }
 

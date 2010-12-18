@@ -1,4 +1,4 @@
-package Twarchiver::DBActions;
+package Twarchiver::Functions::DBAccess;
 
 use strict;
 use warnings;
@@ -15,7 +15,7 @@ Twarchiver::DBActions - Functions for interacting with the database
 
 =head1 SYNOPSIS
 
-  use Twarchiver::DBActions qw(:all);
+  use Twarchiver::DBAccess qw(:all);
 
   my @tweets = get_all_tweets_for($user);
 
@@ -52,10 +52,12 @@ our %EXPORT_TAGS = (
     get_tags_for get_tweets_in_month get_user_record  
     add_tags_to_tweets remove_tags_from_tweets
     /],
-    'main' => [qw/
-    store_twitter_statuses get_since_id_for restore_tokens save_tokens
+    'pagecontent' => [qw/
     get_user_record get_retweet_summary get_months_in 
     get_tweets_in_month 
+    /],
+    twitterapi => [qw/
+    save_tokens restore_tokens store_twitter_statuses get_since_id_for
     /]
 );
 

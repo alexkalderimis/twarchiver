@@ -1,88 +1,82 @@
-package Twarchiver::HTMLActions;
+package Twarchiver::Functions::PageContent;
 use Dancer ':syntax';
 
 use feature ':5.10';
 
 our $VERSION = '0.1';
 
-use Net::Twitter;
-use Twarchiver::DBActions ':main';
+use Twarchiver::Functions::DBAccess ':pagecontent';
+use Twarchiver::Functions::Util ':all';
+
 use HTML::EasyTags;
-use DateTime::Format::Strptime;
-use DateTime;
 use List::MoreUtils qw(uniq);
 use URI;
-use Text::CSV;
 use Carp qw/confess/;
 
 use constant {
-    CONS_KEY       => 'duo83UgzZ99BRPpf56pUnA',
-    CONS_SEC       => '6Si7yg4S1USpVFFYpL6N8Bc3MftddMXEQYefbn9U3w',
     TWITTER_BASE   => 'http://twitter.com/',
     TWITTER_SEARCH => 'http://twitter.com/search',
-    DATE_FORMAT    => "%d %b %Y %X",
 };
-use constant ACTIONS => qw/retweeted favorited/;
 
 use Exporter 'import';
 
 our @EXPORT_OK = qw/
-  show_tweets_including authorise needs_authorisation
-  make_user_home_link get_month_name_for get_tweets_as_textfile
-  get_tweets_as_spreadsheet download_latest_tweets_for
-  make_content ACTIONS DATE_FORMAT make_year_group
-  make_mention_sidebar_item make_hashtag_sidebar_item
-  make_url_sidebar_item make_tag_sidebar_item make_retweeted_sidebar
-  linkify_text make_tweet_li request_tokens_for has_been_authorised
-  make_retweet_link make_month_link tweet_to_text
-  get_mention_url get_hashtag_url
-  make_highlit_content
-  make_url_report_link
-  make_tag_link
+  get_hashtag_url
+  get_mention_url 
+  linkify_text make_tweet_li 
+  make_content 
   make_hashtag_link
   make_hashtag_report_link
+  make_hashtag_sidebar_item
+  make_highlit_content
   make_mention_link
   make_mention_report_link
-  get_twitter
+  make_mention_sidebar_item 
+  make_month_link 
+  make_retweeted_sidebar
+  make_retweet_link 
+  make_tagger_form_body
+  make_tag_link
+  make_tag_list_box
+  make_tag_sidebar_item 
+  make_tags_list
   make_tweet_display_box
   make_tweet_tagger_form
-  make_tagger_form_body
-  make_tags_list
-  make_tag_list_box
+  make_url_report_link
+  make_url_sidebar_item 
+  make_user_home_link 
+  make_year_group
   /;
 
 our %EXPORT_TAGS = (
     'routes' => [qw/
-      show_tweets_including authorise needs_authorisation
-      make_user_home_link get_month_name_for get_tweets_as_textfile
-      get_tweets_as_spreadsheet download_latest_tweets_for
-      make_content ACTIONS make_year_group
-      make_mention_sidebar_item make_hashtag_sidebar_item
-      make_url_sidebar_item make_tag_sidebar_item make_retweeted_sidebar
       /],
     'all' => [qw/
-        show_tweets_including authorise needs_authorisation
-        make_user_home_link get_month_name_for get_tweets_as_textfile
-        get_tweets_as_spreadsheet download_latest_tweets_for
-        make_content ACTIONS DATE_FORMAT make_year_group
-        make_mention_sidebar_item make_hashtag_sidebar_item
-        make_url_sidebar_item make_tag_sidebar_item make_retweeted_sidebar
-        linkify_text make_tweet_li request_tokens_for has_been_authorised
-        make_retweet_link make_month_link tweet_to_text
-        get_mention_url get_hashtag_url
-        make_highlit_content
-        make_url_report_link
-        make_tag_link
+        get_hashtag_url
+        get_mention_url 
+        linkify_text make_tweet_li 
+        make_content 
         make_hashtag_link
         make_hashtag_report_link
+        make_hashtag_sidebar_item
+        make_highlit_content
         make_mention_link
         make_mention_report_link
-        get_twitter
+        make_mention_sidebar_item 
+        make_month_link 
+        make_retweeted_sidebar
+        make_retweet_link 
+        make_tagger_form_body
+        make_tag_link
+        make_tag_list_box
+        make_tag_sidebar_item 
+        make_tags_list
         make_tweet_display_box
         make_tweet_tagger_form
-        make_tags_list
-        make_tagger_form_body
-        make_tag_list_box
+        make_url_report_link
+        make_url_sidebar_item 
+        make_user_home_link 
+        make_year_group
     /]
 );
 
@@ -390,162 +384,6 @@ sub make_tagger_form_body {
         "Tag:" . $text_box . $add_button . $remove_button
     );
     return $form_body;
-}
-
-=head2 [Bool] request_tokens_for(username, verifier)
-
-Function:  Get access tokens from twitter, and store them in the database
-Arguments: The username (string) and the OAuth verifier (String)
-Returns:   Whether or not the request succeeded.
-Throws:    An exception if the user authorises a different twitter user.
-
-=cut
-
-sub request_tokens_for {
-    my ( $user, $verifier ) = @_;
-    confess "No user" unless $user;
-    confess "No verifier" unless $verifier;
-    debug("Got verifier: $verifier");
-
-    my $twitter = get_twitter();
-    $twitter->request_token( cookies->{token}->value );
-    $twitter->request_token_secret( cookies->{secret}->value );
-    my @bits = $twitter->request_access_token( verifier => $verifier );
-
-    confess("names don't match - got $bits[3]")
-      unless ( $bits[3] eq $user );
-    save_tokens( @bits[ 3, 0, 1 ] );
-    return true;
-}
-
-=head2 [Bool] needs_authorisation( username )
-
-Function: Returns true if the user hasn't been authorised yet. Simple
-          Negation of L<has_been_authorised>
-Arguments: The twitter username
-Returns:  A truth value
-
-=cut
-
-sub needs_authorisation {
-    my $user = shift;
-    return !has_been_authorised($user);
-}
-
-=head2 [Bool] has_been_authorised( username )
-
-Function: Returns true if the user has been authorised.
-Arguments: The twitter username
-Returns:  A truth value
-
-=cut
-
-sub has_been_authorised {
-    my $user = shift;
-
-    if ( my $verifier = params->{oauth_verifier} ) {
-        request_tokens_for( $user, $verifier );
-    }
-    return restore_tokens($user);
-}
-
-=head2 authorise()
-
-Function: redirect the user to twitter to authorise us.
-
-=cut
-
-sub authorise {
-    my $cb_url = request->uri_for( request->path );
-    debug("callback url is $cb_url");
-    eval {
-        my $twitter = get_twitter();
-        my $url = $twitter->get_authorization_url( callback => $cb_url );
-        debug( "request token is " . $twitter->request_token );
-        set_cookie token  => $twitter->request_token;
-        set_cookie secret => $twitter->request_token_secret;
-        redirect($url);
-        return false;
-    };
-    if ( my $err = $@ ) {
-        error($err);
-        send_error("Authorisation failed, $err");
-    }
-}
-
-=head2 get_month_name_for(month_number)
-
-Function:  Get the name of the month given as a number
-Arguments: A number from 1 - 12
-Returns:   A string with the corresponding month name
-
-=cut
-
-sub get_month_name_for {
-    state %name_of_month;
-    my $month_number = shift;
-    confess "No month number provided to get_month_name_for" 
-        unless $month_number;
-    confess "Bad argument to get_month_name_for: expected a number from 1 - 12, but got '$month_number'" 
-        unless (grep {$month_number eq $_} 1 .. 12);
-    
-    unless (%name_of_month) {
-        %name_of_month =
-          map { $_ => DateTime->new( year => 2010, month => $_ )->month_name } 1 .. 12;
-    }
-    return $name_of_month{$month_number};
-}
-
-=head2 get_twitter([access_token, access_secret])
-
-Function: Get a Net::Twitter object, using the access tokens if available
-Returns:  A Net::Twitter instance
-
-=cut
-
-sub get_twitter {
-    my @tokens = @_;
-    my %args   = (
-        traits          => [qw/OAuth API::REST InflateObjects/],
-        consumer_key    => CONS_KEY,
-        consumer_secret => CONS_SEC,
-    );
-    if ( @tokens == 2 ) {
-        @args{qw/access_token access_token_secret/} = @tokens;
-    }
-    my $twitter = eval { Net::Twitter->new(%args)};
-    if (my $e = $@) {
-        confess "Problem making twitter connection: $e";
-    }
-    return $twitter;
-}
-
-=head2 download_latest_tweets_for( screen_name )
-
-Function:  Get the most up to date tweets by querying the twitter API
-           and store them.
-Arguments: The user's twitter screen name
-
-=cut
-
-sub download_latest_tweets_for {
-    my $user    = shift;
-    my @tokens  = restore_tokens($user);
-    my $twitter = get_twitter(@tokens);
-    my $since   = get_since_id_for($user);
-
-    if ( $twitter->authorized ) {
-        for ( my $page = 1 ; ; ++$page ) {
-            debug("Getting page $page of twitter statuses");
-            my $args = { count => 100, page => $page };
-            $args->{since_id} = $since if $since;
-            my $statuses = $twitter->user_timeline($args);
-            last unless @$statuses;
-            store_twitter_statuses(@$statuses);
-        }
-    } else {
-        die "Not authorised.";
-    }
 }
 
 =head2 make_popular_sidebar( username, action )
@@ -904,91 +742,6 @@ sub make_mention_report_link {
         text  => "($count mentions)",
         class => 'sidebarinternallink',
     );
-}
-
-=head2 get_tweets_as_textfile( @tweets )
-
-Function: Transform a list of tweets into a text string for downloading
-Returns:  A text string
-
-=cut
-
-sub get_tweets_as_textfile {
-    my @tweets = @_;
-
-    content_type 'text/plain';
-
-    return join( "\n\n", map { tweet_to_text($_) } @tweets );
-}
-
-=head2 get_tweets_as_spreadsheet( separator, tweets )
-
-Function: Transform a list of tweets into csv, or tsv file format
-Returns:  A text string
-
-=cut
-
-sub get_tweets_as_spreadsheet {
-    my ( $separator, @tweets ) = @_;
-
-    content_type "text/tab-separated-values";
-
-    my $csv = Text::CSV->new(
-        {
-            sep_char     => $separator,
-            binary       => 1,
-            always_quote => 1,
-        }
-    );
-    return join(
-        "\n",
-        map {
-            $csv->combine(
-                $_->created_at->strftime(DATE_FORMAT), 
-                $_->text,
-                $_->retweeted_count,
-                join(':', $_->tags->get_column('tag_text')->all),
-            );
-            $csv->string()
-          } @tweets
-    );
-}
-
-=head2 tweet_to_text( tweet )
-
-Function: Transform a tweet into a text string, with date, text and tags
-
-=cut
-
-sub tweet_to_text {
-    my $tweet = shift;
-    my $created_at  = $tweet->created_at->strftime(DATE_FORMAT);
-    my $text  = $tweet->text;
-    my @tags  = $tweet->tags->get_column('tag_text')->all;
-    my $tags =
-      (@tags)
-      ? 'Tags: ' . join( ', ', @tags )
-      : '';
-    my $result;
-    eval {
-        local $SIG{__WARN__};
-        open( TEMP, '>', \$result );
-        format TEMP = 
-Time:   @<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-        $created_at
-^<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< ~~
-$text
-^<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< 
-$tags
-      ^<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< ~~
-      $tags
-.
-        write TEMP;
-    };
-    if ( my $e = $@ ) {
-        error( "Problem with " . $tweet->text . $e );
-    }
-    return $result;
 }
 
 true;
