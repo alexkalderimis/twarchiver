@@ -31,6 +31,9 @@ our %EXPORT_TAGS = (
         get_month_name_for
         DATE_FORMAT
     /],
+    'routes' => [qw/
+        get_month_name_for
+    /]
 );
 
 =head1 FUNCTIONS
