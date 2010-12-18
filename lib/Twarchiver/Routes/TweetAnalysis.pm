@@ -126,12 +126,13 @@ get '/show/:username/url.:format' => sub {
     }
 };
 
-get '/show/:username/tag/*.*' => sub {
-    my ($tag, $format) = splat;
-    $format = lc $format;
+get '/show/:username/tag/:tag.:format' => sub {
+    my $format = lc params->{format};
+    my $tag = params->{tag};
+    my $username = params->{username};
 
     if ($format eq 'html') {
-        redirect '/show/' . params->{username} . /tag/ . $tag;
+        redirect(URI->new(join('/', '/show', $username, 'tag', $tag)));
     } else {
         my $username = params->{username};
         
@@ -145,11 +146,11 @@ get '/show/:username/tag/:tag' => sub {
 
     return authorise($user) if needs_authorisation($user);
 
-    my $content_url = join('/', $user, 'tag', $tag);
+    my $content_url = URI->new(join('/', $user, 'tag', $tag));
     my $title = sprintf "Statuses from %s tagged with %s",
         make_user_home_link(), $tag;
 
-    return_tweet_analysis_page($content_url, $title, $user);
+    return_tweet_analysis_page("$content_url", $title, $user);
 };
 
 
