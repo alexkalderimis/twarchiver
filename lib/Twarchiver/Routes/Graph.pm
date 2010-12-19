@@ -14,17 +14,26 @@ my %title_for_interval = (
 );
 get '/graphdata/:username/tweets/by/week' => sub {
     my $interval = params->{interval} || 7;
-    my %addition;
-    if ($interval eq "month") {
-        $addition{months} = 1;
-    } elsif ($interval eq "quarter") {
-        $addition{months} = 3;
-    } else {
-        $addition{days} = $interval;
-    }
     my $user = get_user_record(params->{username});
     my $creation = DateTime->from_epoch(epoch => $user->created_at->epoch);
     $creation->truncate( to => "month" );
+    my %addition;
+    if ($interval eq "month") {
+        $addition{months} = 1;
+        $creation->truncate( to => "month" );
+    } elsif ($interval eq "quarter") {
+        $addition{months} = 3;
+        $creation->truncate( to => "month" );
+        my $months_into_quarter = ($creation->month - 1) % 3;
+        $creation->subtract( months => $months_into_quarter);
+    } else {
+        $addition{days} = $interval;
+        if ($interval == 7 or $interval == 14) {
+            $creation->truncate( to => "week" );
+        } else {
+            $creation->truncate( to => "day" );
+        }
+    }
     
     my $now = DateTime->now();
     my $start_of_frame = DateTime->from_epoch(epoch => $creation->epoch);
