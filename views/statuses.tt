@@ -21,6 +21,7 @@
             <li>
                 <h3><a href="#" onclick="javascript:toggleDiv('timeline');">Timeline</a></h3>
                 <div id="timeline" style="display: none;">
+                    <a href="/graph/<% username %>/tweets/by/week">View as Graph</a>
                     <ul id="timeline-list"><li>Loading<li></ul>
                 </div>
             </li>
@@ -128,13 +129,15 @@
 
     <script> 
         // Asynchronously load the content
-        $.throbberShow({
-            image : "/images/ajax-loader.gif",
-            parent : '#content',
-            ajax   : false
-        });
-        $("#content").load("/load/content/<% content_url %>", null, function() {
-            updateSideBars('<% username %>');
-        });
+            window.onload = function() {
+                $("#content").load("/load/content/<% content_url %>", null, function() {
+                    updateSideBars('<% username %>');
+                });
+                $.throbberShow({
+                    image : "/images/ajax-loader.gif",
+                    parent : '#content',
+                    ajax   : false
+                });
+            };
     </script>
 
