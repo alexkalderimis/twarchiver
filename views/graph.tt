@@ -1,0 +1,221 @@
+  
+<!-- 
+    Credit goes to the Ruby on Rails team for this page 
+    has been heavily based on the default Rails page that is 
+    built with a scaffolded application.
+
+    Thanks a lot to them for their work.
+
+    See Ruby on Rails if you want a kickass framework in Ruby:
+    http://www.rubyonrails.org/
+-->;
+<script language="javascript" type="text/javascript" src="/javascripts/statuses.js">
+</script>
+<script language="javascript" type="text/javascript" src="/javascripts/ajax.js">
+</script>
+ <!--[if IE]><script language="javascript" type="text/javascript" src="/javascripts/flot/excanvas.min.js"></script><![endif]-->
+<script language="javascript" type="text/javascript" src="/javascripts/jquery.js"></script>
+<script language="javascript" type="text/javascript" src="/javascripts/flot/jquery.flot.js"></script>
+<div id="page">
+    <div id="sidebar">
+        <ul id="sidebar-items">
+            <li>
+                <h3><a href="#" onclick="javascript:toggleDiv('timeline');">Timeline</a></h3>
+                <div id="timeline" style="display: none;">
+                    <ul id="timeline-list"><li>Loading<li></ul>
+                </div>
+            </li>
+            <li>
+                <h3><a href="#" onclick="javascript:toggleDiv('mentions');">Mentions</a></h3>
+                <div id="mentions" style="display: none;">
+                    <ul id="mentions-list"><li>Loading<li></ul>
+                </div>
+            <li>
+            </li>
+                <h3><a href="#" onclick="javascript:toggleDiv('hashtags');">Hash-Tags</a></h3>
+                <div id="hashtags" style="display: none;">
+                    <ul id="hashtags-list"><li>Loading<li></ul>
+                </div>
+            </li>
+            </li>
+                <h3><a href="javascript:toggleDiv('usertags');">Your tags</a></h3>
+                <div id="usertags" style="display: none;">
+                    <ul id="tagLinksList">
+                    <li>Loading<li></ul>
+                </div>
+            </li>
+            <li>
+                <h3><a href="#" onclick="javascript:toggleDiv('retweeteds');">Retweeted Statuses</a></h3>
+                <div id="retweeteds" style="display: none;">
+                    <ul id="retweetedLinksList"><li>Loading<li></ul>
+                </div>
+            </li>
+            <li>
+                <h3><a href="#" onclick="javascript:toggleDiv('withurls');">Statuses with Links</a></h3>
+                <div id="withurls" style="display: none;">
+                    <ul id="urls-list"><li>Loading<li></ul>
+                </div>
+            </li>
+            <li>
+                <h3>Your Tweet History</h3>
+
+                <ul>
+                    <li>Tweeting since: <span id="beginning">
+                    </span></li>
+                    <li>Most recent tweet: <span id="most_recent">
+                    </span></li>
+                    <li>Number of Tweets: <span id="tweet_count">
+                    </span></li>
+                    <li>Number of mentions: <span id="mention_count">
+                    </span></li>
+                    <li>Number of Hashtags: <span id="hashtag_count">
+                    </span></li>
+                    <li>Number of Tags: <span id="tag_count">
+                    </span></li>
+                    <li>Retweeted tweets: <span id="retweet_count">
+                    </span></li>
+                </ul>
+          </li>
+        </ul>
+      </div>
+
+      <div id="main">
+        <div id="header" style="background-image: url(<% profile_image %>);">
+          <h1><% title %></h1>
+ <!--         <h2><% sub_title %></h2>
+          <br> -->
+        </div>
+
+            <div id="menu">
+            <ul>
+                <li><a href="#" onclick="javascript:toggleDiv('export')">Export</a></li>
+                <li><a href="#" onclick="javascript:toggleDiv('search')">Search</a></li>
+            </ul>
+            </div>
+        <div id="tweet-analysis">
+
+          <div id="export" style="display: none;">
+            <ul>
+                <li><a href="/download/<% username %>.txt">Download all tweets as text file</a></li>
+                <li><a href="/download/<% username %>.tsv">Download all tweets as tab separated value file</a></li>
+                <li><a href="/download/<% username %>.csv">Download all tweets as comma separated value file</a></li>
+            </ul>
+          </div>
+          <div id="search" style="display: none;">
+            <form method="get" action="/search/<% username %>"/>
+                <p>Search Term:
+                    <input type="text" name="searchterm" size="30" />
+                    <input type="submit" value="Find" />
+                </p>
+            </form>
+          </div>
+          <div id="graph" style="width:395px;height:300px;"></div>
+          <form id="intervalForm">
+            <select id="interval">
+                <option value="1">Day</option>
+                <option value="7" selected="yes">Week</option>
+                <option value="14">Fortnight</option>
+                <option value="month">Month</option>
+                <option value="quarter">Quarter</option>
+            </select>
+            <input type="checkbox" id="cumulative">Show  Cumulative Total</input>
+            <input type="button" onclick="javascript:refreshGraph();" value="Refresh Graph">
+            </input>
+          </form>
+        </div>
+      </div>
+    </div>
+
+<script id="source" language="javascript" type="text/javascript">
+    var dayInMillis = 24 * 60 * 60 * 1000;
+    var options = {
+        lines: { show: false },
+        bars: { show: true, barWidth: dayInMillis * 7},
+        points: { show: false },
+        xaxis: { mode: "time"},
+        grid: { hoverable: true, clickable: true },
+        legend: { position: "nw"}
+    };
+    var data = [];
+    var placeholder = $("#graph");
+    var plot;
+        
+    function onDataReceived(data) {
+        // and plot all we got
+        plot = $.plot(placeholder, data, options);
+    }
+    function showTooltip(x, y, contents) {
+        $('<div id="tooltip">' + contents + '</div>').css( {
+            position: 'absolute',
+            display: 'none',
+            top: y + 5,
+            left: x + 5,
+            border: '1px solid #fdd',
+            padding: '2px',
+            'background-color': '#fee',
+            opacity: 0.80
+        }).appendTo("body").fadeIn(200);
+    }
+    var previousPoint = null;
+    placeholder.bind("plothover", function (event, pos, item) {
+
+        if (item) {
+            if (previousPoint != item.datapoint) {
+                previousPoint = item.datapoint;
+                
+                $("#tooltip").remove();
+                var x = item.datapoint[0].toFixed(2),
+                    y = item.datapoint[1].toFixed(2);
+                var preposition;
+                if (item.series.label == "Cumulative total") {
+                    preposition = "up to";
+                } else {
+                    preposition = "in period ending";
+                }
+                
+                var millis = parseInt(x);
+                var tweetNo = parseInt(y);
+                var d = new Date(millis);
+                var dString = d.toDateString();
+                showTooltip(item.pageX, item.pageY,
+                    "tweets " + preposition + " " + dString + ": " + tweetNo);
+            }
+        }
+        else {
+            $("#tooltip").remove();
+            previousPoint = null;            
+        }
+    });
+    function refreshGraph() {
+        console.log("Refreshing graph");
+        var index = document.getElementById("interval").selectedIndex;
+        var interval = document.getElementById("interval").children[index].value;
+        if (interval == "month") {
+            options.bars.barWidth = dayInMillis * 30;
+        } else if (interval == "quarter") {
+            options.bars.barWidth = dayInMillis * 90;
+        } else {
+            options.bars.barWidth = dayInMillis * parseInt(interval);
+        }
+        var dataurl = "/graphdata/<% username %>/tweets/by/week?interval=" + interval;
+        if ($('#cumulative:checked').val() !== undefined) {
+            dataurl = dataurl + "&cumulative=1";
+        }
+        $.ajax({
+            url: dataurl,
+            method: 'GET',
+            dataType: 'json',
+            success: onDataReceived
+        });
+    }
+    window.onload = function() {
+        $.ajax({
+            url: "/graphdata/<% username %>/tweets/by/week",
+            method: 'GET',
+            dataType: 'json',
+            success: onDataReceived
+        });
+        updateSideBars('<% username %>');
+    };
+</script>
+
