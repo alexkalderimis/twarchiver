@@ -147,7 +147,7 @@ get '/show/:username/tag/:tag' => sub {
     return authorise($user) if needs_authorisation($user);
 
     my $content_url = URI->new(join('/', $user, 'tag', $tag));
-    my $title = sprintf "Statuses from %s tagged with %s",
+    my $title = sprintf "Statuses from %s tagged with: %s",
         make_user_home_link(), $tag;
 
     return_tweet_analysis_page("$content_url", $title, $user);
@@ -183,10 +183,9 @@ get '/show/:username' => sub {
 };
 
 
-get '/show/:username/:year/:month.:format' => sub {
-    my $format = params->{format};
+get qr{/show/([\w\d]+)/(\d{4})-(\d{1,2}).(\w{3,4})} => sub {
+    my ($username, $month, $year, $format) = splat;
     $format = lc $format;
-    my ($username, $year, $month) = @{{(params)}}{qw/username year month/};
 
     if ($format eq 'html') {
         redirect '/show/' . join('/', $username, $year, $month);
@@ -195,20 +194,16 @@ get '/show/:username/:year/:month.:format' => sub {
         return export_tweets_in_format($format, @tweets);
     }
 };
-get '/show/:username/:year/:month' => sub {
-    my $username = params->{username};
-    my $year = params->{year};
-    my $month = params->{month};
-    
-    pass and return false if
-        ($year !~ $digits && $month !~ $digits);
+
+get qr{/show/([\w\d]+)/(\d{4})-(\d{1,2})} => sub {
+    my ($username, $year, $month) = splat;
 
     return authorise($username) if needs_authorisation($username);
 
     my $content_url = join('/', $username, $year, $month);
 
     my $title = sprintf "Statuses by %s from %s %s",
-        make_user_home_link(), get_month_name_for($month), $year;
+        make_user_home_link($username), get_month_name_for($month), $year;
 
     return_tweet_analysis_page($content_url, $title, $username);
 };
