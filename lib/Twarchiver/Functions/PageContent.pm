@@ -421,9 +421,16 @@ sub make_tagger_form_body {
         type    => 'button',
         onclick => "javascript:removeTags('$user', '$id');",
     );
+    ## Stupidly enough, this is needed to stop auto-submission
+    ## of a one text field, two button form. Sheesh
+    my $dummy_field = $html->input(
+        name => "dummy",
+        type => "text",
+        style => "display: none",
+    ); 
 
     my $form_body = $html->p(
-        "Tag:" . $text_box . $add_button . $remove_button
+        "Tag:" . $text_box . $add_button . $remove_button . $dummy_field
     );
     return $form_body;
 }
@@ -541,7 +548,7 @@ sub make_month_link {
     my ( $user, $y, $m ) = @_;
     my $number_of_tweets = get_tweets_in_month( $user, $y, $m )->count;
     return $html->a(
-        href => request->uri_for( join( '/', 'show', $user, $y, $m ) ),
+        href => request->uri_for("show/$user/$y-$m"),
         text => sprintf( "%s (%s tweets)", get_month_name_for($m), $number_of_tweets ),
     );
 }
