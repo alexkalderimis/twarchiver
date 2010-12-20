@@ -1,2 +1,6 @@
 logs
 .*swp
+MANIFEST*
+MYMETA.yml
+Build
+_build
