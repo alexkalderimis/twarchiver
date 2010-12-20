@@ -112,14 +112,14 @@
           <div id="timeline-graph" ></div>
           <form id="intervalForm">
             <select id="interval">
-                <option value="1">Day</option>
-                <option value="7" selected="yes">Week</option>
-                <option value="14">Fortnight</option>
+                <option value="day">Day</option>
+                <option value="week">Week</option>
+                <option value="fortnight">Fortnight</option>
                 <option value="month">Month</option>
                 <option value="quarter">Quarter</option>
             </select>
-            <input type="checkbox" id="cumulative">Show  Cumulative Total</input>
-            <input type="button" onclick="javascript:refreshGraph();" value="Refresh Graph">
+            <input type="checkbox" id="cumulative">Show Cumulative Total</input>
+            <input type="button" onclick="javascript:refreshGraphFromForm();" value="Refresh Graph">
             </input>
           </form>
         </div>
@@ -140,6 +140,22 @@
     var placeholder = $("#timeline-graph");
     var plot;
         
+    var interval = "<% interval %>";
+    var days;
+    if (interval == "month") {
+        days = 30;
+    } else if (interval == "quarter") {
+        days = 91;
+    } else if (interval == "fortnight") {
+        days = 14;
+    } else if (interval == "day") {
+        days = 1;
+    } else if (interval == "week") {
+        days = 7;
+    } 
+
+    options.bars.barWidth = dayInMillis * days * <% unit %>;
+
     function onDataReceived(data) {
         // and plot all we got
         plot = $.plot(placeholder, data, options);
@@ -187,21 +203,47 @@
             previousPoint = null;            
         }
     });
-    function refreshGraph() {
+    function refreshGraphFromForm() {
         console.log("Refreshing graph");
         var index = document.getElementById("interval").selectedIndex;
         var interval = document.getElementById("interval").children[index].value;
+        var unit = 1;
+        var checked = 0;
+        var cumulativeCB = document.getElementById("cumulative");
+        var mainurl = "/graph/<% username %>/tweets/by/" + interval;
+        if (cumulativeCB.checked) {
+            checked = 1;
+            mainurl = mainurl + "?cumulative=1";
+        }
+        window.history.pushState({path: mainurl}, '', mainurl);
+        refreshGraph(interval, unit, checked);
+    }
+
+
+    function refreshGraph(interval, unit, showCumulative) {
+        var days;
         if (interval == "month") {
-            options.bars.barWidth = dayInMillis * 30;
+            days = 30;
         } else if (interval == "quarter") {
-            options.bars.barWidth = dayInMillis * 90;
-        } else {
-            options.bars.barWidth = dayInMillis * parseInt(interval);
+            days = 91;
+        } else if (interval == "fortnight") {
+            days = 14;
+        } else if (interval == "day") {
+            days = 1;
+        } else if (interval == "week") {
+            days = 7;
+        } 
+
+        options.bars.barWidth = dayInMillis * days * unit;
+
+        var dataurl = "/graphdata/<% username %>/tweets/by/" + interval;
+        if (showCumulative != null && showCumulative > 0) {
+            dataurl = dataurl + "?cumulative=1";
         }
-        var dataurl = "/graphdata/<% username %>/tweets/by/week?interval=" + interval;
-        if ($('#cumulative:checked').val() !== undefined) {
-            dataurl = dataurl + "&cumulative=1";
+        if (unit != 1) {
+            dataurl = dataurl + "&unit=" + unit;
         }
+
         $.ajax({
             url: dataurl,
             method: 'GET',
@@ -209,6 +251,29 @@
             success: onDataReceived
         });
     }
+
+    $(window).bind('popstate', function() {
+        var mainurl = location.pathname;
+        var pathParts = mainurl.split("/");
+        var lastPart = pathParts.pop();
+        var bits = lastPart.split("?");
+        var interval = bits.shift();
+        var queryString = bits.shift();
+        var unit = 1;
+        var showCumulative;
+        if (queryString != undefined) {
+            var pairs = queryString.split("&");
+            for (var i = 0; i < pairs.length; i++) {
+                var pair = pairs[i].split("=");
+                if (pair[0] == "unit") {
+                    unit =  pair[1];
+                } else if (pair[0] == "cumulative") {
+                    showCumulative = pair[1];
+                }
+            }
+        }
+        refreshGraph(interval, unit, showCumulative);
+    });
 
     placeholder.bind("plotclick", function (event, pos, item) {
         var url = "/show/<% username %>/from/";
@@ -231,8 +296,17 @@
         }
     });
     window.onload = function() {
+        var selector = document.getElementById("interval");
+        var toSelect = "<% interval %>";
+        for (var i = 0; i < selector.children.length; i++) {
+            if (selector.children[i].value == toSelect) {
+                selector.children[i].selected = true;
+                break;
+            }
+        }
+
         $.ajax({
-            url: "/graphdata/<% username %>/tweets/by/week",
+            url: "<% graphdataurl %>",
             method: 'GET',
             dataType: 'json',
             success: onDataReceived

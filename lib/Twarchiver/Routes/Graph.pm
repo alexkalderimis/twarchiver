@@ -6,34 +6,35 @@ use Twarchiver::Functions::DBAccess 'get_user_record';
 use Twarchiver::Functions::TwitterAPI qw/authorise needs_authorisation/;
 use Twarchiver::Functions::PageContent qw/make_user_home_link/;
 
-my %title_for_interval = (
-    1 => "Tweets by day",
-    7 => "Tweets by Week",
-    14 => "Tweets by Fortnight",
-    month => "Tweets by Month",
-    quarter => "Tweets by Quarter",
-);
-get '/graphdata/:username/tweets/by/week' => sub {
-    my $interval = params->{interval} || 7;
+get '/graphdata/:username/tweets/by/:interval' => sub {
+    my $interval = lc params->{interval};
     my $user = get_user_record(params->{username});
     my $creation = DateTime->from_epoch(epoch => $user->created_at->epoch);
-    $creation->truncate( to => "month" );
     my %addition;
     if ($interval eq "month") {
         $addition{months} = 1;
+        $addition{months} *= params->{unit} if params->{unit};
         $creation->truncate( to => "month" );
     } elsif ($interval eq "quarter") {
         $addition{months} = 3;
+        $addition{months} *= params->{unit} if params->{unit};
         $creation->truncate( to => "month" );
         my $months_into_quarter = ($creation->month - 1) % 3;
         $creation->subtract( months => $months_into_quarter);
+    } elsif ($interval eq "fortnight") {
+        $creation->truncate(to => "week");
+        $addition{weeks} = 2;
+        $addition{weeks} *= params->{unit} if params->{unit};
+    } elsif ($interval eq "week") {
+        $creation->truncate(to => "week");
+        $addition{weeks} = 1;
+        $addition{weeks} *= params->{unit} if params->{unit};
+    } elsif ($interval eq "day") {
+        $creation->truncate( to => "day" );
+        $addition{days} = 1;
+        $addition{days} *= params->{unit} if params->{unit};
     } else {
-        $addition{days} = $interval;
-        if ($interval == 7 or $interval == 14) {
-            $creation->truncate( to => "week" );
-        } else {
-            $creation->truncate( to => "day" );
-        }
+        pass and return false;
     }
     
     my $now = DateTime->now();
@@ -70,24 +71,33 @@ get '/graphdata/:username/tweets/by/week' => sub {
         };
     }
     push @json, {
-            label => $title_for_interval{$interval},
+            label => "Tweets by $interval",
             hoverable => \1,
             data => \@data_points,
         };
     return to_json(\@json);
 };
 
-get '/graph/:username/tweets/by/week' => sub {
+get '/graph/:username/tweets/by/:interval' => sub {
     my $username = params->{username};
+    my $interval = params->{interval};
+    my $cumulative = params->{cumulative};
+    my $unit = params->{unit} || 1;
 
     return authorise($username) if needs_authorisation($username);
 
     my $profile_image = get_user_record($username)->profile_image_url
                         || '/images/squirrel_icon64.gif';
+    my $graphdataurl = "/graphdata/$username/tweets/by/$interval";
+    $graphdataurl .= "?unit=" . $unit;
+    $graphdataurl .= "&cumulative=1" if $cumulative;
     template 'graph' => {
         username => $username,
         title => "Timeline for " . make_user_home_link($username),
         profile_image => $profile_image,
+        graphdataurl => $graphdataurl,
+        interval => $interval,
+        unit => $unit,
     };
 };
 
