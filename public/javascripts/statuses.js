@@ -3,6 +3,7 @@ function addTagsToAll(user) {
     var tagFieldValue = document.getElementById('masstag').value;
     var tags = tagFieldValue.split(",");
     tags = jQuery.map(tags, function(str) {return trim(str)});
+    ensureHidden("masstagger");
     requestAddTags(user, tags, tweetIds);
 }
 
@@ -38,6 +39,7 @@ function removeTagsFromAll(user) {
     var tagFieldValue = document.getElementById('masstag').value;
     var tags = tagFieldValue.split(",");
     tags = jQuery.map(tags, function(str) {return trim(str)});
+    ensureHidden("masstagger");
     requestRemoveTags(user, tags, tweetIds);
 }
 
@@ -82,7 +84,11 @@ function getTagAdder(user) {
         var messages = [];
         jQuery.each(data, function(key, value) {
             if (key == "errors") {
-                messages.push(value);
+                if (value instanceof Array) {
+                    messages = messages.concat(value);
+                } else {
+                    messages.push(value);
+                }
             } else {
                 var tweetId = key;
                 console.log("Tweet id is " + tweetId);
@@ -146,8 +152,8 @@ function removeTagFromTagList(tag, tagListElem) {
     }
 }
 
-function toggleElem(obj) {
-    var el = document.getElementById(obj);
+function toggleElem(divId) {
+    var el = document.getElementById(divId);
     if ( el.style.display != 'none' ) {
         el.style.display = 'none';
     }
@@ -156,9 +162,11 @@ function toggleElem(obj) {
     }
 }
 
-function ensureHidden(obj) {
-    var el = document.getElementById(obj);
-    el.style.display = 'none';
+function ensureHidden(divId) {
+    var el = document.getElementById(divId);
+    if (el.style.display != 'none') {
+        toggleDiv(divId);
+    }
 }
 
 function getTagDeleter(user) {
@@ -166,7 +174,11 @@ function getTagDeleter(user) {
         var messages = [];
         jQuery.each(data, function(key, value) {
             if (key == "errors") {
-                messages.push(value);
+                if (value instanceof Array) {
+                    messages = messages.concat(value);
+                } else {
+                    messages.push(value);
+                }
             } else {
                 var tweetId = key;
                 var removedTags = value.removed;
