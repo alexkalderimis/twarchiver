@@ -4,8 +4,8 @@ font-family: 'Linux Libertine', Palatino, 'Palatino Linotype', 'Book Antiqua', G
 margin: 0;
 margin-bottom: 25px;
 padding: 0;
-background-color: #ddd;
-background-image: url("/images/perldancer-bg.jpg"); 
+background-color: #CAD8B8;
+background-image: url("/images/bkg.png"); 
 background-repeat: no-repeat;
 background-position: top left;
 
@@ -32,7 +32,7 @@ span.key-term {
 }
 
 #page {
-background-color: #ddd;
+background-color: #CAD8B8;
 width: 800px;
 margin: auto;
 margin-left: auto;
@@ -42,10 +42,11 @@ margin-right: auto;
 
 #main {
 background-color: white;
-border: 3px solid #aaa;
-border-top: none;
+border: 2px solid #aaa;
 padding: 25px;
 width: 500px;
+border-radius: 15px;
+-moz-border-radius: 15px;
 }
 
 #sidebar {
@@ -213,6 +214,10 @@ font-size: 13px;
     margin-bottom: 2px ! important;
 }
 
+#export li {
+    margin-bottom: 2px ! important;
+}
+
 #timeline ul li a {
     color: blue;
     text-decoration: none;
@@ -248,7 +253,7 @@ padding-left: 0;
 margin-top: 25px;
 font-size: 16px;
 padding-bottom: 10px;
-border-bottom: 1px solid #ccc;
+border-bottom: 1px solid #777E6E;
 }
 #sidebar li {
 list-style-type: none;
