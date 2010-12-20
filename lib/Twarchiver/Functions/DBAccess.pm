@@ -37,6 +37,7 @@ our @EXPORT_OK = qw/
     get_tweets_with_mention get_tweets_with_hashtag get_tweets_with_url
     store_user_info
     get_most_recent_tweet_by
+    get_tweets_from
 /;
 our %EXPORT_TAGS = (
     'all' => [qw/
@@ -49,6 +50,7 @@ our %EXPORT_TAGS = (
     get_tweets_with_mention get_tweets_with_hashtag get_tweets_with_url
     store_user_info
     get_most_recent_tweet_by
+    get_tweets_from
     /],
     'routes' => [qw/
     get_all_tweets_for get_tweets_with_tag get_retweeted_tweets 
@@ -57,6 +59,7 @@ our %EXPORT_TAGS = (
     add_tags_to_tweets remove_tags_from_tweets
     get_most_recent_tweet_by get_tweets_with_tag 
     get_tweets_with_mention get_tweets_with_hashtag get_tweets_with_url
+    get_tweets_from
     /],
     'pagecontent' => [qw/
     get_user_record get_retweet_summary get_months_in 
@@ -646,6 +649,18 @@ sub get_tweets_in_month {
                 { order_by   => {-desc => 'created_at'         }})
         ->search({created_at => {'>='  => $start_of_month->ymd }})
         ->search({created_at => {'<'   => $end_of_month->ymd   }});
+}
+
+sub get_tweets_from {
+    my ($username, $epoch, $days) = @_;
+    my $from = DateTime->from_epoch( epoch => $epoch);
+    my $to = ($days)
+        ? DateTime->from_epoch( epoch => $epoch)
+                        ->add( days => $days)
+        : DateTime->now();
+    return get_user_record($username)->tweets
+                        ->search({created_at => {'>=', $from->ymd}})
+                        ->search({created_at => {'<', $to->ymd}});
 }
 
 1;
