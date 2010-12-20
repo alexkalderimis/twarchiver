@@ -148,7 +148,7 @@ Returns:   A <ol > li> list of tweets, or <p>apology</p> if no tweets found
 sub make_content {
     my @tweets = @_;
     if (@tweets) {
-        return $html->ol( $html->li_group( [ map { make_tweet_li($_) } @tweets ] ) );
+        return $html->ol( $html->li_group( {class => "tweet"}, [ map { make_tweet_li($_) } @tweets ] ) );
     } else {
         return $html->p("No tweets found");
     }
