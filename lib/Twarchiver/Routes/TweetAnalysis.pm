@@ -3,6 +3,7 @@ package Twarchiver::Routes::TweetAnalysis;
 use Dancer ':syntax';
 use Dancer::Plugin::Ajax;
 use HTML::EasyTags;
+use DateTime;
 use URI;
 
 use Twarchiver::Functions::DBAccess    ':routes';
@@ -206,6 +207,42 @@ get qr{/show/([\w\d]+)/(\d{4})-(\d{1,2})} => sub {
         make_user_home_link($username), get_month_name_for($month), $year;
 
     return_tweet_analysis_page($content_url, $title, $username);
+};
+
+get '/show/:username/from/:epoch.:format' => sub {
+    my $username = params->{username};
+    my $epoch = params->{epoch};
+    my $days = params->{days};
+    my $format = lc params->{format};
+    if ($format eq 'html') {
+        my $url = '/show/' . join('/', $username, 'from', $epoch);
+        $url .= "?days=$days" if $days;
+        redirect $url;
+    } else {
+        my @tweets = get_tweets_from($username, $epoch, $days);
+        return export_tweets_in_format($format, @tweets);
+    }
+};
+
+get '/show/:username/from/:epoch' => sub {
+    my $username = params->{username};
+    my $epoch = params->{epoch};
+    my $days = params->{days};
+
+    return authorise($username) if needs_authorisation($username);
+
+    my $content_url = join('/', $username, 'from', $epoch);
+    $content_url .= "?days=$days" if $days;
+
+    my $start = DateTime->from_epoch(epoch => $epoch);
+
+    my $title = sprintf "Statuses by %s %sfrom %s",
+        make_user_home_link($username), 
+        (($days) ? "in the $days days " : ''),
+        $start->ymd;
+
+    my $params = {days => $days};
+    return_tweet_analysis_page($content_url, $title, $username, $params);
 };
 
 get '/show/:username/retweeted.:format' => sub {
@@ -483,13 +520,9 @@ get '/load/content/:username' => sub {
     my $content = make_content(@tweets);
     return $content;
 };
-get '/load/content/:username/:year/:month' => sub {
-    my $user = params->{username};
-    my $year = params->{year};
-    my $month = params->{month};
-    
-    pass and return false if
-        ($year !~ $digits && $month !~ $digits);
+get qr{/load/content/([\w\d]+)/(\d{4})/(\d{1,2})} => sub {
+    my ($user, $year, $month) = splat;
+
     return $html->p("Not Authorised") if ( needs_authorisation($user) );
     download_latest_tweets_for($user);
     my @tweets = get_tweets_in_month($user, $year, $month);
@@ -497,6 +530,16 @@ get '/load/content/:username/:year/:month' => sub {
     return $content;
 };
 
+get '/load/content/:username/from/:epoch' => sub {
+    my $username = params->{username};
+    my $epoch = params->{epoch};
+    my $days = params->{days};
+    return $html->p("Not Authorised") if ( needs_authorisation($username) );
+
+    my @tweets = get_tweets_from($username, $epoch, $days);
+    my $content = make_content(@tweets);
+    return $content;
+};
 
 get '/load/summary/:username' => sub {
     my $username = params->{username};
