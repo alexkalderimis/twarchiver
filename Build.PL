@@ -1,0 +1,33 @@
+use Module::Build;
+
+my $build = Module::Build->new(
+    module_name   => 'Twarchiver',
+    license       => 'perl',
+    dist_author   => 'Alex Kalderimis <alex@gmail.com>',
+    dist_abstract => 'A twitter archiving webapp',
+    create_readme => 1,
+    recursive_test_files => 1,
+    create_makefile_pl   => 'traditional',
+    requires             => {
+        'perl'                          => '5.10',
+        'Dancer'                        => 1.2,
+        'Dancer::Plugin::Ajax'          => 0,
+        'Crypt::SaltedHash'             => 0,
+        URI                             => 0,
+        DateTime                        => 0,
+        'Net::Twitter'                  => 0,
+        'Try::Tiny'                     => 0,
+        'HTML::EasyTags'                => 0,
+        'List::MoreUtils'               => 0,
+        'Text::CSV'                     => 0,
+        'DBIx::Class'                   => 0,
+    },
+    build_requires => {
+        'Test::Exception' => 0,
+        'Test::More'      => 0,
+        'Test::MockObject' => 0,
+        'Test::Most'       => 0,
+        'Test::DBIx::Class' => 0,
+    },
+);
+$build->create_build_script;
