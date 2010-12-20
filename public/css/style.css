@@ -208,6 +208,10 @@ color: #333;
 color: #555;
 font-size: 13px;
 }
+.tags-list li {
+    font-size: 13px ! important ;
+    margin-bottom: 2px ! important;
+}
 
 #timeline ul li a {
     color: blue;
