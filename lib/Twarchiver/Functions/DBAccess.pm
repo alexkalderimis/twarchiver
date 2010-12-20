@@ -155,7 +155,7 @@ Returns:   The id (scalar)
 sub get_since_id_for {
     my $user = shift;
     my $most_recent_tweet = get_most_recent_tweet_by($user);
-    if ($user) {
+    if ($most_recent_tweet) {
         return $most_recent_tweet->tweet_id;
     } else {
         return;
