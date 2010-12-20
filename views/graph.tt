@@ -92,7 +92,7 @@
                 <li><a href="#" onclick="javascript:toggleDiv('search')">Search</a></li>
             </ul>
             </div>
-        <div id="tweet-analysis">
+        <div id="tweet-timeline">
 
           <div id="export" style="display: none;">
             <ul>
@@ -109,7 +109,7 @@
                 </p>
             </form>
           </div>
-          <div id="graph" style="width:395px;height:300px;"></div>
+          <div id="timeline-graph" ></div>
           <form id="intervalForm">
             <select id="interval">
                 <option value="1">Day</option>
@@ -137,7 +137,7 @@
         legend: { position: "nw"}
     };
     var data = [];
-    var placeholder = $("#graph");
+    var placeholder = $("#timeline-graph");
     var plot;
         
     function onDataReceived(data) {
