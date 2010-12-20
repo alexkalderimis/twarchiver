@@ -129,7 +129,7 @@
 <script id="source" language="javascript" type="text/javascript">
     var dayInMillis = 24 * 60 * 60 * 1000;
     var options = {
-        lines: { show: false },
+        lines: {show: false},
         bars: { show: true, barWidth: dayInMillis * 7},
         points: { show: false },
         xaxis: { mode: "time"},
@@ -166,19 +166,20 @@
                 $("#tooltip").remove();
                 var x = item.datapoint[0].toFixed(2),
                     y = item.datapoint[1].toFixed(2);
-                var preposition;
+                var tooltip;
                 if (item.series.label == "Cumulative total") {
-                    preposition = "up to";
+                    tooltip = "Total: " + parseInt(y);
                 } else {
-                    preposition = "in period ending";
+                    var parts = item.series.label.toLowerCase().split(" ");
+                    var period = parts.pop();
+                    var millis = parseInt(x);
+                    var tweetNo = parseInt(y);
+                    var d = new Date(millis);
+                    var dString = d.toDateString();
+                    tooltip = "tweets in " + period + " beginning " 
+                                + dString + ": " + tweetNo;
                 }
-                
-                var millis = parseInt(x);
-                var tweetNo = parseInt(y);
-                var d = new Date(millis);
-                var dString = d.toDateString();
-                showTooltip(item.pageX, item.pageY,
-                    "tweets " + preposition + " " + dString + ": " + tweetNo);
+                showTooltip(item.pageX, item.pageY, tooltip);
             }
         }
         else {
@@ -208,6 +209,27 @@
             success: onDataReceived
         });
     }
+
+    placeholder.bind("plotclick", function (event, pos, item) {
+        var url = "/show/<% username %>/from/";
+        if (item && item.series.label != "Cumulative total") {
+            url = url + (item.datapoint[0].toFixed(0) / 1000);
+            var parts = item.series.label.toLowerCase().split(" ");
+            var period = parts.pop();
+            if (period == "week") {
+                url = url + "?days=7";
+            } else if (period == "day") {
+                url = url + "?days=1";
+            } else if (period == "fortnight") {
+                url = url + "?days=14";
+            } else if (period == "month") {
+                url = url + "?days=31";
+            } else if (period == "quarter") {
+                url = url + "?days=91";
+            }
+            window.location.replace(url);
+        }
+    });
     window.onload = function() {
         $.ajax({
             url: "/graphdata/<% username %>/tweets/by/week",
