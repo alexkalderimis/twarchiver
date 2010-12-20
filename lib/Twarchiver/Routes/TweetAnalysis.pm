@@ -185,7 +185,7 @@ get '/show/:username' => sub {
 
 
 get qr{/show/([\w\d]+)/(\d{4})-(\d{1,2}).(\w{3,4})} => sub {
-    my ($username, $month, $year, $format) = splat;
+    my ($username, $year, $month, $format) = splat;
     $format = lc $format;
 
     if ($format eq 'html') {
