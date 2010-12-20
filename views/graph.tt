@@ -16,23 +16,24 @@
  <!--[if IE]><script language="javascript" type="text/javascript" src="/javascripts/flot/excanvas.min.js"></script><![endif]-->
 <script language="javascript" type="text/javascript" src="/javascripts/jquery.js"></script>
 <script language="javascript" type="text/javascript" src="/javascripts/flot/jquery.flot.js"></script>
+<script language="javascript" type="text/javascript" src="/javascripts/jquery.throbber.js"></script>
 <div id="page">
     <div id="sidebar">
         <ul id="sidebar-items">
             <li>
-                <h3><a href="#" onclick="javascript:toggleDiv('timeline');">Timeline</a></h3>
+                <h3><a href="javascript:toggleDiv('timeline');">Timeline</a></h3>
                 <div id="timeline" style="display: none;">
                     <ul id="timeline-list"><li>Loading<li></ul>
                 </div>
             </li>
             <li>
-                <h3><a href="#" onclick="javascript:toggleDiv('mentions');">Mentions</a></h3>
+                <h3><a href="javascript:toggleDiv('mentions');">Mentions</a></h3>
                 <div id="mentions" style="display: none;">
                     <ul id="mentions-list"><li>Loading<li></ul>
                 </div>
             <li>
             </li>
-                <h3><a href="#" onclick="javascript:toggleDiv('hashtags');">Hash-Tags</a></h3>
+                <h3><a href="javascript:toggleDiv('hashtags');">Hash-Tags</a></h3>
                 <div id="hashtags" style="display: none;">
                     <ul id="hashtags-list"><li>Loading<li></ul>
                 </div>
@@ -45,13 +46,13 @@
                 </div>
             </li>
             <li>
-                <h3><a href="#" onclick="javascript:toggleDiv('retweeteds');">Retweeted Statuses</a></h3>
+                <h3><a href="javascript:toggleDiv('retweeteds');">Retweeted Statuses</a></h3>
                 <div id="retweeteds" style="display: none;">
                     <ul id="retweetedLinksList"><li>Loading<li></ul>
                 </div>
             </li>
             <li>
-                <h3><a href="#" onclick="javascript:toggleDiv('withurls');">Statuses with Links</a></h3>
+                <h3><a href="javascript:toggleDiv('withurls');">Statuses with Links</a></h3>
                 <div id="withurls" style="display: none;">
                     <ul id="urls-list"><li>Loading<li></ul>
                 </div>
@@ -88,8 +89,8 @@
 
             <div id="menu">
             <ul>
-                <li><a href="#" onclick="javascript:toggleDiv('export')">Export</a></li>
-                <li><a href="#" onclick="javascript:toggleDiv('search')">Search</a></li>
+                <li><a href="javascript:toggleDiv('export')">Export</a></li>
+                <li><a href="javascript:toggleDiv('search')">Search</a></li>
             </ul>
             </div>
         <div id="tweet-timeline">
@@ -139,6 +140,7 @@
     var data = [];
     var placeholder = $("#timeline-graph");
     var plot;
+    var currentPath = location.pathname;
         
     var interval = "<% interval %>";
     var days;
@@ -192,8 +194,13 @@
                     var tweetNo = parseInt(y);
                     var d = new Date(millis);
                     var dString = d.toDateString();
-                    tooltip = "tweets in " + period + " beginning " 
-                                + dString + ": " + tweetNo;
+                    var middle;
+                    if (period == "day") {
+                        middle = "on ";
+                    } else {
+                        middle = "in " + period + " beginning ";
+                    }
+                    tooltip = "tweets " + middle + dString + ": " + tweetNo;
                 }
                 showTooltip(item.pageX, item.pageY, tooltip);
             }
@@ -215,12 +222,18 @@
             checked = 1;
             mainurl = mainurl + "?cumulative=1";
         }
+        currentPath = mainurl;
         window.history.pushState({path: mainurl}, '', mainurl);
         refreshGraph(interval, unit, checked);
     }
 
 
     function refreshGraph(interval, unit, showCumulative) {
+        $.throbberShow({
+            image : "/images/ajax-loader.gif",
+            parent : '#timeline-graph',
+            ajax: false
+        });
         var days;
         if (interval == "month") {
             days = 30;
@@ -254,6 +267,11 @@
 
     $(window).bind('popstate', function() {
         var mainurl = location.pathname;
+        if (currentPath != null && mainurl == currentPath) {
+            return;
+        }
+        currentPath = mainurl;
+
         var pathParts = mainurl.split("/");
         var lastPart = pathParts.pop();
         var bits = lastPart.split("?");
