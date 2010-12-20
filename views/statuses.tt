@@ -99,10 +99,10 @@
             <ul>
                 <li><a href="<% text_export_url %>">Download these tweets as text file</a></li>
                 <li><a href="/download/<% username %>.txt">Download all tweets as text file</a></li>
-                <li><a href="<% tsv_export_url %>">Download these tweets as tab separated value file</a></li>
-                <li><a href="/download/<% username %>.tsv">Download all tweets as tab separated value file</a></li>
-                <li><a href="<% csv_export_url %>">Download these tweets as comma separated value file</a></li>
-                <li><a href="/download/<% username %>.csv">Download all tweets as comma separated value file</a></li>
+                <li><a href="<% tsv_export_url %>">Download these tweets as tsv spreadsheet</a></li>
+                <li><a href="/download/<% username %>.tsv">Download all tweets as tsv spreadsheet</a></li>
+                <li><a href="<% csv_export_url %>">Download these tweets as csv spreadsheet</a></li>
+                <li><a href="/download/<% username %>.csv">Download all tweets as csv spreadsheet</a></li>
             </ul>
           </div>
           <div id="search" style="display: none;">
