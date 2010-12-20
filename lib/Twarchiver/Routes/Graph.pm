@@ -4,6 +4,7 @@ use Dancer ':syntax';
 
 use Twarchiver::Functions::DBAccess 'get_user_record';
 use Twarchiver::Functions::TwitterAPI qw/authorise needs_authorisation/;
+use Twarchiver::Functions::PageContent qw/make_user_home_link/;
 
 my %title_for_interval = (
     1 => "Tweets by day",
@@ -40,17 +41,18 @@ get '/graphdata/:username/tweets/by/week' => sub {
     my $end_of_frame = DateTime->from_epoch(epoch => $creation->epoch)
                             ->add(%addition);
     my @data_points;
-    my @cumulatives;
     my $sum = 0;
+    my @cumulatives = ([$creation->epoch * 1000, 0]);
     while ($start_of_frame < $now) {
         my $tweet_count = $user->tweets
                     ->search({created_at => {'>=', $start_of_frame->ymd}})
                     ->search({created_at => {'<', $end_of_frame->ymd}})
                     ->count;
         $sum += $tweet_count;
-        my $time = $end_of_frame->epoch * 1000;
+        my $time = $start_of_frame->epoch * 1000;
         my $data_point = [$time, $tweet_count];
         push @data_points, $data_point;
+        $time = $end_of_frame->epoch * 1000;
         my $cumulation = [$time, $sum];
         push @cumulatives, $cumulation;
         $start_of_frame->add(%addition);
@@ -62,6 +64,8 @@ get '/graphdata/:username/tweets/by/week' => sub {
         push @json, {
             label => "Cumulative total",
             hoverable => \1,
+            lines => {show => \1},
+            bars => {show => \0},
             data => \@cumulatives,
         };
     }
@@ -82,7 +86,7 @@ get '/graph/:username/tweets/by/week' => sub {
                         || '/images/squirrel_icon64.gif';
     template 'graph' => {
         username => $username,
-        title => "Timeline for $username",
+        title => "Timeline for " . make_user_home_link($username),
         profile_image => $profile_image,
     };
 };
