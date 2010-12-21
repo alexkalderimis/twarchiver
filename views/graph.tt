@@ -1,22 +1,5 @@
-  
-<!-- 
-    Credit goes to the Ruby on Rails team for this page 
-    has been heavily based on the default Rails page that is 
-    built with a scaffolded application.
-
-    Thanks a lot to them for their work.
-
-    See Ruby on Rails if you want a kickass framework in Ruby:
-    http://www.rubyonrails.org/
--->;
-<script language="javascript" type="text/javascript" src="/javascripts/statuses.js">
-</script>
-<script language="javascript" type="text/javascript" src="/javascripts/ajax.js">
-</script>
  <!--[if IE]><script language="javascript" type="text/javascript" src="/javascripts/flot/excanvas.min.js"></script><![endif]-->
-<script language="javascript" type="text/javascript" src="/javascripts/jquery.js"></script>
 <script language="javascript" type="text/javascript" src="/javascripts/flot/jquery.flot.js"></script>
-<script language="javascript" type="text/javascript" src="/javascripts/jquery.throbber.js"></script>
 <div id="page">
     <div id="sidebar">
         <ul id="sidebar-items">

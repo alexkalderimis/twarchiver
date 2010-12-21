@@ -1,20 +1,3 @@
-  
-<!-- 
-    Credit goes to the Ruby on Rails team for this page 
-    has been heavily based on the default Rails page that is 
-    built with a scaffolded application.
-
-    Thanks a lot to them for their work.
-
-    See Ruby on Rails if you want a kickass framework in Ruby:
-    http://www.rubyonrails.org/
--->;
-<script language="javascript" type="text/javascript" src="/javascripts/statuses.js">
-</script>
-<script language="javascript" type="text/javascript" src="/javascripts/ajax.js">
-</script>
-<script language="javascript" type="text/javascript" src="/javascripts/jquery.throbber.js"></script>
-
 <div id="page">
     <div id="sidebar">
         <ul id="sidebar-items">
@@ -75,15 +58,15 @@
                     <li>Retweeted tweets: <span id="retweet_count">
                     </span></li>
                 </ul>
-          </li>
+            </li>
         </ul>
-      </div>
+        </div>
 
-      <div id="main">
+        <div id="main">
         <div id="header" style="background-image: url(<% profile_image %>);">
-          <h1><% title %></h1>
- <!--         <h2><% sub_title %></h2>
-          <br> -->
+            <h1><% title %></h1>
+    <!--         <h2><% sub_title %></h2>
+            <br> -->
         </div>
 
             <div id="menu">
@@ -95,7 +78,7 @@
             </div>
         <div id="tweet-analysis">
 
-          <div id="export" style="display: none;">
+            <div id="export" style="display: none;">
             <ul>
                 <li><a href="<% text_export_url %>">Download these tweets as text file</a></li>
                 <li><a href="/download/<% username %>.txt">Download all tweets as text file</a></li>
@@ -104,16 +87,16 @@
                 <li><a href="<% csv_export_url %>">Download these tweets as csv spreadsheet</a></li>
                 <li><a href="/download/<% username %>.csv">Download all tweets as csv spreadsheet</a></li>
             </ul>
-          </div>
-          <div id="search" style="display: none;">
+            </div>
+            <div id="search" style="display: none;">
             <form method="get" action="/search/<% username %>"/>
                 <p>Search Term:
                     <input type="text" name="searchterm" size="30" />
                     <input type="submit" value="Find" />
                 </p>
             </form>
-          </div>
-          <div id="masstagger" style="display: none;">
+            </div>
+            <div id="masstagger" style="display: none;">
             <form>
                 <p>Tag list:
                     <input type="text" id="masstag" size="30" />
@@ -121,23 +104,23 @@
                     <input type="button" value="Remove" onclick="javascript:removeTagsFromAll('<% username %>')" />
                 </p>
             </form>
-          </div>
-          <div id="content"><p>Loading</p></div>
+            </div>
+            <div id="content"><p>Loading</p></div>
         </div>
-      </div>
     </div>
+</div>
 
-    <script> 
-        // Asynchronously load the content
-            window.onload = function() {
-                $("#content").load("/load/content/<% content_url %>", null, function() {
-                    updateSideBars('<% username %>');
-                });
-                $.throbberShow({
-                    image : "/images/ajax-loader.gif",
-                    parent : '#content',
-                    ajax   : false
-                });
-            };
-    </script>
+<script> 
+// Asynchronously load the content
+window.onload = function() {
+    $("#content").load("/load/content/<% content_url %>", null, function() {
+        updateSideBars('<% username %>');
+    });
+    $.throbberShow({
+        image : "/images/ajax-loader.gif",
+        parent : '#content',
+        ajax   : false
+    });
+};
+</script>
 

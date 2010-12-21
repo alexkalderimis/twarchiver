@@ -3,18 +3,28 @@
 <html>
 <head>
 <meta http-equiv="Content-type" content="text/html; charset=<% settings.charset %>" />
-<title>twarchiver</title>
+<title><% settings.sitename %></title>
 <link rel="stylesheet" href="<% request.base %>/css/style.css" />
 
 <!-- Grab Google CDN's jQuery. fall back to local if necessary -->
 <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.4.2/jquery.min.js"></script>
 <script>!window.jQuery && document.write('<script src="<% request.base%>/javascripts/jquery.js"><\/script>')</script>
+<script language="javascript" type="text/javascript" src="/javascripts/statuses.js">
+</script>
+<script language="javascript" type="text/javascript" src="/javascripts/jquery.throbber.js"></script>
 
 </head>
 <body>
 <% content %>
 <div id="footer">
-Powered by <a href="http://perldancer.org/">Dancer</a> <% dancer_version %>
+    <ul>
+        <li>
+            Powered by <a href="http://perldancer.org/">Dancer</a> <% dancer_version %>
+        </li>
+        <li>
+            <a href="mailto:<% settings.contactaddress %>">Contact</a>
+        </li>
+    </ul>
 </div>
 </body>
 </html>
