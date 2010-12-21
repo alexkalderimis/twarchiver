@@ -69,7 +69,7 @@ padding-right: 30px;
 background-image: url("/images/squirrel_icon64.gif"); 
 background-repeat: no-repeat;
 background-position: top left;
-height: 110;
+height: 110px;
 text-align: right;
 }
 #header h1, #header h2 {
@@ -134,7 +134,7 @@ font-size: 14px;
     top: 0px;
 }
 
-#about-content, #export, #search, #masstagger {
+#about-content, #export, #search, #masstagger, #login_content, #register_content {
 background-color: #ffd;
 border: 1px solid #fc0;
 margin-left: -22px;
@@ -295,4 +295,8 @@ ul.NoBulletNoIndent {
     list-style-type: none;
     margin-left: 0px;
     padding-left: 0px
+}
+
+#footer ul li {
+  display: inline;
 }

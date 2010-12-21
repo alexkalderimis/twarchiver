@@ -5,6 +5,9 @@
 # Your application's name
 appname: "twarchiver"
 
+sitename: "Twistory"
+contactaddress: "contact@twistory.org"
+
 # The default layout to use for your application (located in
 # views/layouts/main.tt)
 layout: "main"
@@ -32,3 +35,5 @@ logger: 'file'
 log: debug
 
 database: "data/twarchiver.db"
+
+session: "YAML"

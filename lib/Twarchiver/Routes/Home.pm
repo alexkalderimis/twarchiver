@@ -3,7 +3,10 @@ package Twarchiver::Routes::Home;
 use Dancer ':syntax';
 
 get '/' => sub {
-    template 'index' => {page_title => 'twarchiver'};
+    my $quote = "The only thing I can predict is the past - Watshisface";
+    template 'index' => {
+        quote => $quote,
+    };
 };
 
 true;
