@@ -223,19 +223,19 @@ subtest 'Test make_user_home_link' => sub {
 
 subtest 'Test make_month_link' => sub {
     my $expected = "\n" . 
-            '<a href="show/UserOne/2010/1">January (3 tweets)</a>';
+            '<a href="show/UserOne/2010-1">January (3 tweets)</a>';
     is make_month_link('UserOne', 2010, 1), $expected
         => "Can make a month link - 3 results";
     $expected = "\n" . 
-            '<a href="show/UserTwo/2010/1">January (0 tweets)</a>';
+            '<a href="show/UserTwo/2010-1">January (0 tweets)</a>';
     is make_month_link('UserTwo', 2010, 1), $expected
         => "Can make a month link - 0 results";
     $expected = "\n" . 
-            '<a href="show/UserOne/2009/12">December (2 tweets)</a>';
+            '<a href="show/UserOne/2009-12">December (2 tweets)</a>';
     is make_month_link('UserOne', 2009, 12), $expected
         => "Can make a month link - 2 results";
     $expected = "\n" . 
-            '<a href="show/UserOne/1066/8">August (0 tweets)</a>';
+            '<a href="show/UserOne/1066-8">August (0 tweets)</a>';
     is make_month_link('UserOne', 1066, 8), $expected
         => "Can make a month link - even for unreasonable dates";
 };
@@ -310,7 +310,7 @@ subtest 'Test make_tag_sidebar_item' => sub {
 
     my $expected = "\n" . '<a href="show/FAKE_USER/tag/tagtext">tagtext (count)</a>'; 
 
-    my $mock_tag = Test::Object->new(text => 'tagtext');
+    my $mock_tag = Test::Object->new(tag_text => 'tagtext');
     is make_tag_sidebar_item($mock_tag), $expected
         => "Can make a tag sidebar item";
     throws_ok(
@@ -443,7 +443,8 @@ subtest 'Test make_tagger_form_body' => sub {
 <p>Tag:
 <input type="text" id="tag-987654321" />
 <input type="button" value="Add" onclick="javascript:addTags('UserOne', '987654321');" />
-<input type="button" value="Remove" onclick="javascript:removeTags('UserOne', '987654321');" /></p>
+<input type="button" value="Remove" onclick="javascript:removeTags('UserOne', '987654321');" />
+<input type="text" name="dummy" style="display: none" /></p>
 EXP
     chomp $expected;
 
@@ -460,7 +461,8 @@ subtest 'Test make_tweet_tagger_form' => sub {
 <p>Tag:
 <input type="text" id="tag-987654321" />
 <input type="button" value="Add" onclick="javascript:addTags('UserOne', '987654321');" />
-<input type="button" value="Remove" onclick="javascript:removeTags('UserOne', '987654321');" /></p>
+<input type="button" value="Remove" onclick="javascript:removeTags('UserOne', '987654321');" />
+<input type="text" name="dummy" style="display: none" /></p>
 </form>
 EXP
     chomp $expected;
@@ -481,8 +483,12 @@ subtest 'Test make_tags_list' => sub {
 
     my $expected = <<'EXP';
 
-<li>An added example tag</li>
-<li>Eine zugefügte Bemerkung</li>
+<li>
+<span onclick="toggleElem('987654321-An added example tag')">An added example tag</span>   
+<a href="#" style="display: none" id="987654321-An added example tag" onclick="removeTag('UserOne', '987654321', 'An added example tag')">delete</a></li>
+<li>
+<span onclick="toggleElem('987654321-Eine zugefügte Bemerkung')">Eine zugefügte Bemerkung</span>   
+<a href="#" style="display: none" id="987654321-Eine zugefügte Bemerkung" onclick="removeTag('UserOne', '987654321', 'Eine zugefügte Bemerkung')">delete</a></li>
 EXP
     chomp $expected;
 
@@ -504,9 +510,13 @@ subtest 'Test make_tag_list_box' => sub {
     my $expected = <<'EXP';
 
 <div class="tags-list" id="987654321-tags">
-<ul id="tagList-987654321">
-<li>An added example tag</li>
-<li>Eine zugefügte Bemerkung</li></ul>
+<ul class="tags-ul" id="tagList-987654321">
+<li>
+<span onclick="toggleElem('987654321-An added example tag')">An added example tag</span>   
+<a href="#" style="display: none" id="987654321-An added example tag" onclick="removeTag('UserOne', '987654321', 'An added example tag')">delete</a></li>
+<li>
+<span onclick="toggleElem('987654321-Eine zugefügte Bemerkung')">Eine zugefügte Bemerkung</span>   
+<a href="#" style="display: none" id="987654321-Eine zugefügte Bemerkung" onclick="removeTag('UserOne', '987654321', 'Eine zugefügte Bemerkung')">delete</a></li></ul>
 </div>
 EXP
     chomp $expected;
@@ -517,7 +527,7 @@ EXP
     $expected = <<'EXP';
 
 <div class="tags-list" id="987654320-tags">
-<ul id="tagList-987654320"></ul>
+<ul class="tags-ul" id="tagList-987654320"></ul>
 </div>
 EXP
     chomp $expected;
@@ -538,11 +548,15 @@ subtest 'Test make_tweet_display_box' => sub {
 <p>This is the first 
 <a href="http://twitter.com/search?q=%23example">#example</a> tweet from the test data set for 
 <a href="http://twitter.com/twarchiver">@twarchiver</a></p>
-<div class="tags-list" id="987654321-tags">
-<ul id="tagList-987654321">
-<li>An added example tag</li>
-<li>Eine zugefügte Bemerkung</li></ul>
 </div>
+<div class="tags-list" id="987654321-tags">
+<ul class="tags-ul" id="tagList-987654321">
+<li>
+<span onclick="toggleElem('987654321-An added example tag')">An added example tag</span>   
+<a href="#" style="display: none" id="987654321-An added example tag" onclick="removeTag('UserOne', '987654321', 'An added example tag')">delete</a></li>
+<li>
+<span onclick="toggleElem('987654321-Eine zugefügte Bemerkung')">Eine zugefügte Bemerkung</span>   
+<a href="#" style="display: none" id="987654321-Eine zugefügte Bemerkung" onclick="removeTag('UserOne', '987654321', 'Eine zugefügte Bemerkung')">delete</a></li></ul>
 </div>
 EXP
     chomp $expected;
@@ -560,9 +574,9 @@ EXP
 <a href="http://twitter.com/search?q=%23example">#example</a> tweet from the test data set for 
 <a href="http://twitter.com/twarchiver">@twarchiver</a>, it is about 
 <a href="http://twitter.com/search?q=%23fish">#fish</a></p>
-<div class="tags-list" id="987654320-tags">
-<ul id="tagList-987654320"></ul>
 </div>
+<div class="tags-list" id="987654320-tags">
+<ul class="tags-ul" id="tagList-987654320"></ul>
 </div>
 EXP
     chomp $expected;
@@ -582,17 +596,22 @@ subtest 'Test make_tweet_li'  => sub {
 <p>This is the first 
 <a href="http://twitter.com/search?q=%23example">#example</a> tweet from the test data set for 
 <a href="http://twitter.com/twarchiver">@twarchiver</a></p>
-<div class="tags-list" id="987654321-tags">
-<ul id="tagList-987654321">
-<li>An added example tag</li>
-<li>Eine zugefügte Bemerkung</li></ul>
 </div>
+<div class="tags-list" id="987654321-tags">
+<ul class="tags-ul" id="tagList-987654321">
+<li>
+<span onclick="toggleElem('987654321-An added example tag')">An added example tag</span>   
+<a href="#" style="display: none" id="987654321-An added example tag" onclick="removeTag('UserOne', '987654321', 'An added example tag')">delete</a></li>
+<li>
+<span onclick="toggleElem('987654321-Eine zugefügte Bemerkung')">Eine zugefügte Bemerkung</span>   
+<a href="#" style="display: none" id="987654321-Eine zugefügte Bemerkung" onclick="removeTag('UserOne', '987654321', 'Eine zugefügte Bemerkung')">delete</a></li></ul>
 </div>
 <form method="post" style="display: none;" class="tag-form" id="987654321">
 <p>Tag:
 <input type="text" id="tag-987654321" />
 <input type="button" value="Add" onclick="javascript:addTags('UserOne', '987654321');" />
-<input type="button" value="Remove" onclick="javascript:removeTags('UserOne', '987654321');" /></p>
+<input type="button" value="Remove" onclick="javascript:removeTags('UserOne', '987654321');" />
+<input type="text" name="dummy" style="display: none" /></p>
 </form>
 EXP
     chomp $expected;
@@ -610,15 +629,16 @@ EXP
 <a href="http://twitter.com/search?q=%23example">#example</a> tweet from the test data set for 
 <a href="http://twitter.com/twarchiver">@twarchiver</a>, it is about 
 <a href="http://twitter.com/search?q=%23fish">#fish</a></p>
-<div class="tags-list" id="987654320-tags">
-<ul id="tagList-987654320"></ul>
 </div>
+<div class="tags-list" id="987654320-tags">
+<ul class="tags-ul" id="tagList-987654320"></ul>
 </div>
 <form method="post" style="display: none;" class="tag-form" id="987654320">
 <p>Tag:
 <input type="text" id="tag-987654320" />
 <input type="button" value="Add" onclick="javascript:addTags('UserOne', '987654320');" />
-<input type="button" value="Remove" onclick="javascript:removeTags('UserOne', '987654320');" /></p>
+<input type="button" value="Remove" onclick="javascript:removeTags('UserOne', '987654320');" />
+<input type="text" name="dummy" style="display: none" /></p>
 </form>
 EXP
     chomp $expected;

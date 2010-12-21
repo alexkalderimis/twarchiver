@@ -1,5 +1,5 @@
 use warnings;
-use Test::Most 'bail';
+use Test::Most tests => 6;
 use Test::Exception;
 use Test::MockObject;
 use Carp qw/confess/;
@@ -15,14 +15,16 @@ use Test::Object (
     allow_setting => 1,
     confess_non_existant_fields => 0
 );
-
+my @test_user_data = (
+    Test::Object->new(
+        id => 123,
+        screen_name => "USER_FROM_TEST_DATA",
+    )
+);
 my $params = {username => 'FAKE_USER'};
 my $authdata = {};
-my $token = Test::Object->new(
-    value => 'COOKIE_REQ_TOK'
-);
-my $secret = Test::Object->new(
-    value => 'COOKIE_SECRET'
+my $cookie = Test::Object->new(
+    value => 'COOKIE_REQ_TOK___COOKIE_SECRET'
 );
 my %extra_twitter_attr = ();
 BEGIN {
@@ -50,7 +52,7 @@ BEGIN {
         set_cookie => sub {$authdata->{$_[0]} = $_[1]},
         redirect => sub {$authdata->{redirect} = shift;},
         send_error => sub {confess @_},
-        cookies => sub {return {token => $token, secret => $secret}},
+        cookies => sub {return {tok_sec => $cookie,}},
     );
 }
 
@@ -103,8 +105,7 @@ subtest 'Test get_twitter' => sub {
 
 subtest 'Test authorise' => sub {
    my $expected = {
-       token => 'TEST_REQ_TOKEN',
-       secret => 'REQ_TOK_SECRET',
+       tok_sec => 'TEST_REQ_TOKEN___REQ_TOK_SECRET',
        redirect => 'callback',
    };
    %extra_twitter_attr = (
@@ -224,6 +225,7 @@ subtest 'Test download_latest_tweets_for' => sub {
             return [];
         },
         authorized => 1,
+        lookup_users => sub {return [@test_user_data]},
     );
     lives_ok(
         sub {download_latest_tweets_for('NeverAuthorised')},

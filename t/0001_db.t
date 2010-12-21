@@ -1,8 +1,6 @@
 #!/usr/bin/perl
 
-use Test::More;
-
-use lib 'lib';
+use Test::Most 'bail';
 
 use strict;
 use warnings;
@@ -109,7 +107,8 @@ fixtures_ok sub {
         access_token_secret => 'Access Secret Two',
         tweets => [
                 {
-                    text=>'Tweet Five',
+                    tweet_id => 4,
+                    text=>'Tweet Four',
                     retweeted => 1,
                     retweeted_count => 300_000,
                     favorited => 1,
@@ -134,7 +133,8 @@ fixtures_ok sub {
 
                 },
                 {
-                    text=>'Tweet Six',
+                    tweet_id => 5,
+                    text=>'Tweet Five',
                     retweeted => 1,
                     retweeted_count => 200_000,
                     favorited => 1,
@@ -165,7 +165,8 @@ fixtures_ok sub {
 
                 },
                 {
-                    text=>'Tweet Seven',
+                    tweet_id => 6,
+                    text=>'Tweet Six',
                     created_at => DateTime->new(
                         year => 2010, month => 5, day => 17
                     )
@@ -181,21 +182,24 @@ ok my $user = User->find({screen_name => "User One"})
 
 is( $user->tweets->count, 3, => "Who has three tweets");
 
-lives_ok( sub {$user->add_to_tweets({text => "Tweet Four"})}
+lives_ok( sub {$user->add_to_tweets({
+                text => "Tweet Eight",
+                tweet_id => 8,
+            })}
     => "Can add tweet");
 
 is( $user->tweets->count, 4 => "Who now has four tweets");
 
 is_deeply(
     [ $user->tweets->get_column('text')->all ],
-    ["Tweet One", "Tweet Two", "Tweet Three", "Tweet Four"],
+    ["Tweet One", "Tweet Two", "Tweet Three", "Tweet Eight"],
     'The tweets have the right texts'
     );
 
 is_deeply(
     [ Tweet->get_column('text')->all ],
-    ["Tweet One", "Tweet Two", "Tweet Three", 
-        "Tweet Five", "Tweet Six", "Tweet Seven", "Tweet Four"],
+    ["Tweet One", "Tweet Two", "Tweet Three", "Tweet Four",
+        "Tweet Five", "Tweet Six", "Tweet Eight"],
     'All tweets have the right texts'
 );
 
@@ -265,7 +269,7 @@ my $tweets_in_may2010 = Tweet
 
 is $tweets_in_may2010->count, 2, "Can find tweets in a particular month";
 
-$tweet = Tweet->find({text => "Tweet Six"});
+$tweet = Tweet->find({text => "Tweet Five"});
 
 is $tweet->tags->count, 3, "Can find tags ok";
 is_deeply(
@@ -355,10 +359,10 @@ is_deeply(
     "Can summarise hashtags properly"
 ) or diag(explain \@occurances_of_topics);
 
-is $user_one->tweets->get_column('tweet_id')->max, 7
+is $user_one->tweets->get_column('tweet_id')->max, 8
     => "get_since_id_for logic test";
 
-is $user_one->tweets->find(7)->text, "Tweet Four"
+is $user_one->tweets->find(8)->text, "Tweet Eight"
     => "The since id points to the right record";
 
 is User->find_or_create({screen_name => "User One"})->id, 
@@ -400,26 +404,26 @@ is $user_tweets_rs->count, 4
 
 is_deeply(
     [$user_tweets_rs->get_column('text')->all],
-    ["Tweet Four", "Tweet Three", "Tweet Two", "Tweet One"],
+    ["Tweet Eight", "Tweet Three", "Tweet Two", "Tweet One"],
     "restore_statuses_for content test"
 );
 
-ok my $tweet_7 = Tweet->find({text => "Tweet Seven"})
-    => "Can find tweet 7";
+ok my $tweet_6 = Tweet->find({text => "Tweet Six"})
+    => "Can find tweet 6";
 
-is $tweet_7->tags->count, 0
+is $tweet_6->tags->count, 0
     => "Starts with 0 tags";
 
 
-is $tweet_7->urls->count, 0
+is $tweet_6->urls->count, 0
     => "Starts with 0 urls";
 
 lives_ok(
-    sub {$tweet_7->add_to_urls({address => "Added Url"})},
+    sub {$tweet_6->add_to_urls({address => "Added Url"})},
     "Can add a url"
 );
 
-is $tweet_7->urls->count, 1
+is $tweet_6->urls->count, 1
     => "Now has 1 url";
 
 ok my $added_url = Url->find({address => "Added Url"})
@@ -432,11 +436,11 @@ is Url->count, 9
     => "The number of urls overall is right";
 
 lives_ok(
-    sub {$tweet_7->add_to_urls({address => "Url One"})},
+    sub {$tweet_6->add_to_urls({address => "Url One"})},
     "Can add an existing url"
 );
 
-is $tweet_7->urls->count, 2
+is $tweet_6->urls->count, 2
     => "The count of urls for the tweet has gone up";
 
 is Url->count, 9
