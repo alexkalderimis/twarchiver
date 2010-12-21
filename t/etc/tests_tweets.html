@@ -1,58 +1,65 @@
 
 <ol>
-<li>
+<li class="tweet">
 <div onclick="toggleForm('987654321');">
 <h2>01 Feb 2010 12:00:00 AM</h2>
 <p>This is the first 
 <a href="http://twitter.com/search?q=%23example">#example</a> tweet from the test data set for 
 <a href="http://twitter.com/twarchiver">@twarchiver</a></p>
-<div class="tags-list" id="987654321-tags">
-<ul id="tagList-987654321">
-<li>An added example tag</li>
-<li>Eine zugefügte Bemerkung</li></ul>
 </div>
+<div class="tags-list" id="987654321-tags">
+<ul class="tags-ul" id="tagList-987654321">
+<li>
+<span onclick="toggleElem('987654321-An added example tag')">An added example tag</span>   
+<a href="#" style="display: none" id="987654321-An added example tag" onclick="removeTag('UserOne', '987654321', 'An added example tag')">delete</a></li>
+<li>
+<span onclick="toggleElem('987654321-Eine zugefügte Bemerkung')">Eine zugefügte Bemerkung</span>   
+<a href="#" style="display: none" id="987654321-Eine zugefügte Bemerkung" onclick="removeTag('UserOne', '987654321', 'Eine zugefügte Bemerkung')">delete</a></li></ul>
 </div>
 <form method="post" style="display: none;" class="tag-form" id="987654321">
 <p>Tag:
 <input type="text" id="tag-987654321" />
 <input type="button" value="Add" onclick="javascript:addTags('UserOne', '987654321');" />
-<input type="button" value="Remove" onclick="javascript:removeTags('UserOne', '987654321');" /></p>
+<input type="button" value="Remove" onclick="javascript:removeTags('UserOne', '987654321');" />
+<input type="text" name="dummy" style="display: none" /></p>
 </form></li>
-<li>
+<li class="tweet">
 <div onclick="toggleForm('987654320');">
 <h2>31 Jan 2010 11:59:59 PM</h2>
 <p>This is the second 
 <a href="http://twitter.com/search?q=%23example">#example</a> tweet from the test data set for 
 <a href="http://twitter.com/twarchiver">@twarchiver</a>, it is about 
 <a href="http://twitter.com/search?q=%23fish">#fish</a></p>
-<div class="tags-list" id="987654320-tags">
-<ul id="tagList-987654320"></ul>
 </div>
+<div class="tags-list" id="987654320-tags">
+<ul class="tags-ul" id="tagList-987654320"></ul>
 </div>
 <form method="post" style="display: none;" class="tag-form" id="987654320">
 <p>Tag:
 <input type="text" id="tag-987654320" />
 <input type="button" value="Add" onclick="javascript:addTags('UserOne', '987654320');" />
-<input type="button" value="Remove" onclick="javascript:removeTags('UserOne', '987654320');" /></p>
+<input type="button" value="Remove" onclick="javascript:removeTags('UserOne', '987654320');" />
+<input type="text" name="dummy" style="display: none" /></p>
 </form></li>
-<li>
+<li class="tweet">
 <div onclick="toggleForm('987654319');">
 <h2>15 Jan 2010 11:59:59 PM</h2>
 <p>This is the third 
 <a href="http://twitter.com/search?q=%23example">#example</a> tweet from the test data set for twarchiver, it is not about 
 <a href="http://twitter.com/search?q=%23fish">#fish</a>, but about 
 <a href="http://twitter.com/search?q=%23elephants">#elephants</a></p>
-<div class="tags-list" id="987654319-tags">
-<ul id="tagList-987654319"></ul>
 </div>
+<div class="tags-list" id="987654319-tags">
+<ul class="tags-ul" id="tagList-987654319"></ul>
 </div>
 <form method="post" style="display: none;" class="tag-form" id="987654319">
 <p>Tag:
 <input type="text" id="tag-987654319" />
 <input type="button" value="Add" onclick="javascript:addTags('UserOne', '987654319');" />
-<input type="button" value="Remove" onclick="javascript:removeTags('UserOne', '987654319');" /></p>
+<input type="button" value="Remove" onclick="javascript:removeTags('UserOne', '987654319');" />
+<input type="text" name="dummy" style="display: none" /></p>
 </form></li>
-<li>
+<li class="tweet">
 <div onclick="toggleForm('987654318');">
 <h2>01 Jan 2010 12:00:00 AM</h2>
 <p>This is the fourth 
@@ -60,17 +67,18 @@
 <a href="http://twitter.com/search?q=%23test-data">#test-data</a> set for 
 <a href="http://twitter.com/twarchiver">@twarchiver</a>, go to 
 <a href="http://animals.com">http://animals.com</a> to see lots of animals</p>
-<div class="tags-list" id="987654318-tags">
-<ul id="tagList-987654318"></ul>
 </div>
+<div class="tags-list" id="987654318-tags">
+<ul class="tags-ul" id="tagList-987654318"></ul>
 </div>
 <form method="post" style="display: none;" class="tag-form" id="987654318">
 <p>Tag:
 <input type="text" id="tag-987654318" />
 <input type="button" value="Add" onclick="javascript:addTags('UserOne', '987654318');" />
-<input type="button" value="Remove" onclick="javascript:removeTags('UserOne', '987654318');" /></p>
+<input type="button" value="Remove" onclick="javascript:removeTags('UserOne', '987654318');" />
+<input type="text" name="dummy" style="display: none" /></p>
 </form></li>
-<li>
+<li class="tweet">
 <div onclick="toggleForm('987654317');">
 <h2>31 Dec 2009 11:59:59 PM</h2>
 <p>This is the fifth 
@@ -79,17 +87,18 @@
 <a href="http://twitter.com/twarchiver">@twarchiver</a>, mentioning 
 <a href="http://twitter.com/animals">@animals</a>, just not 
 <a href="http://twitter.com/fish">@fish</a></p>
-<div class="tags-list" id="987654317-tags">
-<ul id="tagList-987654317"></ul>
 </div>
+<div class="tags-list" id="987654317-tags">
+<ul class="tags-ul" id="tagList-987654317"></ul>
 </div>
 <form method="post" style="display: none;" class="tag-form" id="987654317">
 <p>Tag:
 <input type="text" id="tag-987654317" />
 <input type="button" value="Add" onclick="javascript:addTags('UserOne', '987654317');" />
-<input type="button" value="Remove" onclick="javascript:removeTags('UserOne', '987654317');" /></p>
+<input type="button" value="Remove" onclick="javascript:removeTags('UserOne', '987654317');" />
+<input type="text" name="dummy" style="display: none" /></p>
 </form></li>
-<li>
+<li class="tweet">
 <div onclick="toggleForm('987654316');">
 <h2>01 Dec 2009 12:00:00 AM</h2>
 <p>This is the sixth 
@@ -98,17 +107,18 @@
 <a href="http://twitter.com/twarchiver">@twarchiver</a>, fav sites = 
 <a href="http://animals.com">http://animals.com</a> and 
 <a href="http://not.animals.com">http://not.animals.com</a></p>
-<div class="tags-list" id="987654316-tags">
-<ul id="tagList-987654316"></ul>
 </div>
+<div class="tags-list" id="987654316-tags">
+<ul class="tags-ul" id="tagList-987654316"></ul>
 </div>
 <form method="post" style="display: none;" class="tag-form" id="987654316">
 <p>Tag:
 <input type="text" id="tag-987654316" />
 <input type="button" value="Add" onclick="javascript:addTags('UserOne', '987654316');" />
-<input type="button" value="Remove" onclick="javascript:removeTags('UserOne', '987654316');" /></p>
+<input type="button" value="Remove" onclick="javascript:removeTags('UserOne', '987654316');" />
+<input type="text" name="dummy" style="display: none" /></p>
 </form></li>
-<li>
+<li class="tweet">
 <div onclick="toggleForm('987654315');">
 <h2>01 Jun 2009 12:00:00 AM</h2>
 <p>This is the seventh 
@@ -117,17 +127,18 @@
 <a href="http://twitter.com/elephants">@elephants</a>, fav sites = 
 <a href="http://elephants.com">http://elephants.com</a> and 
 <a href="http://fish.com">http://fish.com</a></p>
-<div class="tags-list" id="987654315-tags">
-<ul id="tagList-987654315"></ul>
 </div>
+<div class="tags-list" id="987654315-tags">
+<ul class="tags-ul" id="tagList-987654315"></ul>
 </div>
 <form method="post" style="display: none;" class="tag-form" id="987654315">
 <p>Tag:
 <input type="text" id="tag-987654315" />
 <input type="button" value="Add" onclick="javascript:addTags('UserOne', '987654315');" />
-<input type="button" value="Remove" onclick="javascript:removeTags('UserOne', '987654315');" /></p>
+<input type="button" value="Remove" onclick="javascript:removeTags('UserOne', '987654315');" />
+<input type="text" name="dummy" style="display: none" /></p>
 </form></li>
-<li>
+<li class="tweet">
 <div onclick="toggleForm('987654314');">
 <h2>01 Jan 2009 12:00:00 AM</h2>
 <p>This is the eighth 
@@ -139,17 +150,18 @@
 <a href="http://twitter.com/meerkats">@meerkats</a>, fav sites = 
 <a href="http://africa.com">http://africa.com</a> and 
 <a href="http://elephants.com">http://elephants.com</a></p>
-<div class="tags-list" id="987654314-tags">
-<ul id="tagList-987654314"></ul>
 </div>
+<div class="tags-list" id="987654314-tags">
+<ul class="tags-ul" id="tagList-987654314"></ul>
 </div>
 <form method="post" style="display: none;" class="tag-form" id="987654314">
 <p>Tag:
 <input type="text" id="tag-987654314" />
 <input type="button" value="Add" onclick="javascript:addTags('UserOne', '987654314');" />
-<input type="button" value="Remove" onclick="javascript:removeTags('UserOne', '987654314');" /></p>
+<input type="button" value="Remove" onclick="javascript:removeTags('UserOne', '987654314');" />
+<input type="text" name="dummy" style="display: none" /></p>
 </form></li>
-<li>
+<li class="tweet">
 <div onclick="toggleForm('987654313');">
 <h2>31 May 2008 12:00:00 AM</h2>
 <p>This is the ninth 
@@ -160,17 +172,18 @@
 <a href="http://twitter.com/bisons">@bisons</a> and 
 <a href="http://twitter.com/turkeys">@turkeys</a>. 
 <a href="http://american.wildlife">http://american.wildlife</a></p>
-<div class="tags-list" id="987654313-tags">
-<ul id="tagList-987654313"></ul>
 </div>
+<div class="tags-list" id="987654313-tags">
+<ul class="tags-ul" id="tagList-987654313"></ul>
 </div>
 <form method="post" style="display: none;" class="tag-form" id="987654313">
 <p>Tag:
 <input type="text" id="tag-987654313" />
 <input type="button" value="Add" onclick="javascript:addTags('UserOne', '987654313');" />
-<input type="button" value="Remove" onclick="javascript:removeTags('UserOne', '987654313');" /></p>
+<input type="button" value="Remove" onclick="javascript:removeTags('UserOne', '987654313');" />
+<input type="text" name="dummy" style="display: none" /></p>
 </form></li>
-<li>
+<li class="tweet">
 <div onclick="toggleForm('987654312');">
 <h2>30 May 2008 12:00:00 AM</h2>
 <p>This is the tenth 
@@ -182,13 +195,14 @@
 <a href="http://twitter.com/whales">@whales</a>! 
 <a href="http://animals.com">http://animals.com</a> 
 <a href="http://oceans.com">http://oceans.com</a></p>
-<div class="tags-list" id="987654312-tags">
-<ul id="tagList-987654312"></ul>
 </div>
+<div class="tags-list" id="987654312-tags">
+<ul class="tags-ul" id="tagList-987654312"></ul>
 </div>
 <form method="post" style="display: none;" class="tag-form" id="987654312">
 <p>Tag:
 <input type="text" id="tag-987654312" />
 <input type="button" value="Add" onclick="javascript:addTags('UserOne', '987654312');" />
-<input type="button" value="Remove" onclick="javascript:removeTags('UserOne', '987654312');" /></p>
+<input type="button" value="Remove" onclick="javascript:removeTags('UserOne', '987654312');" />
+<input type="text" name="dummy" style="display: none" /></p>
 </form></li></ol>
