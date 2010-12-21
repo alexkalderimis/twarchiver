@@ -99,10 +99,20 @@ our %EXPORT_TAGS = (
 
 my $html = HTML::EasyTags->new();
 
-my $span_re     = qr/<.?span.*?>/;
+my $span_re     = qr{</?span(?: class=\S+>|>)};
 my $mentions_re = qr/(\@(?:$span_re|\w+)+\b)/;
 my $hashtags_re = qr/(\#(?:$span_re|[\w-]+)+)/;
-my $urls_re     = qr{(http://(?:$span_re|[\w\./]+)+\b)};
+my $urls_re     = qr{(
+                            http://
+                            (?:$span_re|[^\s<>]+)+
+                            \b
+                        |
+                            \b
+                            (?:$span_re|\w|\.)+
+                            (?:com|org|co\.uk|ly)
+                            (?:$span_re|[\w\&\?/])*
+                            \b
+                    )}x;
 
 my %re_for = (
     urls     => $urls_re,
@@ -111,7 +121,7 @@ my %re_for = (
 );
 
 my %urliser_for = (
-    urls     => sub { return shift },
+    urls     => sub { return get_url_url(shift) },
     mentions => sub { return get_mention_url(shift) },
     hashtags => sub { return get_hashtag_url(shift) },
 );
@@ -173,8 +183,8 @@ sub linkify_text {
         @things = uniq(@things);
         debug(
             sprintf(
-                "Found %d things of interest: %s",
-                scalar(@things), join( ', ', @things )
+                "Found %d things of interest: %s\nfrom text: %s",
+                scalar(@things), join( ', ', @things ), $text
             )
         );
         my %link_for;
@@ -735,6 +745,21 @@ sub make_mention_sidebar_item {
         confess "Problem making mention sidebar item: $e";
     }
     return $result;
+}
+
+=head2 get_url_url( url )
+
+Function: Construct a url we can link to
+Return:   http://some.url
+
+=cut
+
+sub get_url_url {
+    my $url = shift;
+    if ($url !~ m!^https?://!) {
+        $url = 'http://' . $url;
+    }
+    return $url;
 }
 
 =head2 get_mention_url( screen_name )

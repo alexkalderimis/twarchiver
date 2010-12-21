@@ -73,7 +73,7 @@ our %EXPORT_TAGS = (
 
 my $mentions_re  = qr/(\@\w+\b)/;
 my $hashtags_re  = qr/(\#[\w-]+)/;
-my $urls_re      = qr{(http://[\w\./]+\b)};
+my $urls_re      = qr{(http://[\w\./]+\b|[\w\.]+(?:com|co\.uk|org|ly)[\w\&\?/]*)};
 
 #my $dt_parser = DateTime::Format::Strptime->new( pattern => '%a %b %d %T %z %Y' );
 
