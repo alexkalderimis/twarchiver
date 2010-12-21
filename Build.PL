@@ -23,6 +23,7 @@ my $build = Module::Build->new(
         'DBIx::Class'                   => 0,
     },
     build_requires => {
+        'SQL::Translator' => 0.11006,
         'Test::Exception' => 0,
         'Test::More'      => 0,
         'Test::MockObject' => 0,
