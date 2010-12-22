@@ -11,7 +11,8 @@ CREATE TABLE tweet (
 
 CREATE TABLE user (
     user_id INTEGER PRIMARY KEY,
-    screen_name TEXT NOT NULL,
+    twitter_id TEXT,
+    screen_name TEXT,
     friends_count INTEGER,
     created_at DATETIME,
     profile_image_url TEXT,

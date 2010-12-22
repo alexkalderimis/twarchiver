@@ -5,7 +5,7 @@ use warnings;
 
 use Dancer ':syntax';
 use Crypt::SaltedHash qw/validate/;
-use Twarchiver::Functions::DBAccess qw/get_user_record/;
+use Twarchiver::Functions::DBAccess qw/:login/;
 use Twarchiver::Functions::PageContent qw/:login/;
 
 
@@ -15,34 +15,36 @@ post '/login' => sub {
     
     if (not exists_user($user)) {
         warning "Failed login for unrecognised user '$user'";
-        redirect '/?loginfailed=notexists';
+        redirect '/?failed=notexists';
     } else {
         my $user_rec = get_user_record($user);
-        if (validate_user($user, params->{login_password}) {
+        if (validate_user($user, params->{login_password})) {
             debug "Password correct";
             # Logged in successfully
             session username => $user;
             redirect params->{url} || '/';
         } else {
             debug("Login failed - password incorrect for " . params->{username});
-            redirect '/?loginfailed=incorrect';
+            redirect '/?failed=incorrect';
         }
     }
 };
 
 post '/register' => sub {
-    my $user = params->{login_user};
+    my $user = params->{reg_user};
 
-    if (exists_user($user) {
+    if (exists_user($user)) {
         debug "User already exists";
-        redirect '/login?failed=exists';
+        redirect '/?failed=exists';
     } else {
-        if (params->{reg_password} ne params->{confirm_password}) {
-            redirect '/login?failed=notmatchingpass';
+        if (not (params->{reg_password} && params->{confirm_password})) {
+            redirect '/?failed=nopass';
+        } elsif (params->{reg_password} ne params->{confirm_password}) {
+            redirect '/?failed=notmatchingpass';
         } else {
             my $csh = Crypt::SaltedHash->new(algorithm => 'SHA-1');
             $csh->add(params->{reg_password});
-            my $pashhash = $csh->generate;
+            my $passhash = $csh->generate;
             my $user_rec = get_user_record($user);
             $user_rec->update({passhash => $passhash});
             session username => $user;

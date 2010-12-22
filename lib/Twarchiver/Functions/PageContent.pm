@@ -539,9 +539,10 @@ Returns:  '<a href="/show/username">username</a>'
 sub make_user_home_link {
     my $user = session('username');
     confess "No username provided" unless $user;
+    my $screen_name = get_user_record($user)->screen_name;
     my $link = $html->a(
         href => request->uri_for( '/show/tweets' ),
-        text => $user,
+        text => $screen_name,
     );
     return $link;
 }
@@ -593,7 +594,7 @@ sub make_url_report_link {
     my ( $address, $count ) = @_;
     confess "no address" unless $address;
     confess "no count" unless defined $count;
-    my $uri = URI->new( request->uri_for( "show/links/to" );
+    my $uri = URI->new( request->uri_for( "show/links/to" ));
     $uri->query_form( address => $address );
 
     return $html->a(

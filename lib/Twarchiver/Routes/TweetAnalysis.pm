@@ -16,7 +16,7 @@ my $digits = qr/^\d+$/;
 my $html = HTML::EasyTags->new();
 
 before sub {
-    if (request->path_info =~ m{/(show|search|download)} {
+    if (request->path_info =~ m{/(show|search|download)}) {
         my $user = session('username');
         return authorise($user) if needs_authorisation($user);
     }
@@ -29,7 +29,6 @@ get '/show/mentions/of/*.*' => sub {
     if ($format eq 'html') {
         redirect "/show/mentions/of/$mention";
     } else {
-        my $username = session('username');
         my $username = session('username');
         my $mention = '@' . $mention;
         my @tweets  = get_tweets_with_mention($username, $mention);
@@ -95,7 +94,7 @@ get '/show/tweets/on/:topic' => sub {
 get '/show/links/to' => sub {
     my $address  = params->{address};
 
-    my $content_url = URI->new('links/to'));
+    my $content_url = URI->new('links/to');
     $content_url->query_form(address => $address);
     my $title = sprintf "Statuses from %s with a link to %s",
         make_user_home_link(), $address;
@@ -160,7 +159,7 @@ Function: return a page loading all the statuses from a user
 =cut
 
 get '/show/tweets.:format' => sub {
-    $format = lc params->{format};
+    my $format = lc params->{format};
 
     if ($format eq 'html') {
         redirect '/show';
@@ -172,7 +171,7 @@ get '/show/tweets.:format' => sub {
 get '/show/tweets' => sub {
 
     my $title       = "Twistory for " . session('username');
-    my $content_url = 'tweets'
+    my $content_url = 'tweets';
 
     return_tweet_analysis_page($content_url, $title);
 };

@@ -4,7 +4,7 @@
             <li>
                 <h3><a href="#" onclick="javascript:toggleDiv('timeline');">Timeline</a></h3>
                 <div id="timeline" style="display: none;">
-                    <a href="/graph/<% username %>/tweets/by/week">View as Graph</a>
+                    <a href="/graph/tweets/by/week">View as Graph</a>
                     <ul id="timeline-list"><li>Loading<li></ul>
                 </div>
             </li>
@@ -94,15 +94,15 @@
             <div id="export" style="display: none;">
             <ul>
                 <li><a href="<% text_export_url %>">Download these tweets as text file</a></li>
-                <li><a href="/download/<% username %>.txt">Download all tweets as text file</a></li>
+                <li><a href="/download/tweets.txt">Download all tweets as text file</a></li>
                 <li><a href="<% tsv_export_url %>">Download these tweets as tsv spreadsheet</a></li>
-                <li><a href="/download/<% username %>.tsv">Download all tweets as tsv spreadsheet</a></li>
+                <li><a href="/download/tweets.tsv">Download all tweets as tsv spreadsheet</a></li>
                 <li><a href="<% csv_export_url %>">Download these tweets as csv spreadsheet</a></li>
-                <li><a href="/download/<% username %>.csv">Download all tweets as csv spreadsheet</a></li>
+                <li><a href="/download/tweets.csv">Download all tweets as csv spreadsheet</a></li>
             </ul>
             </div>
             <div id="search" style="display: none;">
-            <form method="get" action="/search/<% username %>"/>
+            <form method="get" action="/search/tweets"/>
                 <p>Search Term:
                     <input type="text" name="searchterm" size="30" />
                     <input type="submit" value="Find" />
@@ -127,7 +127,7 @@
 // Asynchronously load the content
 window.onload = function() {
     $("#content").load("/load/content/<% content_url %>", null, function() {
-        updateSideBars('<% username %>');
+        updateSideBars();
     });
     $.throbberShow({
         image : "/images/ajax-loader.gif",

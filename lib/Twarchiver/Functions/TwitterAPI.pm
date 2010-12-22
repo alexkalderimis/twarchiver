@@ -65,10 +65,12 @@ sub request_tokens_for {
     $twitter->request_token_secret( $sec );
     my @bits = $twitter->request_access_token( verifier => $verifier );
 
-    confess("names don't match - got $bits[3]")
-      unless ( $bits[3] eq $user );
-    save_tokens( @bits[ 3, 0, 1 ] );
-    return true;
+    if (@bits) {
+        save_user_info( $user, @bits );
+        return true;
+    } else {
+        return false;
+    }
 }
 
 =head2 [Bool] needs_authorisation( username )
@@ -162,18 +164,19 @@ Arguments: The user's twitter screen name
 
 sub download_latest_tweets_for {
     my $user    = shift;
+    my $user_rec = get_user_record($user);
     my @tokens  = restore_tokens($user);
     my $twitter = get_twitter(@tokens);
     my $since   = get_since_id_for($user);
 
     if ( $twitter->authorized ) {
-        my $users = $twitter->lookup_users({screen_name => $user});
+        my $users = $twitter->lookup_users({
+                screen_name => $user_rec->screen_name});
         confess "Couldn't get user info" 
-            unless ($users && ref $users eq 'ARRAY' && @$users);
-        confess ("More than one user matches the screen name $user: ",
-                to_dumper($users))
+            unless ($users && ref $users eq 'ARRAY');
+        confess "More than one user found"
             if (@$users > 1);
-        store_user_info($users->[0]);
+        update_user_info($users->[0]);
 
         for ( my $page = 1 ; ; ++$page ) {
             debug("Getting page $page of twitter statuses");
@@ -181,7 +184,7 @@ sub download_latest_tweets_for {
             $args->{since_id} = $since if $since;
             my $statuses = $twitter->user_timeline($args);
             last unless @$statuses;
-            store_twitter_statuses(@$statuses);
+            store_twitter_statuses($user, @$statuses);
         }
     } else {
         die "Not authorised.";

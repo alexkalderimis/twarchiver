@@ -300,3 +300,8 @@ ul.NoBulletNoIndent {
 #footer ul li {
   display: inline;
 }
+
+#failure_message {
+    background-color: #E99292;
+    color: white;
+}

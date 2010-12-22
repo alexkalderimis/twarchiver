@@ -31,24 +31,26 @@ our @EXPORT_OK = qw/
     get_db get_all_tweets_for get_user_record get_since_id_for 
     get_tweet_record get_urls_for get_mentions_for get_hashtags_for
     get_tags_for store_twitter_statuses add_tags_to_tweets 
-    remove_tags_from_tweets restore_tokens save_tokens
+    remove_tags_from_tweets restore_tokens save_user_info
     get_tweets_with_tag get_tweets_in_month get_retweeted_tweets
     get_months_in get_years_for get_retweet_summary
     get_tweets_with_mention get_tweets_with_hashtag get_tweets_with_url
-    store_user_info
+    update_user_info
     get_most_recent_tweet_by
     get_tweets_from
+    exists_user
+    validate_user
 /;
 our %EXPORT_TAGS = (
     'all' => [qw/
     get_db get_all_tweets_for get_user_record get_since_id_for 
     get_tweet_record get_urls_for get_mentions_for get_hashtags_for
     get_tags_for store_twitter_statuses add_tags_to_tweets 
-    remove_tags_from_tweets restore_tokens save_tokens
+    remove_tags_from_tweets restore_tokens save_user_info
     get_tweets_with_tag get_tweets_in_month get_retweeted_tweets
     get_months_in get_years_for get_retweet_summary
     get_tweets_with_mention get_tweets_with_hashtag get_tweets_with_url
-    store_user_info
+    update_user_info
     get_most_recent_tweet_by
     get_tweets_from
     /],
@@ -66,9 +68,12 @@ our %EXPORT_TAGS = (
     get_tweets_in_month 
     /],
     twitterapi => [qw/
-    save_tokens restore_tokens store_twitter_statuses get_since_id_for
-    store_user_info
-    /]
+    save_user_info restore_tokens store_twitter_statuses get_since_id_for
+    update_user_info get_user_record
+    /],
+    login => [qw/
+    exists_user validate_user get_user_record
+    /],
 );
 
 my $mentions_re  = qr/(\@\w+\b)/;
@@ -108,9 +113,8 @@ Returns:   A DBIx::Class User result row object
 
 sub get_user_record {
     my $user = shift;
-    my $id   = shift;
     my $condition  = {
-        screen_name => $user,
+        username => $user,
     };
     my $db = get_db();
     my $user_rec = $db->resultset('User')->find_or_create(
@@ -119,9 +123,6 @@ sub get_user_record {
             prefetch => 'tweets'
         }
     );
-    if ($id) {
-        $user_rec->update({user_id => $id});
-    }
     return $user_rec;
 }
 
@@ -207,10 +208,10 @@ Arguments: The list of twitter statuses returned from the Twitter API
 =cut
 
 sub store_twitter_statuses {
-    my @statuses = @_;
+    my ($user, @statuses) = @_;
     for (@statuses) {
         my $tweet_rec = get_tweet_record(
-            $_->user->screen_name, $_->id, $_->text);
+            $user, $_->id, $_->text);
         $tweet_rec->update({
             retweeted_count => $_->retweet_count,
             favorited       => $_->favorited,
@@ -234,11 +235,14 @@ sub store_twitter_statuses {
     }
 }
 
-sub store_user_info {
+sub update_user_info {
     my $user = shift;
-    my $user_rec = get_user_record($user->screen_name, $user->id);
+    my $username = Dancer::session('username');
+    my $user_rec = get_user_record($username);
     $user_rec->update({
-            created_at => $user->created_at,
+            twitter_id        => $user->id,
+            screen_name       => $user->screen_name,
+            created_at        => $user->created_at,
             profile_image_url => $user->profile_image_url,
             profile_bkg_url   => $user->profile_background_image_url,
         });
@@ -251,11 +255,13 @@ Function: Store the given tokens in the database in the given
 
 =cut
 
-sub save_tokens {
-    my ( $user, $token, $secret ) = @_;
-    my $user_rec = get_user_record($user);
+sub save_user_info {
+    my ( $username, $token, $secret, $twitter_id, $screen_name ) = @_;
+    my $user_rec = get_user_record($username);
 
     $user_rec->update({
+            screen_name => $screen_name,
+            twitter_id => $twitter_id,
             access_token => $token,
             access_token_secret => $secret,
     });
@@ -667,7 +673,7 @@ sub validate_user {
     my $username = shift;
     my $password = shift;
     
-    my $user_rec = get_user_record($user);
+    my $user_rec = get_user_record($username);
     my $passhash = $user_rec->passhash;
 
     if (Crypt::SaltedHash->validate($passhash, $password)) {
@@ -677,5 +683,11 @@ sub validate_user {
     }
 }
 
+sub exists_user {
+    my $username = shift;
+    return get_db()->resultset('User')
+                   ->search({username => $username})
+                   ->count;
+}
 
 1;

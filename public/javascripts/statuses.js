@@ -19,7 +19,6 @@ function requestAddTags(user, tags, tweetIds) {
     var tagList = tags.join(",");
     var tweetList = tweetIds.join(",");
     var info = {
-        username : user,
         tags     : tagList,
         tweetIds : tweetList
     };
@@ -64,7 +63,6 @@ function requestRemoveTags(user, tags, tweetIds) {
     var tweet_ids = tweetIds.join(",");
     var info = {
         tags     : tagList,
-        username : user,
         tweetIds : tweet_ids
     };
     var tagDeleter = getTagDeleter(tweetIds, tags, user);
@@ -105,7 +103,7 @@ function getTagAdder(user) {
         if (messages.length > 0) {
             alert(messages.join("\n"));
         }
-        updateTags(user);
+        updateTags();
     };
 }
 
@@ -192,7 +190,7 @@ function getTagDeleter(user) {
         if (messages.length > 0) {
             alert(messages.join("\n"));
         }
-        updateTags(user);
+        updateTags();
     };
 }
 
@@ -223,19 +221,18 @@ function loadSummary(data) {
     document.getElementById('retweet_count').innerHTML = data.retweet_count;
 }
 
-function updateTags(user) {
-    $("#tagLinksList").load("/load/tags/for/" + user);
-    $.get("/load/summary/" + user, null, 
-        loadSummary, "json");
+function updateTags() {
+    $("#tagLinksList").load("/load/tags");
+    $.get("/load/summary", null, loadSummary, "json");
 }
 
-function updateSideBars(user) {
-    $("#timeline-list").load("/load/timeline/for/" + user);
-    $("#mentions-list").load("/load/mentions/for/" + user);
-    $("#hashtags-list").load("/load/hashtags/for/" + user);
-    $("#urls-list").load("/load/urls/for/" + user);
-    $("#retweetedLinksList").load("/load/retweeteds/for/" + user);
-    updateTags(user);
+function updateSideBars() {
+    $("#timeline-list").load("/load/timeline");
+    $("#mentions-list").load("/load/mentions");
+    $("#hashtags-list").load("/load/hashtags");
+    $("#urls-list").load("/load/urls");
+    $("#retweetedLinksList").load("/load/retweeteds");
+    updateTags();
 }
 /**
 *

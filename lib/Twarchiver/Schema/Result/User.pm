@@ -25,10 +25,15 @@ __PACKAGE__->table("user");
   is_auto_increment: 1
   is_nullable: 0
 
+=head2 twitter_id
+
+  data_type: 'text'
+  is_nullable: 1
+
 =head2 screen_name
 
   data_type: 'text'
-  is_nullable: 0
+  is_nullable: 1
 
 =head2 friends_count
 
@@ -86,8 +91,10 @@ __PACKAGE__->load_components(qw/InflateColumn::DateTime/);
 __PACKAGE__->add_columns(
   "user_id",
   { data_type => "integer", is_auto_increment => 1, is_nullable => 0 },
+  "twitter_id",
+  { data_type => "text", is_nullable => 1 },
   "screen_name",
-  { data_type => "text", is_nullable => 0 },
+  { data_type => "text", is_nullable => 1 },
   "friends_count",
   { data_type => "integer", is_nullable => 1 },
   "created_at",
