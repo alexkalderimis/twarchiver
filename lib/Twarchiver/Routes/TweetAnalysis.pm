@@ -16,7 +16,7 @@ my $digits = qr/^\d+$/;
 my $html = HTML::EasyTags->new();
 
 before sub {
-    if (request->path_info =~ m{/(show|search|download)}) {
+    if (request->path_info =~ m{/(show|search|download|graph)}) {
         my $user = session('username');
         return authorise($user) if needs_authorisation($user);
     }
@@ -358,7 +358,7 @@ get '/load/content/tweets/on/:topic' => sub {
     return $content;
 };
 
-get '/load/content/links/to/url' => sub {
+get '/load/content/links/to' => sub {
     my $address = params->{address};
     my $user = session('username');
 

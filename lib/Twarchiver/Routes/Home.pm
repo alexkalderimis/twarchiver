@@ -3,15 +3,19 @@ package Twarchiver::Routes::Home;
 use Dancer ':syntax';
 
 use Twarchiver::Functions::DBAccess qw/get_user_record/;
+use Twarchiver::Functions::Util qw/:all/;
 
 get '/' => sub {
     my $quote = "The only thing I can predict is the past - Watshisface";
     if (session('username')) {
         my $user = get_user_record(session('username'));
         my $tweet_count = $user->tweets->count;
+        my $user_creation = $user->created_at->strftime(LONG_MONTH_FORMAT);
         template 'loggedin_index' => {
             quote => $quote,
             tweet_count => $tweet_count,
+            username => session('username'),
+            user_creation => $user_creation,
             
         };
 

@@ -84,6 +84,9 @@
 
             <div id="menu">
             <ul>
+                <li>
+                  <a href="#" onclick="toggleDiv('logout_content');" id="logout_link">Logout</a>
+                </li>
                 <li><a href="#" onclick="javascript:toggleDiv('export')">Export</a></li>
                 <li><a href="#" onclick="javascript:toggleDiv('search')">Search</a></li>
                 <li><a href="#" onclick="javascript:toggleDiv('masstagger')">Tag these Tweets</a></li>
@@ -91,6 +94,20 @@
             </div>
         <div id="tweet-analysis">
 
+          <div id="logout_content" style="display: none;">
+            <form id="logout_form" action="/logout" method="post">
+                <table>
+                <tr>
+                <td>Really?</td>
+                <td><input type="submit" id="logout-button" value="Yes">
+                </input></td>
+                <td><input type="button" id="no-button" value="No" 
+                onclick="toggleDiv('logout_content');" >
+                </input></td> 
+                </tr>
+                </table>
+            </form>
+          </div>
             <div id="export" style="display: none;">
             <ul>
                 <li><a href="<% text_export_url %>">Download these tweets as text file</a></li>

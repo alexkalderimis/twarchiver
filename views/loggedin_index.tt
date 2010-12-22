@@ -1,4 +1,79 @@
 <div id="page">
+    <div id="sidebar">
+        <ul id="sidebar-items">
+            <li>
+                <h3><a href="#" onclick="javascript:toggleDiv('timeline');">Timeline</a></h3>
+                <div id="timeline" style="display: none;">
+                    <a href="/graph/tweets/by/week">View as Graph</a>
+                    <ul id="timeline-list"><li>Loading<li></ul>
+                </div>
+            </li>
+            <li>
+                <h3><a href="#" onclick="javascript:toggleDiv('mentions');">Mentions</a></h3>
+                <div id="mentions" style="display: none;">
+                    <ul id="mentions-list"><li>Loading<li></ul>
+                </div>
+            <li>
+            </li>
+                <h3><a href="#" onclick="javascript:toggleDiv('hashtags');">Hash-Tags</a></h3>
+                <div id="hashtags" style="display: none;">
+                    <ul id="hashtags-list"><li>Loading<li></ul>
+                </div>
+            </li>
+            </li>
+                <h3><a href="javascript:toggleDiv('usertags');">Your tags</a></h3>
+                <div id="usertags" style="display: none;">
+                    <ul id="tagLinksList">
+                    <li>Loading<li></ul>
+                </div>
+            </li>
+            <li>
+                <h3><a href="#" onclick="javascript:toggleDiv('retweeteds');">Retweeted Statuses</a></h3>
+                <div id="retweeteds" style="display: none;">
+                    <ul id="retweetedLinksList"><li>Loading<li></ul>
+                </div>
+            </li>
+            <li>
+                <h3><a href="#" onclick="javascript:toggleDiv('withurls');">Statuses with Links</a></h3>
+                <div id="withurls" style="display: none;">
+                    <ul id="urls-list"><li>Loading<li></ul>
+                </div>
+            </li>
+            <li>
+                <h3>Your Tweet History</h3>
+                <table>
+                    <tr>
+                    <td>Tweeting since:</td>
+                    <td><span id="beginning"></span></td>
+                    </tr>
+                    <tr>
+                    <td>Most recent tweet:</td>
+                    <td><span id="most_recent"></span></td>
+                    </tr>
+                    <tr>
+                    <td>Number of Tweets:</td>
+                    <td><span id="tweet_count"></span></td>
+                    </tr>
+                    <tr>
+                    <td>Number of mentions:</td>
+                    <td><span id="mention_count"></span></td>
+                    </tr>
+                    <tr>
+                    <td>Number of Hashtags:</td>
+                    <td><span id="hashtag_count"></span></td>
+                    </tr>
+                    <tr>
+                    <td>Number of Tags:</td>
+                    <td><span id="tag_count"></span></td>
+                    </tr>
+                    <tr>
+                    <td>Retweeted tweets:</td>
+                    <td><span id="retweet_count"></span></td>
+                    </tr>
+                </table>
+            </li>
+        </ul>
+        </div>
       <div id="main">
         <div id="header">
           <h1><% settings.sitename %></h1>
@@ -24,7 +99,7 @@
                 <td><input type="submit" id="logout-button" value="Yes">
                 </input></td>
                 <td><input type="button" id="no-button" value="No" 
-                onclick="toggleDiv('logout_form');" >
+                onclick="toggleDiv('logout_content');" >
                 </input></td> 
                 </tr>
                 </table>
@@ -67,13 +142,14 @@
                     </tr>
                 </table>
           </div>
-              <h2>Welcome to Your Twistory, <% session.username %></h2>
+              <h2>Welcome to Your Twistory, <% username %></h2>
 
               <p>
               Twistory is a twitter archive webapp - designed to make 
               searching through your tweets easy (did you know you
               have <% tweet_count %> of them?). Did you tweet some really
-              cool link a couple of months back? Was there some question
+              cool link a couple of months back? (You have been tweeting
+              since <% user_creation %>!) Was there some question
               someone asked you just realised the answer to? 
               <br/>
               <em>All is not lost: It's Twistory!</em>
@@ -81,3 +157,9 @@
         </div>
       </div>
     </div>
+<script> 
+// Asynchronously load the content
+    window.onload = function() {
+        updateSideBars();
+    };
+</script>

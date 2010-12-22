@@ -72,21 +72,38 @@
 
             <div id="menu">
             <ul>
+                <li>
+                  <a href="#" onclick="toggleDiv('logout_content');" id="logout_link">Logout</a>
+                </li>
                 <li><a href="javascript:toggleDiv('export')">Export</a></li>
                 <li><a href="javascript:toggleDiv('search')">Search</a></li>
             </ul>
             </div>
         <div id="tweet-timeline">
+          <div id="logout_content" style="display: none;">
+            <form id="logout_form" action="/logout" method="post">
+                <table>
+                <tr>
+                <td>Really?</td>
+                <td><input type="submit" id="logout-button" value="Yes">
+                </input></td>
+                <td><input type="button" id="no-button" value="No" 
+                onclick="toggleDiv('logout_content');" >
+                </input></td> 
+                </tr>
+                </table>
+            </form>
+          </div>
 
           <div id="export" style="display: none;">
             <ul>
-                <li><a href="/download/<% username %>.txt">Download all tweets as text file</a></li>
-                <li><a href="/download/<% username %>.tsv">Download all tweets as tab separated value file</a></li>
-                <li><a href="/download/<% username %>.csv">Download all tweets as comma separated value file</a></li>
+                <li><a href="/download/tweets.txt">Download all tweets as text file</a></li>
+                <li><a href="/download/tweets.tsv">Download all tweets as tab separated value file</a></li>
+                <li><a href="/download/tweets.csv">Download all tweets as comma separated value file</a></li>
             </ul>
           </div>
           <div id="search" style="display: none;">
-            <form method="get" action="/search/<% username %>"/>
+            <form method="get" action="/search/tweets"/>
                 <p>Search Term:
                     <input type="text" name="searchterm" size="30" />
                     <input type="submit" value="Find" />
@@ -200,7 +217,7 @@
         var unit = 1;
         var checked = 0;
         var cumulativeCB = document.getElementById("cumulative");
-        var mainurl = "/graph/<% username %>/tweets/by/" + interval;
+        var mainurl = "/graph/tweets/by/" + interval;
         if (cumulativeCB.checked) {
             checked = 1;
             mainurl = mainurl + "?cumulative=1";
@@ -232,7 +249,7 @@
 
         options.bars.barWidth = dayInMillis * days * unit;
 
-        var dataurl = "/graphdata/<% username %>/tweets/by/" + interval;
+        var dataurl = "/graphdata/tweets/by/" + interval;
         if (showCumulative != null && showCumulative > 0) {
             dataurl = dataurl + "?cumulative=1";
         }
@@ -277,7 +294,7 @@
     });
 
     placeholder.bind("plotclick", function (event, pos, item) {
-        var url = "/show/<% username %>/from/";
+        var url = "/show/tweets/from/";
         if (item && item.series.label != "Cumulative total") {
             url = url + (item.datapoint[0].toFixed(0) / 1000);
             var parts = item.series.label.toLowerCase().split(" ");
@@ -312,7 +329,7 @@
             dataType: 'json',
             success: onDataReceived
         });
-        updateSideBars('<% username %>');
+        updateSideBars();
     };
 </script>
 

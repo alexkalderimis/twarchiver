@@ -6,9 +6,9 @@ use Twarchiver::Functions::DBAccess 'get_user_record';
 use Twarchiver::Functions::TwitterAPI qw/authorise needs_authorisation/;
 use Twarchiver::Functions::PageContent qw/make_user_home_link/;
 
-get '/graphdata/:username/tweets/by/:interval' => sub {
+get '/graphdata/tweets/by/:interval' => sub {
     my $interval = lc params->{interval};
-    my $user = get_user_record(params->{username});
+    my $user = get_user_record(session('username'));
     my $creation = DateTime->from_epoch(epoch => $user->created_at->epoch);
     my %addition;
     if ($interval eq "month") {
@@ -78,22 +78,19 @@ get '/graphdata/:username/tweets/by/:interval' => sub {
     return to_json(\@json);
 };
 
-get '/graph/:username/tweets/by/:interval' => sub {
-    my $username = params->{username};
+get '/graph/tweets/by/:interval' => sub {
     my $interval = params->{interval};
     my $cumulative = params->{cumulative};
     my $unit = params->{unit} || 1;
 
-    return authorise($username) if needs_authorisation($username);
-
-    my $profile_image = get_user_record($username)->profile_image_url
+    my $profile_image = get_user_record(session('username'))
+                            ->profile_image_url
                         || '/images/squirrel_icon64.gif';
-    my $graphdataurl = "/graphdata/$username/tweets/by/$interval";
+    my $graphdataurl = "/graphdata/tweets/by/$interval";
     $graphdataurl .= "?unit=" . $unit;
     $graphdataurl .= "&cumulative=1" if $cumulative;
     template 'graph' => {
-        username => $username,
-        title => "Timeline for " . make_user_home_link($username),
+        title => "Timeline for " . make_user_home_link(),
         profile_image => $profile_image,
         graphdataurl => $graphdataurl,
         interval => $interval,

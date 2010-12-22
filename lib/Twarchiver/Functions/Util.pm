@@ -15,6 +15,7 @@ The standard date format we use for displaying date times:
 
 use constant {
     DATE_FORMAT    => "%d %b %Y %X",
+    LONG_MONTH_FORMAT => "%e %B %Y",
 };
 
 our $VERSION = '0.1';
@@ -24,12 +25,14 @@ use Exporter 'import';
 our @EXPORT_OK = qw/
     get_month_name_for
     DATE_FORMAT
+    LONG_MONTH_FORMAT
     /;
 
 our %EXPORT_TAGS = (
     'all' => [qw/
         get_month_name_for
         DATE_FORMAT
+        LONG_MONTH_FORMAT
     /],
     'routes' => [qw/
         get_month_name_for
