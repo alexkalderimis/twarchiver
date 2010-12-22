@@ -21,7 +21,7 @@ CREATE TABLE user (
     passhash TEXT,
     username TEXT NOT NULL,
     preferred_page_size INTEGER,
-    last_login DATETIME,
+    last_login DATETIME
 );
 
 CREATE TABLE tweet_mention (
