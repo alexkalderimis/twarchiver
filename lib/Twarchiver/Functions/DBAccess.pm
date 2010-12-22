@@ -663,4 +663,19 @@ sub get_tweets_from {
                         ->search({created_at => {'<', $to->ymd}});
 }
 
+sub validate_user {
+    my $username = shift;
+    my $password = shift;
+    
+    my $user_rec = get_user_record($user);
+    my $passhash = $user_rec->passhash;
+
+    if (Crypt::SaltedHash->validate($passhash, $password)) {
+        return 1;
+    } else {
+        return 0;
+    }
+}
+
+
 1;

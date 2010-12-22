@@ -18,7 +18,10 @@ CREATE TABLE user (
     profile_bkg_url TEXT,
     access_token TEXT,
     access_token_secret TEXT,
-    passhash TEXT
+    passhash TEXT,
+    username TEXT NOT NULL,
+    preferred_page_size INTEGER,
+    last_login DATETIME,
 );
 
 CREATE TABLE tweet_mention (

@@ -11,64 +11,60 @@ use Twarchiver::Functions::PageContent qw/:login/;
 
 
 post '/login' => sub {
-    my $user = get_user_record(params->{username});
+    my $user = params->{login_user};
     
-    if (not $user->passhash) {
-        warning "Failed login for unrecognised user " . params->{username};
-        $user->delete;
-        redirect '/login?failed=1';
+    if (not exists_user($user)) {
+        warning "Failed login for unrecognised user '$user'";
+        redirect '/?loginfailed=notexists';
     } else {
-        if (Crypt::SaltedHash->validate($user->passhash, params->password)) 
-        {
+        my $user_rec = get_user_record($user);
+        if (validate_user($user, params->{login_password}) {
             debug "Password correct";
             # Logged in successfully
-            session user => $user;
-            redirect params->{path} || '/';
+            session username => $user;
+            redirect params->{url} || '/';
         } else {
             debug("Login failed - password incorrect for " . params->{username});
-            redirect '/login?failed=incorrect';
+            redirect '/?loginfailed=incorrect';
         }
     }
 };
 
 post '/register' => sub {
-    my $user = get_user_record(params->{username});
-    if ($user->passhash) {
+    my $user = params->{login_user};
+
+    if (exists_user($user) {
         debug "User already exists";
         redirect '/login?failed=exists';
     } else {
-        my $csh = Crypt::SaltedHash->new(algorithm => 'SHA-1');
-        $csh->add(params->{password});
-        my $pashhash = $csh->generate;
-        $user->update({passhash => $passhash});
-        session user => $user;
-        redirect params->{path} || '/';
+        if (params->{reg_password} ne params->{confirm_password}) {
+            redirect '/login?failed=notmatchingpass';
+        } else {
+            my $csh = Crypt::SaltedHash->new(algorithm => 'SHA-1');
+            $csh->add(params->{reg_password});
+            my $pashhash = $csh->generate;
+            my $user_rec = get_user_record($user);
+            $user_rec->update({passhash => $passhash});
+            session username => $user;
+            redirect params->{url} || '/';
+        }
     }
 };
 
- before sub {
+post '/logout' => sub {
+    session->destroy;
+    redirect('/');
+};
 
-    # If an unlogged-in user wants to do anything but login or go to the root
-    if (! session('user') && request->path_info !~ m{^/(?:$|login)}) {
+before sub {
+
+    # If an unlogged-in user wants to do anything but login,
+    # register, or go to the root
+    if (! session('username') 
+        && request->path_info !~ m{^/(?:$|login|logout|register)}) {
         var requested_path => request->path_info;
-        request->path_info('/login');
+        return request->path_info('/');
     }
-};
-
-get '/login' => sub {
-    # Display a login page; the original URL they requested is available as
-    # vars->{requested_path}, so could be put in a hidden field in the form
-    my $message_box;
-    if (my $reason = params->{failed}) {
-        $message_box = get_failed_login_message_box($reason);
-    } else {
-        $message_box = get_normal_login_message_box();
-    }
-
-    template 'login', { 
-        path => vars->{requested_path},
-        message => $message_box,
-    };
 };
 
 true;

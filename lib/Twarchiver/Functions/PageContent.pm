@@ -461,8 +461,7 @@ sub make_retweeted_sidebar {
     my $list     = $html->li_group(
         [
             $html->a(
-                href => request->uri_for( 
-                    join('/', 'show', params->{username}, 'retweeted')),
+                href => request->uri_for( "/show/tweets/retweeted" ),
                 text => "All Retweeted Statuses ($total)",
             )
         ]
@@ -505,7 +504,7 @@ sub make_retweet_link {
     }
     $text .= " ($number_of_tweets)";
 
-    my $uri = URI->new( request->uri_for( join( '/', 'show', params->{username}, 'retweeted' ) ) );
+    my $uri = URI->new( request->uri_for( "/show/tweets/retweeted" ) );
     $uri->query_form( count => $retweet_count );
     return $html->a(
         href => $uri,
@@ -538,10 +537,10 @@ Returns:  '<a href="/show/username">username</a>'
 =cut
 
 sub make_user_home_link {
-    my $user = shift || params->{username};
+    my $user = session('username');
     confess "No username provided" unless $user;
     my $link = $html->a(
-        href => request->uri_for( join( '/', 'show', $user ) ),
+        href => request->uri_for( '/show/tweets' ),
         text => $user,
     );
     return $link;
@@ -558,7 +557,7 @@ sub make_month_link {
     my ( $user, $y, $m ) = @_;
     my $number_of_tweets = get_tweets_in_month( $user, $y, $m )->count;
     return $html->a(
-        href => request->uri_for("show/$user/$y-$m"),
+        href => request->uri_for("show/$y-$m"),
         text => sprintf( "%s (%s tweets)", get_month_name_for($m), $number_of_tweets ),
     );
 }
@@ -594,7 +593,7 @@ sub make_url_report_link {
     my ( $address, $count ) = @_;
     confess "no address" unless $address;
     confess "no count" unless defined $count;
-    my $uri = URI->new( request->uri_for( join( '/', 'show', params->{username}, 'url' ) ) );
+    my $uri = URI->new( request->uri_for( "show/links/to" );
     $uri->query_form( address => $address );
 
     return $html->a(
@@ -635,13 +634,7 @@ sub make_tag_link {
         confess "No ", $_->[1] unless $_[$_->[0]];
     };
     return $html->a(
-        href => request->uri_for(
-            join(
-                '/',
-                show => $username,
-                tag  => $tag
-            )
-        ),
+        href => request->uri_for( "show/tweets/tagged/$tag" ),
         text => "$tag ($count)",
     );
 }
@@ -715,8 +708,7 @@ sub make_hashtag_report_link {
         unless ($topic =~ /^#/);
     return $html->a(
         href => URI->new(
-            request->uri_for(
-            join( '/', 'show', params->{username}, 'on', substr( $topic, 1 ) ) )
+            request->uri_for("show/tweets/on/" . substr( $topic, 1 ) )
         ),
         text  => "($count hashtags)",
         class => 'sidebarinternallink',
@@ -807,36 +799,12 @@ sub make_mention_report_link {
         confess "No ", $_->[1] unless $_[$_->[0]];
     }
     return $html->a(
-        href => request->uri_for(
-            join( '/', 
-                'show', params->{username}, 'to', 
-                substr( $screen_name, 1 ) 
-            )
+        href => request->uri_for("show/mentions/of/" .  
+                    substr( $screen_name, 1 ) 
         ),
         text  => "($count mentions)",
         class => 'sidebarinternallink',
     );
 }
-
-sub get_failed_login_message_box {
-    my $reason = shift;
-    my $message_text;
-    if ($reason eq 'incorrect') {
-        $message_text = "The login details you provided are incorrect. Please check your spelling (and make sure you don't have Caps-Lock on!";
-    } elsif ($reason eq 'exists') {
-        $message_text = "This user already exists. Please login instead."
-    }
-    my $content = $html->p(
-        {class => 'failed'},
-        $message_text
-    );
-    return $content;
-}
-
-sub get_normal_login_message_box {
-    return $html->p(
-        "Please enter your username and password below. Your username should be the same as your twitter screen name, but your password should be " . $html->strong("unique") . " to this site"
-    );
-};
 
 true;

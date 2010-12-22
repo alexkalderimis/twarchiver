@@ -41,23 +41,36 @@
             </li>
             <li>
                 <h3>Your Tweet History</h3>
-
-                <ul>
-                    <li>Tweeting since: <span id="beginning">
-                    </span></li>
-                    <li>Most recent tweet: <span id="most_recent">
-                    </span></li>
-                    <li>Number of Tweets: <span id="tweet_count">
-                    </span></li>
-                    <li>Number of mentions: <span id="mention_count">
-                    </span></li>
-                    <li>Number of Hashtags: <span id="hashtag_count">
-                    </span></li>
-                    <li>Number of Tags: <span id="tag_count">
-                    </span></li>
-                    <li>Retweeted tweets: <span id="retweet_count">
-                    </span></li>
-                </ul>
+                <table>
+                    <tr>
+                    <td>Tweeting since:</td>
+                    <td><span id="beginning"></span></td>
+                    </tr>
+                    <tr>
+                    <td>Most recent tweet:</td>
+                    <td><span id="most_recent"></span></td>
+                    </tr>
+                    <tr>
+                    <td>Number of Tweets:</td>
+                    <td><span id="tweet_count"></span></td>
+                    </tr>
+                    <tr>
+                    <td>Number of mentions:</td>
+                    <td><span id="mention_count"></span></td>
+                    </tr>
+                    <tr>
+                    <td>Number of Hashtags:</td>
+                    <td><span id="hashtag_count"></span></td>
+                    </tr>
+                    <tr>
+                    <td>Number of Tags:</td>
+                    <td><span id="tag_count"></span></td>
+                    </tr>
+                    <tr>
+                    <td>Retweeted tweets:</td>
+                    <td><span id="retweet_count"></span></td>
+                    </tr>
+                </table>
             </li>
         </ul>
         </div>

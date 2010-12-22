@@ -3,6 +3,7 @@ package Twarchiver;
 our $VERSION = 0.1;
 
 use Twarchiver::Routes::Home;
+use Twarchiver::Routes::Login;
 use Twarchiver::Routes::TweetAnalysis;
 use Twarchiver::Routes::Graph;
 

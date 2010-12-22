@@ -15,7 +15,9 @@
 
 </head>
 <body>
+    <div id="body-content">
 <% content %>
+    </div>
 <div id="footer">
     <ul>
         <li>
