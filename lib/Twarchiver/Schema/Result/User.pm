@@ -1,8 +1,5 @@
 package Twarchiver::Schema::Result::User;
 
-# Created by DBIx::Class::Schema::Loader
-# DO NOT MODIFY THE FIRST PART OF THIS FILE
-
 use strict;
 use warnings;
 
@@ -25,46 +22,10 @@ __PACKAGE__->table("user");
   is_auto_increment: 1
   is_nullable: 0
 
-=head2 twitter_id
-
-  data_type: 'text'
-  is_nullable: 1
-
-=head2 screen_name
-
-  data_type: 'text'
-  is_nullable: 1
-
-=head2 friends_count
-
-  data_type: 'integer'
-  is_nullable: 1
-
 =head2 created_at
 
   data_type: 'datetime'
   is_nullable: 1
-
-=head2 profile_image_url
-
-  data_type: 'text'
-  is_nullable: 1
-
-=head2 profile_bkg_url
-
-  data_type: 'text'
-  is_nullable: 1
-
-=head2 access_token
-
-  data_type: 'text'
-  is_nullable: 1
-
-=head2 access_token_secret
-
-  data_type: 'text'
-  is_nullable: 1
-
 =head2 passhash
 
   data_type: 'text'
@@ -91,22 +52,8 @@ __PACKAGE__->load_components(qw/InflateColumn::DateTime/);
 __PACKAGE__->add_columns(
   "user_id",
   { data_type => "integer", is_auto_increment => 1, is_nullable => 0 },
-  "twitter_id",
-  { data_type => "text", is_nullable => 1 },
-  "screen_name",
-  { data_type => "text", is_nullable => 1 },
-  "friends_count",
-  { data_type => "integer", is_nullable => 1 },
   "created_at",
   { data_type => "datetime", is_nullable => 1 },
-  "profile_image_url",
-  { data_type => "text", is_nullable => 1 },
-  "profile_bkg_url",
-  { data_type => "text", is_nullable => 1 },
-  "access_token",
-  { data_type => "text", is_nullable => 1 },
-  "access_token_secret",
-  { data_type => "text", is_nullable => 1 },
   "passhash",
   { data_type => "text", is_nullable => 1 },
   "username",
@@ -115,6 +62,9 @@ __PACKAGE__->add_columns(
   { data_type => "integer", is_nullable => 1 },
   "last_login",
   { data_type => "datetime", is_nullable => 1 },
+  "twitter_account",
+  { data_type => "text", is_nullable => 1, 
+    is_foreign_key => 1},
 
 );
 __PACKAGE__->set_primary_key("user_id");
@@ -136,10 +86,18 @@ __PACKAGE__->has_many(
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
+=head2 twitter_account
 
-# Created by DBIx::Class::Schema::Loader v0.07002 @ 2010-12-06 21:20:27
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:HrYywIxk5cRDZILy/MERNA
+Type: belongs_to
 
+Related object: L<Twarchiver::Schema::Result::TwitterAccount>
 
-# You can replace this text with custom content, and it will be preserved on regeneration
+=cut
+
+__PACKAGE__->belongs_to(
+  "twitter_account",
+  "Twarchiver::Schema::Result::TwitterAccount",
+  { "foreign.user" => "self.user_id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
 1;

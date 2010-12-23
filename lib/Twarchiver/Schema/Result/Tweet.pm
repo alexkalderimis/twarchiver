@@ -81,6 +81,9 @@ __PACKAGE__->add_columns(
   { data_type => "datetime", is_nullable => 1 },
   "user",
   { data_type => "integer", is_foreign_key => 1, is_nullable => 0 },
+  "retweets",
+  { data_type => "text", is_foreign_key => 1,
+      is_nullable => 1 },
 );
 __PACKAGE__->set_primary_key("tweet_id");
 
@@ -100,6 +103,19 @@ __PACKAGE__->belongs_to(
   { user_id => "user" },
   { is_deferrable => 1, on_delete => "CASCADE", on_update => "CASCADE" },
 );
+
+=head2 retweets
+
+Type: belongs_to
+
+Related object: L<Twarchiver::Schema::Result::User>
+
+=cut
+
+__PACKAGE__->belongs_to(
+    "retweets",
+    "Twarchiver::Schema::Result::TwitterAccount",
+    { foreign. => "retweets" },
 
 =head2 tweet_mentions
 
