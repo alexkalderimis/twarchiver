@@ -168,7 +168,7 @@ sub download_latest_tweets_for {
     my $user_rec = get_user_record($user);
     my $last_update = $user_rec->last_update();
     my $five_minutes_ago = DateTime->now()->subtract(minutes => 5);
-    if (not $last_update or $last_update > $five_minutes_ago) {
+    if ($last_update and $last_update > $five_minutes_ago) {
         return;
     }
 
