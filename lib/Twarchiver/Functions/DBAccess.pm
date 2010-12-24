@@ -151,9 +151,9 @@ sub get_all_tweets_for {
     my $user      = shift;
     my $condition = shift;
     my $user_rec = get_user_record($user);
-    if ($user_rec->twitter_account) {
+    if ($user_rec->has_twitter_account) {
         return $user_rec->twitter_account->tweets->search( $condition,
-                            {order_by => {-desc => 'created_at'}},
+                            {order_by => {-desc => 'tweeted_at'}},
                         );
     } else {
         return;
@@ -179,14 +179,12 @@ sub get_since_id_for {
 }
 
 sub get_most_recent_tweet_by {
-    my $user = shift;
-    my $user_rec = get_user_record($user);
-    if ($user_rec->twitter_account && 
-            $user_rec->twitter_account->tweets->count) {
-        my $since = $user_rec->twitter_account->tweets
-                             ->get_column('created_at')->max;
-        my $most_recent = $user_rec->twitter_account->tweets
-                                ->find({created_at => $since});
+    my $user = get_user_record(shift);
+    if ($user->has_twitter_account and $user->twitter_account->has_tweets) {
+        my $since = $user->twitter_account->tweets
+                             ->get_column('tweeted_at')->max;
+        my $most_recent = $user->twitter_account->tweets
+                                ->find({tweeted_at => $since});
     } else {
         return;
     }
@@ -233,7 +231,7 @@ sub store_twitter_statuses {
         $tweet_rec->update({
             retweeted_count => $_->retweet_count,
             favorited       => $_->favorited,
-            created_at      => $_->created_at,
+            tweeted_at      => $_->created_at,
         });
         my $text = $_->text;
 
@@ -273,12 +271,12 @@ sub mentions_added_since {
     if ($since_id) {
         my $since_tweet = get_db()->resultset('Tweet')->find(
                             {tweet_id => $since_id});
-        $since = $since_tweet->created_at->ymd;
+        $since = $since_tweet->tweeted_at->ymd;
     }
     my $mentions = get_db()->resultset('TwitterAccount')
                            ->search(
                         {
-                            "tweet.created_at" => {'>' => $since},
+                            "tweet.tweeted_at" => {'>' => $since},
                         },
                         {
                             'join' => {'tweet_mentions' => 'tweet'},
@@ -538,7 +536,9 @@ sub get_tweets_with_mention {
     my ($username, $mention) = @_;
     return get_all_tweets_for($username)->search(
         {'mention.screen_name'    => $mention },
-        {'join' => {tweet_mentions => 'mention'}}
+        {
+            'join' => {tweet_mentions => 'mention'},
+        }
     );
 }
 
@@ -644,10 +644,10 @@ Returns:   (List[Str]) A list of years
 sub get_years_for {
     my $username = shift;
     my @years = uniq( 
-                    map( {$_->created_at->year} 
+                    map( {$_->tweeted_at->year} 
                         get_all_tweets_for($username)->search(
-                            { created_at => {'!=' => undef}},
-                            { order_by => {-desc => 'created_at'}}
+                            { tweeted_at => {'!=' => undef}},
+                            { order_by => {-desc => 'tweeted_at'}}
                         )->all)
                 );
     return @years;
@@ -670,12 +670,12 @@ sub get_months_in {
     my $year_end =  DateTime->new(year => ++$year, month => 1, day => 1);
 
     my @months = uniq(
-                map  {$_->created_at->month} 
+                map  {$_->tweeted_at->month} 
                 get_all_tweets_for($username)->search(
-                        { created_at => {'!='    => undef            }},
-                        { order_by   => {'-desc' => 'created_at'     }})
-                ->search({created_at => {'>='    => $year_start->ymd }})
-                ->search({created_at => {'<'     => $year_end->ymd   }})
+                        { tweeted_at => {'!='    => undef            }},
+                        { order_by   => {'-desc' => 'tweeted_at'     }})
+                ->search({tweeted_at => {'>='    => $year_start->ymd }})
+                ->search({tweeted_at => {'<'     => $year_end->ymd   }})
                 ->all
                 );
     return @months;
@@ -702,10 +702,10 @@ sub get_tweets_in_month {
     )->add( months => 1 );
 
     return  get_all_tweets_for($username)->search(
-                { created_at => {'!='  => undef                }},
-                { order_by   => {-desc => 'created_at'         }})
-        ->search({created_at => {'>='  => $start_of_month->ymd }})
-        ->search({created_at => {'<'   => $end_of_month->ymd   }});
+                { tweeted_at => {'!='  => undef                }},
+                { order_by   => {-desc => 'tweeted_at'         }})
+        ->search({tweeted_at => {'>='  => $start_of_month->ymd }})
+        ->search({tweeted_at => {'<'   => $end_of_month->ymd   }});
 }
 
 sub get_tweets_from {
@@ -716,8 +716,8 @@ sub get_tweets_from {
                         ->add( days => $days)
         : DateTime->now();
     return get_all_tweets_for($username)
-                        ->search({created_at => {'>=', $from->ymd}})
-                        ->search({created_at => {'<', $to->ymd}});
+                        ->search({tweeted_at => {'>=', $from->ymd}})
+                        ->search({tweeted_at => {'<', $to->ymd}});
 }
 
 sub validate_user {

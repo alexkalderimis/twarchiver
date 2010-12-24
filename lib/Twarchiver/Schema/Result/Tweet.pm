@@ -77,7 +77,7 @@ __PACKAGE__->add_columns(
   { data_type => "boolean", is_nullable => 1 },
   "favorited_count",
   { data_type => "integer", is_nullable => 1 },
-  "created_at",
+  "tweeted_at",
   { data_type => "datetime", is_nullable => 1 },
   "retweets",
   { data_type => "text", is_foreign_key => 1,

@@ -92,7 +92,7 @@ sub get_tweets_as_spreadsheet {
         "\n",
         map {
             $csv->combine(
-                $_->created_at->strftime(DATE_FORMAT), 
+                $_->tweeted_at->strftime(DATE_FORMAT), 
                 $_->text,
                 $_->retweeted_count,
                 join(':', $_->tags->get_column('tag_text')->all),
@@ -110,7 +110,7 @@ Function: Transform a tweet into a text string, with date, text and tags
 
 sub tweet_to_text {
     my $tweet = shift;
-    my $created_at  = $tweet->created_at->strftime(DATE_FORMAT);
+    my $date  = $tweet->tweeted_at->strftime(DATE_FORMAT);
     my $text  = $tweet->text;
     my @tags  = $tweet->tags->get_column('tag_text')->all;
     my $tags =
@@ -123,7 +123,7 @@ sub tweet_to_text {
         open( TEMP, '>', \$result );
         format TEMP = 
 Time:   @<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-        $created_at
+        $date
 ^<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< ~~
 $text
 ^<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< 

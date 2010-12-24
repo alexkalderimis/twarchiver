@@ -285,7 +285,7 @@ sub make_tweet_display_box {
         onclick => "toggleForm('$id');" 
     );
     my $heading   = $html->h2( 
-        $tweet->created_at->strftime(DATE_FORMAT) 
+        $tweet->tweeted_at->strftime(DATE_FORMAT) 
     );
     my $body      = $html->p($text);
     my $tag_box   = make_tag_list_box($tweet);
@@ -341,7 +341,7 @@ sub make_tags_list {
         my @tags = $tweet->tags->get_column("tag_text")->all;
         my @li_elems = map {
             make_tweet_tags_list_item(
-                $tweet->user->screen_name, $_, $tweet->tweet_id)} @tags;
+                $tweet->twitter_account->screen_name, $_, $tweet->tweet_id)} @tags;
         return $html->li_group([@li_elems]);
     } else {
         return '';
@@ -539,7 +539,7 @@ Returns:  '<a href="/show/username">username</a>'
 sub make_user_home_link {
     my $user = session('username');
     confess "No username provided" unless $user;
-    my $screen_name = get_user_record($user)->screen_name;
+    my $screen_name = get_user_record($user)->twitter_account->screen_name;
     my $link = $html->a(
         href => request->uri_for( '/show/tweets' ),
         text => $screen_name,
@@ -614,7 +614,7 @@ Returns:  '<a href="show/user/tag/tagtext">tagtext (7)</a>'
 sub make_tag_sidebar_item {
     my $tag      = shift;
     my $result = eval { make_tag_link( 
-        params->{username}, $tag->tag_text, $tag->get_column('count') );
+        session('username'), $tag->tag_text, $tag->get_column('count') );
     };
     if (my $e = $@) {
         confess "Problem making tag sidebar item: $e";

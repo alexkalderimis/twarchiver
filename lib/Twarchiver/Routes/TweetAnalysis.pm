@@ -536,7 +536,7 @@ get '/load/summary' => sub {
     $data{mention_count}   = get_mentions_for($username)->count;
     $data{urls_total}      = get_urls_for($username)->count;
     $data{beginning}       = $user->twitter_account->created_at->dmy();
-    $data{most_recent}     = get_most_recent_tweet_by($username)->created_at->dmy();
+    $data{most_recent}     = get_most_recent_tweet_by($username)->tweeted_at->dmy();
     return to_json( \%data );
 };
 

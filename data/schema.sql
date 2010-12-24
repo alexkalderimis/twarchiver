@@ -5,7 +5,7 @@ CREATE TABLE tweet (
     retweeted_count INTEGER,
     favorited BOOLEAN,
     favorited_count INTEGER,
-    created_at DATETIME,
+    tweeted_at DATETIME,
     twitter_account TEXT NOT NULL REFERENCES twitteraccount(screen_name),
     retweets TEXT REFERENCES twitteraccount(screen_name)
 );

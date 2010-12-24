@@ -8,8 +8,8 @@ use Twarchiver::Functions::PageContent qw/make_user_home_link/;
 
 get '/graphdata/tweets/by/:interval' => sub {
     my $interval = lc params->{interval};
-    my $user = get_user_record(session('username'));
-    my $creation = DateTime->from_epoch(epoch => $user->created_at->epoch);
+    my $twitter_account = get_user_record(session('username'))->twitter_account;
+    my $creation = DateTime->from_epoch(epoch => $twitter_account->created_at->epoch);
     my %addition;
     if ($interval eq "month") {
         $addition{months} = 1;
@@ -45,9 +45,9 @@ get '/graphdata/tweets/by/:interval' => sub {
     my $sum = 0;
     my @cumulatives = ([$creation->epoch * 1000, 0]);
     while ($start_of_frame < $now) {
-        my $tweet_count = $user->tweets
-                    ->search({created_at => {'>=', $start_of_frame->ymd}})
-                    ->search({created_at => {'<', $end_of_frame->ymd}})
+        my $tweet_count = $twitter_account->tweets
+                    ->search({tweeted_at => {'>=', $start_of_frame->ymd}})
+                    ->search({tweeted_at => {'<', $end_of_frame->ymd}})
                     ->count;
         $sum += $tweet_count;
         my $time = $start_of_frame->epoch * 1000;
@@ -84,7 +84,7 @@ get '/graph/tweets/by/:interval' => sub {
     my $unit = params->{unit} || 1;
 
     my $profile_image = get_user_record(session('username'))
-                            ->profile_image_url
+                            ->twitter_account->profile_image_url
                         || '/images/squirrel_icon64.gif';
     my $graphdataurl = "/graphdata/tweets/by/$interval";
     $graphdataurl .= "?unit=" . $unit;

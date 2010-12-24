@@ -27,7 +27,7 @@ function requestAddTags(tags, tweetIds) {
         data  : info,
         dataType : "json",
         error    : handleError,
-        success  : addTags,
+        success  : tagAdder,
         type     : "post",
         url      : "/addtags",
     });
@@ -76,7 +76,8 @@ function requestRemoveTags(tags, tweetIds) {
     });
 }
 
-function addTags(data) {
+function tagAdder(data) {
+    console.log(data);
     var messages = [];
     jQuery.each(data, function(key, value) {
         if (key == "errors") {
@@ -164,7 +165,7 @@ function ensureHidden(divId) {
     }
 }
 
-function deleteTags(data) {
+function tagDeleter(data) {
     var messages = [];
     jQuery.each(data, function(key, value) {
         if (key == "errors") {
