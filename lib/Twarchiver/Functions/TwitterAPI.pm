@@ -187,12 +187,10 @@ sub download_latest_tweets_for {
             last unless @$statuses;
             store_twitter_statuses($user, @$statuses);
         }
+        $user_rec->update({last_update => DateTime->now()});
         for my $new_mention (mentions_added_since($since)) {
             update_user_info_for($new_mention, $user);
         }
-        $user_rec->update({
-                last_update => DateTime->now()
-            });
     } else {
         die "Not authorised.";
     }
@@ -204,8 +202,12 @@ sub update_user_info_for {
     my $username = shift || $twitter_account->user->username;
     my @tokens  = restore_tokens($username);
     my $twitter = get_twitter(@tokens);
-    my $users = $twitter->lookup_users({
-            screen_name => $twitter_account->screen_name});
+
+    my $users = eval {$twitter->lookup_users({
+            screen_name => $twitter_account->screen_name})};
+    if (my $e = $@) {
+        return;
+    }
     confess "Couldn't get user info" 
         unless ($users && ref $users eq 'ARRAY');
     confess "More than one user found"

@@ -267,13 +267,17 @@ sub update_user_info {
 }
 
 sub mentions_added_since {
+    Dancer::debug("in mentions_added_since");
     my $since = my $since_id = shift || 0;
     if ($since_id) {
         my $since_tweet = get_db()->resultset('Tweet')->find(
                             {tweet_id => $since_id});
         $since = $since_tweet->tweeted_at->ymd;
     }
-    my $mentions = get_db()->resultset('TwitterAccount')
+
+    my @mentions = eval {
+        local $SIG{__WARN__};        
+        get_db()->resultset('TwitterAccount')
                            ->search(
                         {
                             "tweet.tweeted_at" => {'>' => $since},
@@ -281,9 +285,13 @@ sub mentions_added_since {
                         {
                             'join' => {'tweet_mentions' => 'tweet'},
                         }
-                    );
+        )->all();
+    };
+    if (my $e = $@) {
+        return;
+    }
 
-    return $mentions->all;
+    return @mentions;
 }
 
 =head2 save_tokens( username, access_token, access_token_secret)
