@@ -6,7 +6,7 @@ CREATE TABLE tweet (
     favorited BOOLEAN,
     favorited_count INTEGER,
     created_at DATETIME,
-    user INTEGER NOT NULL REFERENCES user(user_id),
+    twitter_account TEXT NOT NULL REFERENCES twitteraccount(screen_name),
     retweets TEXT REFERENCES twitteraccount(screen_name)
 );
 
@@ -17,11 +17,12 @@ CREATE TABLE user (
     preferred_page_size INTEGER,
     last_login DATETIME,
     created_at DATETIME,
+    last_update DATETIME,
     twitter_account TEXT REFERENCES twitteraccount(screen_name)
 );
 
 create TABLE twitteraccount (
-    twitter_id,
+    twitter_id TEXT,
     screen_name TEXT PRIMARY KEY,
     friends_count INTEGER,
     created_at DATETIME,
@@ -32,17 +33,10 @@ create TABLE twitteraccount (
     user INTEGER REFERENCES user(user_id)
 );
 
-
 CREATE TABLE tweet_mention (
     id INTEGER PRIMARY KEY,
     tweet INTEGER REFERENCES tweet(tweet_id),
     mention TEXT REFERENCES twitteraccount(screen_name)
-);
-
-CREATE TABLE tweet_retweeter (
-    id INTEGER PRIMARY KEY, 
-    tweet INTEGER REFERENCES tweet(tweet_id),
-    retweeter TEXT REFERENCES twitteraccount(screen_name)
 );
 
 CREATE TABLE tweet_hashtag (

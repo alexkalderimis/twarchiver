@@ -40,6 +40,9 @@ our @EXPORT_OK = qw/
     get_tweets_from
     exists_user
     validate_user
+    get_tweet_count
+    get_retweet_count
+    mentions_added_since
 /;
 our %EXPORT_TAGS = (
     'all' => [qw/
@@ -62,6 +65,8 @@ our %EXPORT_TAGS = (
     get_most_recent_tweet_by get_tweets_with_tag 
     get_tweets_with_mention get_tweets_with_hashtag get_tweets_with_url
     get_tweets_from
+    get_tweet_count
+    get_retweet_count
     /],
     'pagecontent' => [qw/
     get_user_record get_retweet_summary get_months_in 
@@ -70,6 +75,7 @@ our %EXPORT_TAGS = (
     twitterapi => [qw/
     save_user_info restore_tokens store_twitter_statuses get_since_id_for
     update_user_info get_user_record
+    mentions_added_since
     /],
     login => [qw/
     exists_user validate_user get_user_record
@@ -127,9 +133,6 @@ sub get_user_record {
     my $db = get_db();
     my $user_rec = $db->resultset('User')->find_or_create(
         $condition,
-        {
-            prefetch => 'tweets'
-        }
     );
     return $user_rec;
 }
@@ -148,9 +151,13 @@ sub get_all_tweets_for {
     my $user      = shift;
     my $condition = shift;
     my $user_rec = get_user_record($user);
-    return $user_rec->tweets->search( $condition,
-                        {order_by => {-desc => 'created_at'}},
-                    );
+    if ($user_rec->twitter_account) {
+        return $user_rec->twitter_account->tweets->search( $condition,
+                            {order_by => {-desc => 'created_at'}},
+                        );
+    } else {
+        return;
+    }
 }
 
 =head2 get_since_id_for( screen_name )
@@ -174,9 +181,11 @@ sub get_since_id_for {
 sub get_most_recent_tweet_by {
     my $user = shift;
     my $user_rec = get_user_record($user);
-    if ($user_rec->tweets->count) {
-        my $since = $user_rec->tweets->get_column('created_at')->max;
-        my $most_recent = $user_rec->tweets
+    if ($user_rec->twitter_account && 
+            $user_rec->twitter_account->tweets->count) {
+        my $since = $user_rec->twitter_account->tweets
+                             ->get_column('created_at')->max;
+        my $most_recent = $user_rec->twitter_account->tweets
                                 ->find({created_at => $since});
     } else {
         return;
@@ -195,17 +204,18 @@ Returns:   A DBIx::Class Tweet row object
 sub get_tweet_record {
     my ($screen_name, $id, $text) = @_;
     my $db = get_db();
-    my $user_rec = get_user_record($screen_name);
-    my $tweet_rec = $user_rec->tweets->find(
+    my $twitter_ac = get_user_record($screen_name)->twitter_account;
+    confess("no twitter account") unless $twitter_ac;
+    my $tweet = $twitter_ac->tweets->find(
         {'tweet_id' => $id,}
     );
-    unless ($tweet_rec) {
-        $tweet_rec = $user_rec->add_to_tweets({
+    unless ($tweet) {
+        $tweet = $twitter_ac->add_to_tweets({
                 tweet_id => $id,
                 text     => $text,
         });
     }
-    return $tweet_rec;
+    return $tweet;
 }
 
 =head2 store_twitter_statuses( list_of_tweets )
@@ -229,7 +239,7 @@ sub store_twitter_statuses {
 
         my @mentions = $text =~ /$mentions_re/g;
         for my $mention (@mentions) {
-            $tweet_rec->add_to_mentions({mention_name => $mention});
+            $tweet_rec->add_to_mentions({screen_name => $mention});
         }
         my @hashtags = $text =~ /$hashtags_re/g;
         for my $hashtag (@hashtags) {
@@ -245,15 +255,37 @@ sub store_twitter_statuses {
 
 sub update_user_info {
     my $user = shift;
-    my $username = Dancer::session('username');
-    my $user_rec = get_user_record($username);
-    $user_rec->update({
+
+    my $twitter_account = get_db()->resultset('TwitterAccount')
+                                  ->find_or_create({
+                                screen_name => $user->screen_name
+                            });
+    $twitter_account->update({
             twitter_id        => $user->id,
-            screen_name       => $user->screen_name,
             created_at        => $user->created_at,
             profile_image_url => $user->profile_image_url,
             profile_bkg_url   => $user->profile_background_image_url,
         });
+}
+
+sub mentions_added_since {
+    my $since = my $since_id = shift || 0;
+    if ($since_id) {
+        my $since_tweet = get_db()->resultset('Tweet')->find(
+                            {tweet_id => $since_id});
+        $since = $since_tweet->created_at->ymd;
+    }
+    my $mentions = get_db()->resultset('TwitterAccount')
+                           ->search(
+                        {
+                            "tweet.created_at" => {'>' => $since},
+                        },
+                        {
+                            'join' => {'tweet_mentions' => 'tweet'},
+                        }
+                    );
+
+    return $mentions->all;
 }
 
 =head2 save_tokens( username, access_token, access_token_secret)
@@ -267,11 +299,19 @@ sub save_user_info {
     my ( $username, $token, $secret, $twitter_id, $screen_name ) = @_;
     my $user_rec = get_user_record($username);
 
+    my $twitter_account = get_db()->resultset('TwitterAccount')
+                                  ->find_or_create(
+        { screen_name => $screen_name }
+    );
     $user_rec->update({
-            screen_name => $screen_name,
+            twitter_account => $twitter_account
+        });
+    Dancer::debug("Updated users twitter_account");
+    $twitter_account->update({
             twitter_id => $twitter_id,
             access_token => $token,
             access_token_secret => $secret,
+            user => $user_rec,
     });
 }
 
@@ -286,11 +326,14 @@ sub restore_tokens {
     my $user = shift;
     my $user_rec = get_user_record($user);
 
+    return unless ($user_rec->twitter_account);
+
     my @tokens = (
-        $user_rec->access_token,
-        $user_rec->access_token_secret,
+        $user_rec->twitter_account->access_token,
+        $user_rec->twitter_account->access_token_secret,
     );
 
+    Dancer::debug("Tokens are:" . Dancer::to_dumper(@tokens));
     return unless (grep({defined} @tokens) == 2);
     return @tokens;
 }
@@ -322,7 +365,7 @@ Returns:   <List Context> A list of result row objects
 sub get_mentions_for {
     my $user = shift;
     return get_tweet_features_for_user($user, 
-        'Mention', 'mention_name', 'tweet_mentions');
+        'TwitterAccount', 'screen_name', 'tweet_mentions');
 }
 
 =head2 [ResultsRow(s)] get_hashtags_for( screen_name )
@@ -371,9 +414,11 @@ This function is used by get_mentions_for et. al. to query the db.
 
 sub get_tweet_features_for_user {
     my ($user, $source, $main_col, $bridge_table) = @_;
+    Dancer::debug(join(',', @_));
+    my $screen_name = get_user_record($user)->twitter_account->screen_name;
     my $search = get_db()->resultset($source)->search(
         {   
-            'user.username' => $user
+            'tweet.twitter_account' => $screen_name
         },
         {   
             'select' => [
@@ -381,7 +426,7 @@ sub get_tweet_features_for_user {
                 {count => $main_col, -as => 'number'}
             ],
             'as' => [$main_col, 'count'],
-            join => {$bridge_table => { tweet => 'user'}},
+            'join' => {$bridge_table => 'tweet'},
             distinct => 1,
             'order_by' => {-desc => 'number'},
         }
@@ -492,7 +537,7 @@ Returns:   <List Context> DBIx::Class result rows
 sub get_tweets_with_mention {
     my ($username, $mention) = @_;
     return get_all_tweets_for($username)->search(
-        {'mention.mention_name'    => $mention },
+        {'mention.screen_name'    => $mention },
         {'join' => {tweet_mentions => 'mention'}}
     );
 }
@@ -572,7 +617,7 @@ Returns:   <List Context> DBIx::Class result rows
 sub get_retweet_summary {
     my $username = shift;
     my $col = 'retweeted_count';
-    return get_user_record($username)->tweets->search(
+    return get_all_tweets_for($username)->search(
                     {
                         $col => {'>' =>  0},
                     },
@@ -598,10 +643,9 @@ Returns:   (List[Str]) A list of years
 
 sub get_years_for {
     my $username = shift;
-    my $user = get_user_record($username);
     my @years = uniq( 
                     map( {$_->created_at->year} 
-                        $user->search_related('tweets',
+                        get_all_tweets_for($username)->search(
                             { created_at => {'!=' => undef}},
                             { order_by => {-desc => 'created_at'}}
                         )->all)
@@ -622,13 +666,12 @@ Returns:   (List[Str]) A list of months
 sub get_months_in {
     my $username = shift;
     my $year = shift;
-    my $user = get_user_record($username);
     my $year_start = DateTime->new(year => $year, month => 1, day => 1);
     my $year_end =  DateTime->new(year => ++$year, month => 1, day => 1);
 
     my @months = uniq(
                 map  {$_->created_at->month} 
-                $user->search_related('tweets',
+                get_all_tweets_for($username)->search(
                         { created_at => {'!='    => undef            }},
                         { order_by   => {'-desc' => 'created_at'     }})
                 ->search({created_at => {'>='    => $year_start->ymd }})
@@ -658,7 +701,7 @@ sub get_tweets_in_month {
         year => $year, month => $month, day => 1
     )->add( months => 1 );
 
-    return  $user->tweets->search(
+    return  get_all_tweets_for($username)->search(
                 { created_at => {'!='  => undef                }},
                 { order_by   => {-desc => 'created_at'         }})
         ->search({created_at => {'>='  => $start_of_month->ymd }})
@@ -672,7 +715,7 @@ sub get_tweets_from {
         ? DateTime->from_epoch( epoch => $epoch)
                         ->add( days => $days)
         : DateTime->now();
-    return get_user_record($username)->tweets
+    return get_all_tweets_for($username)
                         ->search({created_at => {'>=', $from->ymd}})
                         ->search({created_at => {'<', $to->ymd}});
 }
@@ -696,6 +739,26 @@ sub exists_user {
     return get_db()->resultset('User')
                    ->search({username => $username})
                    ->count;
+}
+
+sub get_tweet_count {
+    my $username = shift;
+    my $tweets = get_all_tweets_for($username);
+    if ($tweets) {
+        return $tweets->count;
+    } else {
+        return 0;
+    }
+}
+
+sub get_retweet_count {
+    my $username = shift;
+    my $tweets = get_all_tweets_for($username);
+    if ($tweets) {
+        return $tweets->search({retweeted_count => {'>' => 0}})->count;
+    } else {
+        return 0;
+    }
 }
 
 1;

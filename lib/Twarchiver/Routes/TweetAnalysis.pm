@@ -54,7 +54,8 @@ sub return_tweet_analysis_page {
     my $text_url = request->uri_for(request->path . '.txt', $params);
     my $tsv_url  = request->uri_for(request->path . '.tsv', $params);
     my $csv_url  = request->uri_for(request->path . '.csv', $params);
-    my $profile_image = get_user_record($username)->profile_image_url
+    my $profile_image = get_user_record($username)
+                            ->twitter_account->profile_image_url
                         || '/images/squirrel_icon64.gif';
     return template statuses => {
         content_url => $content_url,
@@ -525,16 +526,16 @@ get '/load/content/tweets/from/:epoch' => sub {
 
 get '/load/summary' => sub {
     my $username = session('username');
+    download_latest_tweets_for($username);
     my $user     = get_user_record($username);
     my %data;
-    $data{tweet_count}     = $user->tweets->count;
-    $data{retweet_count}   = $user->tweets->search(
-                             { retweeted_count => {'>' => 0}})->count;
-    $data{mention_count}   = get_mentions_for($username)->count;
+    $data{tweet_count}     = get_tweet_count($username);
+    $data{retweet_count}   = get_retweet_count($username);
     $data{hashtag_count}   = get_hashtags_for($username)->count;
     $data{tag_count}       = get_tags_for($username)->count;
+    $data{mention_count}   = get_mentions_for($username)->count;
     $data{urls_total}      = get_urls_for($username)->count;
-    $data{beginning}       = $user->created_at->dmy();
+    $data{beginning}       = $user->twitter_account->created_at->dmy();
     $data{most_recent}     = get_most_recent_tweet_by($username)->created_at->dmy();
     return to_json( \%data );
 };

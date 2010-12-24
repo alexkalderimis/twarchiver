@@ -1,21 +1,21 @@
-function addTagsToAll(user) {
+function addTagsToAll() {
     var tweetIds = $.map($('form.tag-form'), function(el) {return el.id});
     var tagFieldValue = document.getElementById('masstag').value;
     var tags = tagFieldValue.split(",");
     tags = jQuery.map(tags, function(str) {return trim(str)});
     ensureHidden("masstagger");
-    requestAddTags(user, tags, tweetIds);
+    requestAddTags(tags, tweetIds);
 }
 
-function addTags(user, tweetId) {
+function addTags(tweetId) {
     var tweetIds = [tweetId];
     var tagFieldValue = document.getElementById("tag-" + tweetId).value;
     var tags = tagFieldValue.split(",");
     tags = jQuery.map(tags, function(str) {return trim(str)});
     ensureHidden(tweetId);
-    requestAddTags(user, tags, tweetIds);
+    requestAddTags(tags, tweetIds);
 }
-function requestAddTags(user, tags, tweetIds) {
+function requestAddTags(tags, tweetIds) {
     var tagList = tags.join(",");
     var tweetList = tweetIds.join(",");
     var info = {
@@ -27,87 +27,84 @@ function requestAddTags(user, tags, tweetIds) {
         data  : info,
         dataType : "json",
         error    : handleError,
-        success  : getTagAdder(user),
+        success  : addTags,
         type     : "post",
         url      : "/addtags",
     });
 }
 
-function removeTagsFromAll(user) {
+function removeTagsFromAll() {
     var tweetIds = $.map($('form.tag-form'), function(el) {return el.id});
     var tagFieldValue = document.getElementById('masstag').value;
     var tags = tagFieldValue.split(",");
     tags = jQuery.map(tags, function(str) {return trim(str)});
     ensureHidden("masstagger");
-    requestRemoveTags(user, tags, tweetIds);
+    requestRemoveTags(tags, tweetIds);
 }
 
-function removeTags(user, tweetId) {
+function removeTags(tweetId) {
     var tweetIds = [tweetId];
     var tagFieldValue = document.getElementById("tag-" + tweetId).value;
     var tags = tagFieldValue.split(",");
     tags = jQuery.map(tags, function(str) {return trim(str)});
-    requestRemoveTags(user, tags, tweetIds);
+    requestRemoveTags(tags, tweetIds);
     ensureHidden(tweetId);
 }
 
-function removeTag(user, tweetId, tag) {
+function removeTag(tweetId, tag) {
     var tweetIds = [tweetId];
     var tags = [tag];
-    requestRemoveTags(user, tags, tweetIds);
+    requestRemoveTags(tags, tweetIds);
     ensureHidden(tweetId);
 }
 
-function requestRemoveTags(user, tags, tweetIds) {
+function requestRemoveTags(tags, tweetIds) {
     var tagList = tags.join(",");
     var tweet_ids = tweetIds.join(",");
     var info = {
         tags     : tagList,
         tweetIds : tweet_ids
     };
-    var tagDeleter = getTagDeleter(tweetIds, tags, user);
     $.ajax({ 
         cache : false,
         data  : info,
         dataType : "json",
         error    : handleError,
-        success  : getTagDeleter(user),
+        success  : tagDeleter,
         type     : "post",
         url      : "/removetags",
     });
 }
 
-function getTagAdder(user) {
-    return function(data) {
-        var messages = [];
-        jQuery.each(data, function(key, value) {
-            if (key == "errors") {
-                if (value instanceof Array) {
-                    messages = messages.concat(value);
-                } else {
-                    messages.push(value);
-                }
+function addTags(data) {
+    var messages = [];
+    jQuery.each(data, function(key, value) {
+        if (key == "errors") {
+            if (value instanceof Array) {
+                messages = messages.concat(value);
             } else {
-                var tweetId = key;
-                console.log("Tweet id is " + tweetId);
-                var addedTags = value.added;
-                var tagListId = "tagList-" + tweetId;
-                console.log("looking for a taglist called " + tagListId);
-                var tagListElem = document.getElementById(tagListId);
-                console.log(tagListElem);
-                for (var i = 0; i < addedTags.length; i++) {
-                    addTagToTweet(addedTags[i], tagListElem, tweetId, user);
-                }
+                messages.push(value);
             }
-        });
-        if (messages.length > 0) {
-            alert(messages.join("\n"));
+        } else {
+            var tweetId = key;
+            console.log("Tweet id is " + tweetId);
+            var addedTags = value.added;
+            var tagListId = "tagList-" + tweetId;
+            console.log("looking for a taglist called " + tagListId);
+            var tagListElem = document.getElementById(tagListId);
+            console.log(tagListElem);
+            for (var i = 0; i < addedTags.length; i++) {
+                addTagToTweet(addedTags[i], tagListElem, tweetId);
+            }
         }
-        updateTags();
-    };
-}
+    });
+    if (messages.length > 0) {
+        alert(messages.join("\n"));
+    }
+    updateTags();
+};
 
-function addTagToTweet(tag, tagListElem, tweetId, user) {
+function addTagToTweet(tag, tagListElem, tweetId) {
     // first make the new li element
     var liElem = document.createElement("li");
 
@@ -124,7 +121,7 @@ function addTagToTweet(tag, tagListElem, tweetId, user) {
     aElem.setAttribute("href", '#');
     aElem.setAttribute("id", tweetId + '-' + tag);
     aElem.setAttribute("onclick", 
-        "removeTag('" + user  + "', '" + tweetId + "', '" + tag + "')");
+        "removeTag('" + tweetId + "', '" + tag + "')");
     var aText = document.createTextNode("delete");
     aElem.appendChild(aText);
 
@@ -167,32 +164,30 @@ function ensureHidden(divId) {
     }
 }
 
-function getTagDeleter(user) {
-    return function(data) {
-        var messages = [];
-        jQuery.each(data, function(key, value) {
-            if (key == "errors") {
-                if (value instanceof Array) {
-                    messages = messages.concat(value);
-                } else {
-                    messages.push(value);
-                }
+function deleteTags(data) {
+    var messages = [];
+    jQuery.each(data, function(key, value) {
+        if (key == "errors") {
+            if (value instanceof Array) {
+                messages = messages.concat(value);
             } else {
-                var tweetId = key;
-                var removedTags = value.removed;
-                var tagListId = "tagList-" + tweetId;
-                var tagListElem = document.getElementById(tagListId);
-                for (var i = 0; i < removedTags.length; i++) {
-                    removeTagFromTagList(removedTags[i], tagListElem);
-                }
+                messages.push(value);
             }
-        });
-        if (messages.length > 0) {
-            alert(messages.join("\n"));
+        } else {
+            var tweetId = key;
+            var removedTags = value.removed;
+            var tagListId = "tagList-" + tweetId;
+            var tagListElem = document.getElementById(tagListId);
+            for (var i = 0; i < removedTags.length; i++) {
+                removeTagFromTagList(removedTags[i], tagListElem);
+            }
         }
-        updateTags();
-    };
-}
+    });
+    if (messages.length > 0) {
+        alert(messages.join("\n"));
+    }
+    updateTags();
+};
 
 function handleError(request, resultString) {
     alert(resultString);

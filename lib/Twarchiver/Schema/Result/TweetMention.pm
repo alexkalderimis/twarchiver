@@ -45,7 +45,7 @@ __PACKAGE__->add_columns(
   "tweet",
   { data_type => "integer", is_foreign_key => 1, is_nullable => 1 },
   "mention",
-  { data_type => "integer", is_foreign_key => 1, is_nullable => 1 },
+  { data_type => "text", is_foreign_key => 1, is_nullable => 1 },
 );
 __PACKAGE__->set_primary_key("id");
 
@@ -61,8 +61,8 @@ Related object: L<Twarchiver::Schema::Result::Mention>
 
 __PACKAGE__->belongs_to(
   "mention",
-  "Twarchiver::Schema::Result::Mention",
-  { mention_id => "mention" },
+  "Twarchiver::Schema::Result::TwitterAccount",
+  { screen_name => "mention" },
   {
     is_deferrable => 1,
     join_type     => "LEFT",
@@ -90,11 +90,4 @@ __PACKAGE__->belongs_to(
     on_update     => "CASCADE",
   },
 );
-
-
-# Created by DBIx::Class::Schema::Loader v0.07002 @ 2010-12-06 21:18:07
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:DqNhm5PB6LdwZ50as44AYA
-
-
-# You can replace this text with custom content, and it will be preserved on regeneration
 1;

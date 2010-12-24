@@ -7,6 +7,7 @@ use Dancer ':syntax';
 use Crypt::SaltedHash qw/validate/;
 use Twarchiver::Functions::DBAccess qw/:login/;
 use Twarchiver::Functions::PageContent qw/:login/;
+use DateTime;
 
 
 
@@ -20,6 +21,9 @@ post '/login' => sub {
         my $user_rec = get_user_record($user);
         if (validate_user($user, params->{login_password})) {
             debug "Password correct";
+            $user_rec->update(
+                {last_login => DateTime->now()}
+            );
             # Logged in successfully
             session username => $user;
             redirect params->{url} || '/';
@@ -46,7 +50,13 @@ post '/register' => sub {
             $csh->add(params->{reg_password});
             my $passhash = $csh->generate;
             my $user_rec = get_user_record($user);
-            $user_rec->update({passhash => $passhash});
+            $user_rec->update(
+                {
+                    passhash => $passhash,
+                    created_at => DateTime->now(),
+                    last_login => DateTime->now(),
+                }
+            );
             session username => $user;
             redirect params->{url} || '/';
         }

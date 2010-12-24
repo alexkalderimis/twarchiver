@@ -1,0 +1,112 @@
+#!/usr/bin/perl
+
+use strict;
+use warnings;
+
+use File::Basename;
+use XML::Writer;
+use IO::Handle;
+use autodie qw(open close);
+
+use lib dirname(__FILE__) . '/../lib';
+
+use Twarchiver::Schema;
+
+my $dbname = shift;
+die "No db" unless (-f $dbname);
+
+my $dumpfile = shift || dirname(__FILE__) . '/db_dump.xml';
+
+my $schema = Twarchiver::Schema->connect("dbi:SQLite:dbname=$dbname");
+
+open( my $output, '>', $dumpfile);
+my $writer = XML::Writer->new(
+    OUTPUT => $output, 
+    DATA_MODE => 1,
+    DATA_INDENT => 2,
+    ENCODING => 'utf-8',
+);
+$writer->startTag("userdata");
+
+# First dump the users
+
+my $users = $schema->resultset('User')->search();
+$writer->startTag("users");
+
+my @user_cols = $schema->source('User')->columns();
+my %user_col_data_for;
+@user_col_data_for{@columns} = 
+    map {$schema->source('User')->column_info} @columns;
+
+my @tweet_columns = $schema->source('Tweet')->columns();
+my %tweet_col_data_for;
+@tweet_col_data_for{@tweet_columns} = 
+    map {$schema->source('Tweet')->column_info} @tweet_columns;
+
+my @tweet_columns = $schema->source('Tweet')->columns();
+my %tweet_col_data_for;
+@tweet_col_data_for{@tweet_columns} = 
+    map {$schema->source('Tweet')->column_info} @tweet_columns;
+
+my @mention_columns = $schema->source('Mention')->columns();
+my %mention_col_data_for;
+@mention_col_data_for{@mention_columns} = 
+    map {$schema->source('Mention')->column_info} @mention_columns;
+
+my @hashtag_columns = $schema->source('Hashtag')->columns();
+my %hashtag_col_data_for;
+@hashtag_col_data_for{@hashtag_columns} = 
+    map {$schema->source('Hashtag')->column_info} @hashtag_columns;
+
+my @tweet_columns = $schema->source('Tweet')->columns();
+my %tweet_col_data_for;
+@tweet_col_data_for{@tweet_columns} = 
+    map {$schema->source('Tweet')->column_info} @tweet_columns;
+while (my $user = $users->next()) {
+    my %attributes;
+    for my $col (@user_cols) {
+        next if ($col eq 'user_id');
+        next if ($user_col_data_for{$col}->is_foreign_key);
+        my $value = $user->get_column($col)->single;
+        $attributes{$col} = $value if (defined $value);
+    }
+    $writer->startTag('user', %attributes);
+    my $tweets = $user->tweets;
+    while (my $tweet = $tweets->next()) {
+        my %attributes;
+        for my $col (@tweet_columns) {
+            next if ($tweet_col_data_for{$col}->is_foreign_key);
+            my $value = $user->get_column($col)->single;
+            $attributes{$col} = $value if (defined $value);
+        }
+        $writer->startTag('tweet', %attributes);
+        my $mentions = $user->mentions;
+        while (my $mention = $mentions->next()) {
+
+        }
+        my $hashtags = $user->hashtags;
+        while (my $hashtag = $hashtags->next()) {
+
+        }
+        my $tags = $user->tags;
+        while (my $tag = $tags->next()) {
+
+        }
+        my $urls = $user->urls;
+        while (my $url = $urls->next()) {
+
+        }
+
+
+    }
+}
+
+# Then dump the tweets, with their mentions, urls, tags and hashtags
+# inlined.
+
+
+
+
+
+
+

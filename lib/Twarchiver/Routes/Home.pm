@@ -2,19 +2,25 @@ package Twarchiver::Routes::Home;
 
 use Dancer ':syntax';
 
-use Twarchiver::Functions::DBAccess qw/get_user_record/;
+use feature ':5.10';
+
+use Twarchiver::Functions::DBAccess qw/:routes/;
+use Twarchiver::Functions::TwitterAPI qw/:routes/;
 use Twarchiver::Functions::Util qw/:all/;
 
 get '/' => sub {
-    my $quote = "The only thing I can predict is the past - Watshisface";
+    my $quote = get_quote();
     if (session('username')) {
-        my $user = get_user_record(session('username'));
-        my $tweet_count = $user->tweets->count;
+        my $username = session('username');
+        my $user = get_user_record($username);
+        return authorise($username) if needs_authorisation($username);
+        my $tweet_count = get_tweet_count($username);
         my $user_creation = $user->created_at->strftime(LONG_MONTH_FORMAT);
+
         template 'loggedin_index' => {
             quote => $quote,
             tweet_count => $tweet_count,
-            username => session('username'),
+            username => $username,
             user_creation => $user_creation,
             
         };
@@ -45,5 +51,18 @@ get '/' => sub {
         };
     }
 };
+
+sub get_quote {
+    state @quotes;
+    unless (@quotes) {
+        open (my $quotes, '<', 'data/history_quotes');
+        while (<$quotes>) {
+            chomp;
+            push @quotes, $_;
+        }
+        close $quotes;
+    }
+    return $quotes[rand @quotes];
+}
 
 true;

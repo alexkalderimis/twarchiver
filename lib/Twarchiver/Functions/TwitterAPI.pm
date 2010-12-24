@@ -8,6 +8,7 @@ our $VERSION = '0.1';
 
 use Net::Twitter;
 use Carp qw/confess/;
+use DateTime;
 
 use Twarchiver::Functions::DBAccess ':twitterapi';
 
@@ -165,18 +166,18 @@ Arguments: The user's twitter screen name
 sub download_latest_tweets_for {
     my $user    = shift;
     my $user_rec = get_user_record($user);
+    my $last_update = $user_rec->last_update();
+    my $five_minutes_ago = DateTime->now()->subtract(minutes => 5);
+    unless (not $last_update or $last_update > $five_minutes_ago) {
+        return;
+    }
+
     my @tokens  = restore_tokens($user);
     my $twitter = get_twitter(@tokens);
     my $since   = get_since_id_for($user);
 
     if ( $twitter->authorized ) {
-        my $users = $twitter->lookup_users({
-                screen_name => $user_rec->screen_name});
-        confess "Couldn't get user info" 
-            unless ($users && ref $users eq 'ARRAY');
-        confess "More than one user found"
-            if (@$users > 1);
-        update_user_info($users->[0]);
+        update_user_info_for($user_rec->twitter_account);
 
         for ( my $page = 1 ; ; ++$page ) {
             debug("Getting page $page of twitter statuses");
@@ -186,9 +187,30 @@ sub download_latest_tweets_for {
             last unless @$statuses;
             store_twitter_statuses($user, @$statuses);
         }
+        for my $new_mention (mentions_added_since($since)) {
+            update_user_info_for($new_mention, $user);
+        }
+        $user_rec->update({
+                last_update => DateTime->now()
+            });
     } else {
         die "Not authorised.";
     }
+}
+
+sub update_user_info_for {
+    my $twitter_account = shift;
+    confess ("no twitter account" ) unless $twitter_account;
+    my $username = shift || $twitter_account->user->username;
+    my @tokens  = restore_tokens($username);
+    my $twitter = get_twitter(@tokens);
+    my $users = $twitter->lookup_users({
+            screen_name => $twitter_account->screen_name});
+    confess "Couldn't get user info" 
+        unless ($users && ref $users eq 'ARRAY');
+    confess "More than one user found"
+        if (@$users > 1);
+    update_user_info($users->[0]);
 }
 
 true;

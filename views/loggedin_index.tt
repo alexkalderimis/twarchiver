@@ -146,11 +146,13 @@
 
               <p>
               Twistory is a twitter archive webapp - designed to make 
-              searching through your tweets easy (did you know you
-              have <% tweet_count %> of them?). Did you tweet some really
-              cool link a couple of months back? (You have been tweeting
-              since <% user_creation %>!) Was there some question
-              someone asked you just realised the answer to? 
+              searching through your tweets easy did you know you
+              have <% tweet_count %> of them?). - you know that though, 
+              you've been with us since <% user_creation %>! Look around:
+              you'll find a million ways to slice and dice your tweets,
+              starting with the links on the right, or just click 
+              <a href="/show/tweets">here</a> to show all your tweets
+              on a single page.
               <br/>
               <em>All is not lost: It's Twistory!</em>
               </p>

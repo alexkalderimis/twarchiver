@@ -414,7 +414,7 @@ Returns:   An html string with the above structure.
 
 sub make_tagger_form_body {
     my $tweet = shift;
-    my $user = $tweet->user->screen_name;
+    my $user = $tweet->twitter_account->screen_name;
     my $id = $tweet->tweet_id;
 
     my $text_box = $html->input( 
@@ -424,12 +424,12 @@ sub make_tagger_form_body {
     my $add_button = $html->input(
         value   => 'Add',
         type    => 'button',
-        onclick => "javascript:addTags('$user', '$id');",
+        onclick => "javascript:addTags('$id');",
     );
     my $remove_button = $html->input(
         value   => 'Remove',
         type    => 'button',
-        onclick => "javascript:removeTags('$user', '$id');",
+        onclick => "javascript:removeTags('$id');",
     );
     ## Stupidly enough, this is needed to stop auto-submission
     ## of a one text field, two button form. Sheesh
@@ -455,7 +455,7 @@ sub make_retweeted_sidebar {
     my $username = shift;
     my $column   = 'retweeted_count';
     my $user     = get_user_record($username);
-    my $total    = $user->tweets
+    my $total    = $user->twitter_account->tweets
                         ->search( { $column => { '>' => 0 } } )
                         ->count;
     my $list     = $html->li_group(
@@ -727,9 +727,9 @@ sub make_mention_sidebar_item {
     my $mention = shift;
     my $result = eval {
         sprintf( "%s %s",
-            make_mention_link( $mention->mention_name ),
+            make_mention_link( $mention->screen_name ),
             make_mention_report_link( 
-                $mention->mention_name, 
+                $mention->screen_name, 
                 $mention->get_column("count"), 
             ) 
         );
