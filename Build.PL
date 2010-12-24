@@ -21,6 +21,7 @@ my $build = Module::Build->new(
         'List::MoreUtils'               => 0,
         'Text::CSV'                     => 0,
         'DBIx::Class'                   => 0,
+        'DBIx::Class::Relationship::Predicate' => 0.03,
     },
     build_requires => {
         'SQL::Translator' => 0.11006,
