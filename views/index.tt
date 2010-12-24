@@ -1,5 +1,6 @@
 <div id="page">
-      <div id="main">
+    <div id="main">
+        
         <div id="header">
           <h1><% settings.sitename %></h1>
           <h2><% quote %></h2>
@@ -16,44 +17,50 @@
             </ul>
         </div>
 
-          <div id="login_content" style="display: none;">
-            <form id="login_form" action="/login" method="post">
-                <table>
-                <tr>
-                <td>Login Name:</td>
-                <td><input type="text" name="login_user">
-                </input></td>
-                </tr><tr>
-                <td>Password:</td>
-                <td><input type="password" name="login_password">
-                </input></td> 
-                </tr>
-                </table>
-                <input type="hidden" name="url" value="<% callback_url %>"></input>
-                <input type="submit" value="login" />
-            </form>
+        <div id="main-content">
+
+          <div id="drop-down-boxes">
+
+              <div id="login_content" style="display: none;">
+                <form id="login_form" action="/login" method="post">
+                    <table>
+                    <tr>
+                    <td>Login Name:</td>
+                    <td><input type="text" name="login_user">
+                    </input></td>
+                    </tr><tr>
+                    <td>Password:</td>
+                    <td><input type="password" name="login_password">
+                    </input></td>
+                    </tr>
+                    </table>
+                    <input type="hidden" name="url" value="<% callback_url %>"></input>
+                    <input type="submit" value="login" />
+                </form>
+              </div>
+              <div id="register_content" style="display: none;">
+                <form id="register_form" action="/register" method="post">
+                    <table>
+                    <tr>
+                    <td>Login Name:</td>
+                    <td><input type="text" name="reg_user">
+                    </input></td>
+                    </tr><tr>
+                    <td>Enter Password:</td>
+                    <td><input type="password" name="reg_password">
+                    </input></td>
+                    </tr><tr>
+                    <td>Confirm Password:</td>
+                    <td><input type="password" name="confirm_password">
+                    </input></td>
+                    </tr>
+                    </table>
+                    <input type="hidden" name="url" value="<% callback_url %>"></input>
+                    <input type="submit" value="Register" />
+                </form>
+              </div>
           </div>
-          <div id="register_content" style="display: none;">
-            <form id="register_form" action="/register" method="post">
-                <table>
-                <tr>
-                <td>Login Name:</td>
-                <td><input type="text" name="reg_user">
-                </input></td>
-                </tr><tr>
-                <td>Enter Password:</td>
-                <td><input type="password" name="reg_password">
-                </input></td>
-                </tr><tr>
-                <td>Confirm Password:</td>
-                <td><input type="password" name="confirm_password">
-                </input></td> 
-                </tr>
-                </table>
-                <input type="hidden" name="url" value="<% callback_url %>"></input>
-                <input type="submit" value="Register" />
-            </form>
-          </div>
+          <div id="content">
               <h2>Welcome to Twistory</h2>
 
               <p id="failure_message">
@@ -64,9 +71,11 @@
               searching through your tweets easy. Did you tweet some really
               cool link a couple of months back? Was there some question
               someone asked you just realised the answer to? 
-              <br/>
+              </p>
+              <p>
               <em>All is not lost: It's Twistory!</em>
               </p>
-        </div>
+           </div>
       </div>
     </div>
+ </div>

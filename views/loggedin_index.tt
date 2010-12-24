@@ -13,14 +13,14 @@
                 <div id="mentions" style="display: none;">
                     <ul id="mentions-list"><li>Loading<li></ul>
                 </div>
-            <li>
             </li>
+            <li>
                 <h3><a href="#" onclick="javascript:toggleDiv('hashtags');">Hash-Tags</a></h3>
                 <div id="hashtags" style="display: none;">
                     <ul id="hashtags-list"><li>Loading<li></ul>
                 </div>
             </li>
-            </li>
+            <li>
                 <h3><a href="javascript:toggleDiv('usertags');">Your tags</a></h3>
                 <div id="usertags" style="display: none;">
                     <ul id="tagLinksList">
@@ -73,8 +73,9 @@
                 </table>
             </li>
         </ul>
-        </div>
-      <div id="main">
+    </div>
+
+    <div id="main">
         <div id="header">
           <h1><% settings.sitename %></h1>
           <h2><% quote %></h2>
@@ -86,79 +87,68 @@
                   <a href="#" onclick="toggleDiv('logout_content');" id="logout_link">Logout</a>
                 </li>
                 <li>
-                    <a href='#' onclick="toggleDiv('summary_content');" id="summary_link">Summary</a>
+                    <a href='#' onclick="toggleDiv('link-box');" id="where_next_link">Where Next?</a>
                 </li>
             </ul>
         </div>
 
-          <div id="logout_content" style="display: none;">
-            <form id="logout_form" action="/logout" method="post">
-                <table>
-                <tr>
-                <td>Really?</td>
-                <td><input type="submit" id="logout-button" value="Yes">
-                </input></td>
-                <td><input type="button" id="no-button" value="No" 
-                onclick="toggleDiv('logout_content');" >
-                </input></td> 
-                </tr>
-                </table>
-            </form>
+        <div id="main-content">
+
+          <div id="drop-down-boxes">
+            <div id="logout_content" style="display: none;">
+              <form id="logout_form" action="/logout" method="post">
+                  <table>
+                  <tr>
+                  <td>Really?</td>
+                  <td><input type="submit" id="logout-button" value="Yes">
+                  </input></td>
+                  <td><input type="button" id="no-button" value="No"
+                  onclick="toggleDiv('logout_content');" >
+                  </input></td>
+                  </tr>
+                  </table>
+              </form>
+            </div>
+
+            <div id="link-box" style="display: none;">
+              <ul id="where_next_list">
+                <li>
+                  <a href="/show/tweets">See a list of all your tweets</a>
+                </li>
+                <li>
+                  <a href="/graph/tweets/by/month">See a graph of your activity over time</a>
+                </li>
+                <li>
+                  <a href="/download/tweets.txt">Download all your tweets as a text file</a>
+                </li>
+                <li>
+                  <a href="/download/tweets.csv">Download all your tweets as a spreadsheet</a>
+                </li>
+              </ul>
+            </div>
           </div>
-          <div id="summary_content" style="display: none;">
-            <form id="register_form" action="/register" method="post">
-                <table>
-                    <tr>
-                    <td>Tweeting since:</td>
-                    <td><span id="beginning"></span></td>
-                    </tr>
-                    <tr>
-                    <td>Most recent tweet:</td>
-                    <td><span id="most_recent"></span></td>
-                    </tr>
-                    <tr>
-                    <td>Number of Tweets:</td>
-                    <td><span id="tweet_count"></span></td>
-                    </tr>
-                    <tr>
-                    <td>Number of mentions:</td>
-                    <td><span id="mention_count"></span></td>
-                    </tr>
-                    <tr>
-                    <td>Number of Hashtags:</td>
-                    <td><span id="hashtag_count"></span></td>
-                    </tr>
-                    <tr>
-                    <td>Number of Tags:</td>
-                    <td><span id="tag_count"></span></td>
-                    </tr>
-                    <tr>
-                    <td>Retweeted tweets:</td>
-                    <td><span id="retweet_count"></span></td>
-                    </tr>
-                    <tr>
-                    <td>Last Login:</td>
-                    <td><span id="last_login"></span></td>
-                    </tr>
-                </table>
-          </div>
+
+          <div id="content">
               <h2>Welcome to Your Twistory, <% username %></h2>
 
               <p>
               Twistory is a twitter archive webapp - designed to make 
-              searching through your tweets easy did you know you
-              have <% tweet_count %> of them?). - you know that though, 
-              you've been with us since <% user_creation %>! Look around:
-              you'll find a million ways to slice and dice your tweets,
+              searching through your tweets easy (did you know for
+              instance that you have <% tweet_count %> of them?). - you know that though,
+              you've been with us since <% user_creation %>!
+              </p>
+              <p>
+              Look around: you'll find a million ways to slice and dice your tweets,
               starting with the links on the right, or just click 
               <a href="/show/tweets">here</a> to show all your tweets
               on a single page.
-              <br/>
+              </p>
               <em>All is not lost: It's Twistory!</em>
               </p>
+            </div>
         </div>
-      </div>
-    </div>
+     </div>
+ </div>
 <script> 
 // Asynchronously load the content
     window.onload = function() {

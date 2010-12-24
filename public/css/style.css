@@ -59,7 +59,7 @@ a.sidebarinternallink {
     text-decoration: underline ! important;
 }
 
-#header, #about, #tweet-analysis {
+#header, #about, #main-content {
 padding-left: 75px;
 padding-right: 30px;
 }
@@ -134,16 +134,19 @@ font-size: 14px;
     top: 0px;
 }
 
-#about-content, #export, #search, #masstagger, #login_content, #register_content {
+#drop-down-boxes div {
 background-color: #ffd;
 border: 1px solid #fc0;
 margin-left: -22px;
+padding: 10px;
+padding-bottom: 10px;
+
 }
 
-#export li {
+#link-box li {
     display: list-item;
 }
-#export a {
+#link-box a {
     font-size: 14px;
 }
 #about-content table {
@@ -174,38 +177,46 @@ padding: 10px;
     height: 300px;
 }
 
-#tweet-analysis, #tweet-timeline {
+#main-content, #tweet-timeline, #main-content {
 border-top: 1px solid #ccc;
 margin-top: 25px;
 padding-top: 15px;
 }
-#tweet-analysis h1 {
+#main-content h1 {
 margin: 0;
 font-size: 20px;
 }
-#tweet-analysis h2 {
+#main-content h2 {
 margin: 0;
 font-size: 14px;
 font-weight: normal;
 color: #333;
 margin-bottom: 25px;
 }
-#tweet-analysis ol {
+#main-content ol {
 margin-left: 0;
 padding-left: 0;
 }
-#tweet-analysis li {
+#main-content li {
 font-size: 18px;
 color: #888;
 margin-bottom: 25px;
 }
-#tweet-analysis li h2 {
+
+#content h2 {
+  font-size: 20px;
+  color: black;
+  font-weight: italic;
+}
+
+#main-content li h2 {
 margin: 0;
 font-weight: normal;
 font-size: 18px;
 color: #333;
 }
-#tweet-analysis li p {
+
+#main-content li p {
 color: #555;
 font-size: 13px;
 }
@@ -214,7 +225,7 @@ font-size: 13px;
     margin-bottom: 2px ! important;
 }
 
-#export li {
+#link-box li {
     margin-bottom: 2px ! important;
 }
 
@@ -255,13 +266,14 @@ font-size: 16px;
 padding-bottom: 10px;
 border-bottom: 1px solid #777E6E;
 }
+
 #sidebar li {
 list-style-type: none;
 }
+
 #sidebar ul.links li {
 margin-bottom: 5px;
 }
-
 
 h1, h2, h3, h4, h5 {
 font-family: sans-serif;
