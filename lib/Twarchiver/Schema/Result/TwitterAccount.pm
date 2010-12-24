@@ -57,7 +57,7 @@ __PACKAGE__->table("twitteraccount");
 
 =cut
 
-__PACKAGE__->load_components(qw/InflateColumn::DateTime/);
+__PACKAGE__->load_components(qw/InflateColumn::DateTime Relationship::Predicate/);
 __PACKAGE__->add_columns(
   "twitter_id",
   { data_type => "text", is_nullable => 1 },
