@@ -1,0 +1,63 @@
+Twarchiver - a Twitter Archive Webapp
+
+Summary:
+
+The purpose of this webapp is to store and present a users
+history of tweets. The Twitter webapp is focussed on the 
+communicative purpose of tweeting, being particularly
+strong in highlighting connections and following other
+users. This webapp is radically different: it views each
+user's history as its own micro-blog, and seeks to present it
+
+    * Chronologically
+    * Thematically
+    * By participant
+    * By arbitrary classification
+    and hopefully - attractively
+
+This webapp is read only - it doesn't tweet. What is does
+is present reports allowing you to see what you've tweeted when,
+and it offers powerful and sophisticated searching using
+the full capabilities of perl regular expressions.
+
+Installation:
+
+Step 1: Get the repository
+
+git clone git://github.com/alexkalderimis/twarchiver.git 
+
+(Although it should be said if you want to commit changes to 
+the code, please fork the repo first and then make pull
+requests to merge your changes back into master)
+
+Step 2: run the build script
+
+In the new directory:
+
+perl Build.PL
+
+Step 3: Install dependencies
+
+You will probably have missing dependencies, so:
+
+./Build installdeps
+
+then repeat step 2
+
+Step 4: Run the tests
+
+./Build test
+
+(tests are broken at this time)
+
+Step 5: Configure your webapp
+
+Change any settings in config.yml that need personalising
+
+Step 6: Run
+
+perl twarchiver.pl
+
+Step 7: ??
+
+Step 8: Profit!
