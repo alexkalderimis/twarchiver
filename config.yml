@@ -37,3 +37,5 @@ log: debug
 database: "data/twarchiver.db"
 
 session: "YAML"
+
+headericon: "header_icon.png"

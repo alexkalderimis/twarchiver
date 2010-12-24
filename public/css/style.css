@@ -66,7 +66,7 @@ padding-right: 30px;
 
 
 #header {
-background-image: url("/images/squirrel_icon64.gif"); 
+background-image: none;
 background-repeat: no-repeat;
 background-position: top left;
 height: 110px;

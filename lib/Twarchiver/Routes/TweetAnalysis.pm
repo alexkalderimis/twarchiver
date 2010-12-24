@@ -56,7 +56,7 @@ sub return_tweet_analysis_page {
     my $csv_url  = request->uri_for(request->path . '.csv', $params);
     my $profile_image = get_user_record($username)
                             ->twitter_account->profile_image_url
-                        || '/images/squirrel_icon64.gif';
+                        || '/images/' . settings("headericon");
     return template statuses => {
         content_url => $content_url,
         title => $title,
