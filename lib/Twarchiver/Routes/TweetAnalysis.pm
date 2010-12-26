@@ -30,7 +30,6 @@ get '/show/mentions/of/*.*' => sub {
         redirect "/show/mentions/of/$mention";
     } else {
         my $username = session('username');
-        my $mention = '@' . $mention;
         my @tweets  = get_tweets_with_mention($username, $mention);
         return export_tweets_in_format($format, @tweets);
     }
@@ -335,14 +334,14 @@ get '/load/content/tweets/tagged/:tag' => sub {
 
 get '/load/content/mentions/of/:mention' => sub {
     my $user = session('username');
-    my $mention = '@' . params->{mention};
+    my $mention = params->{mention};
 
     return $html->p("Not Authorised") if ( needs_authorisation($user) );
 
     download_latest_tweets_for($user);
 
     my @tweets  = get_tweets_with_mention($user, $mention);
-    my $content = make_highlit_content($mention, @tweets);
+    my $content = make_highlit_content('@'.$mention, @tweets);
     return $content;
 };
 
