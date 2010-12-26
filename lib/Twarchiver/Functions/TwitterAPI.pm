@@ -26,6 +26,7 @@ our @EXPORT_OK = qw/
   has_been_authorised
   needs_authorisation
   request_tokens_for 
+  download_tweets_from
   /;
 
 our %EXPORT_TAGS = (
@@ -36,10 +37,12 @@ our %EXPORT_TAGS = (
         has_been_authorised
         needs_authorisation
         request_tokens_for 
+        download_tweets_from
     /],
     'routes' => [qw/
     authorise needs_authorisation
     download_latest_tweets_for
+    download_tweets_from
     /]
 );
 
@@ -163,6 +166,37 @@ Arguments: The user's twitter screen name
 
 =cut
 
+sub download_tweets_from {
+    my $username = session('username');
+    my $maxId = shift || get_oldest_id_for($username);
+    my $twitter_ac = get_user_record($username)->twitter_account;
+    my @tokens  = restore_tokens($username);
+    my $twitter = get_twitter(@tokens);
+
+    if ( $twitter->authorized ) {
+        update_user_info_for($twitter_ac);
+        my $args = { count => setting('downloadbatchsize') };
+        $args->{max_id} = $maxId if $maxId;
+        my $statuses = $twitter->user_timeline($args);
+        my $response = {};
+        $response->{got} = get_all_tweets_for($username)->count;
+        $response->{total} = $twitter_ac->tweet_total;
+        if (@$statuses) {
+            store_twitter_statuses($username, @$statuses);
+            $response->{isFinished} = \0;
+            $response->{nextBatchFromId} = $statuses->[-1]->id - 1;
+        } else {
+            $response->{isFinished} = \1;
+            $response->{nextBatchFromId} = 0;
+        }
+        debug(to_dumper($response));
+        return $response;
+    } else {
+        send_error("Not authorised");
+    }
+
+}
+
 sub download_latest_tweets_for {
     my $user    = shift;
     my $user_rec = get_user_record($user);
@@ -181,7 +215,7 @@ sub download_latest_tweets_for {
 
         for ( my $page = 1 ; ; ++$page ) {
             debug("Getting page $page of twitter statuses");
-            my $args = { count => 100, page => $page };
+            my $args = { count => setting('downloadbatchsize'), page => $page };
             $args->{since_id} = $since if $since;
             my $statuses = $twitter->user_timeline($args);
             last unless @$statuses;
