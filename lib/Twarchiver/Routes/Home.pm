@@ -55,12 +55,7 @@ get '/' => sub {
 sub get_quote {
     state @quotes;
     unless (@quotes) {
-        open (my $quotes, '<', 'data/history_quotes');
-        while (<$quotes>) {
-            chomp;
-            push @quotes, $_;
-        }
-        close $quotes;
+        @quotes = @{setting('historyquotes')};
     }
     return $quotes[rand @quotes];
 }
