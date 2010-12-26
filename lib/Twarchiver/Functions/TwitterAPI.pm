@@ -179,16 +179,17 @@ sub download_tweets_from {
         $args->{max_id} = $maxId if $maxId;
         my $statuses = $twitter->user_timeline($args);
         my $response = {};
-        $response->{got} = get_all_tweets_for($username)->count;
-        $response->{total} = $twitter_ac->tweet_total;
         if (@$statuses) {
             store_twitter_statuses($username, @$statuses);
             $response->{isFinished} = \0;
             $response->{nextBatchFromId} = $statuses->[-1]->id - 1;
         } else {
+            download_latest_tweets_for($username);
             $response->{isFinished} = \1;
             $response->{nextBatchFromId} = 0;
         }
+        $response->{got} = get_all_tweets_for($username)->count;
+        $response->{total} = $twitter_ac->tweet_total;
         debug(to_dumper($response));
         return $response;
     } else {
