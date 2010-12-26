@@ -109,6 +109,8 @@ my $urls_re     = qr{(
                         |
                             \b
                             (?:$span_re|\w|\.)+
+                            \.
+                            (?:$span_re|\w|\.)*
                             (?:com|org|co\.uk|ly)
                             (?:$span_re|[\w\&\?/])*
                             \b
