@@ -9,10 +9,10 @@
         <div id="menu">
             <ul>
                 <li>
-                  <a href="#" onclick="toggleDiv('login_content');" id="login_link">Login</a>
+                  <a href="#" onclick="toggleDiv('login_content', '#drop-down-boxes > div');" id="login_link">Login</a>
                 </li>
                 <li>
-                    <a href='#' onclick="toggleDiv('register_content');" id="register_link">Register</a>
+                    <a href='#' onclick="toggleDiv('register_content', '#drop-down-boxes > div');" id="register_link">Register</a>
                 </li>
             </ul>
         </div>

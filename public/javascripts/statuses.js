@@ -194,9 +194,16 @@ function handleError(request, resultString) {
     alert(resultString);
 }
 
-function toggleDiv(divid){
-    $("#" + divid).slideToggle('fast', function() {
-    });
+function toggleDiv(divid, othersSelector){
+    if (othersSelector != null) {
+        $(othersSelector).each(function() {
+            console.log(this);
+            if (this.style.display != "none" && this.id != divid) {
+                $(this).slideToggle('fast', function() {});
+            }
+        });
+    }
+    $("#" + divid).slideToggle('fast', function() {});
 };
 
 function toggleForm(divId) {

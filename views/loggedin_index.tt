@@ -84,15 +84,15 @@
         <div id="menu">
             <ul>
                 <li>
-                  <a href="#" onclick="toggleDiv('logout_content');" id="logout_link">Logout</a>
+                  <a href="#" onclick="toggleDiv('logout_content', 'div#drop-down-boxes > div');" id="logout_link">Logout</a>
                 </li>
                 <li>
-                    <a href="#" onclick="javascript:toggleDiv('search')">
+                    <a href="#" onclick="javascript:toggleDiv('search', '#drop-down-boxes > div')">
                         Search
                     </a>
                 </li>
                 <li>
-                    <a href='#' onclick="toggleDiv('link-box');" id="where_next_link">Where Next?</a>
+                    <a href='#' onclick="toggleDiv('link-box', '#drop-down-boxes > div');" id="where_next_link">Where Next?</a>
                 </li>
             </ul>
         </div>
