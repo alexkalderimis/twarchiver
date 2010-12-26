@@ -23,6 +23,7 @@
 
               <div id="login_content" style="display: none;">
                 <form id="login_form" action="/login" method="post">
+                    Please enter your <% settings.sitename %> login details. 
                     <table>
                     <tr>
                     <td>Login Name:</td>
@@ -40,6 +41,8 @@
               </div>
               <div id="register_content" style="display: none;">
                 <form id="register_form" action="/register" method="post">
+                    Please choose a login name and password for <% settings.sitename %> - please
+                    <em>do not enter your twitter login details</em>
                     <table>
                     <tr>
                     <td>Login Name:</td>
@@ -57,6 +60,7 @@
                     </table>
                     <input type="hidden" name="url" value="<% callback_url %>"></input>
                     <input type="submit" value="Register" />
+                    <br/>Clicking "register" will redirect you to twitter to authorise this connection.</td>
                 </form>
               </div>
           </div>
