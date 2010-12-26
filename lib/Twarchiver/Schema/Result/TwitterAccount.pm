@@ -65,6 +65,8 @@ __PACKAGE__->add_columns(
   { data_type => "text", is_nullable => 0 },
   "friends_count",
   { data_type => "integer", is_nullable => 1 },
+  "tweet_total",
+  { data_type => "integer", is_nullable => 1 },
   "created_at",
   { data_type => "datetime", is_nullable => 1 },
   "profile_image_url",
