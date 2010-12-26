@@ -540,6 +540,12 @@ get '/load/summary' => sub {
     return to_json( \%data );
 };
 
+get '/downloadtweets' => sub {
+    my $maxId = params->{maxId};
+    my $response = download_tweets_from($maxId);
+    return to_json( $response );
+};
+
 ajax '/addtags' => sub {
     my @tags      = split( /,/, params->{tags} );
     my @tweet_ids = split( /,/, params->{tweetIds} );
