@@ -143,6 +143,11 @@ padding-bottom: 10px;
 
 }
 
+#progress {
+    background-color: #ffd;
+    border: 1px solid #fc0;
+}
+
 #link-box li {
     display: list-item;
 }
