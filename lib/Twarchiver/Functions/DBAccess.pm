@@ -43,6 +43,7 @@ our @EXPORT_OK = qw/
     get_tweet_count
     get_retweet_count
     mentions_added_since
+    get_oldest_id_for
 /;
 our %EXPORT_TAGS = (
     'all' => [qw/
@@ -76,6 +77,8 @@ our %EXPORT_TAGS = (
     save_user_info restore_tokens store_twitter_statuses get_since_id_for
     update_user_info get_user_record
     mentions_added_since
+    get_all_tweets_for
+    get_oldest_id_for
     /],
     login => [qw/
     exists_user validate_user get_user_record
@@ -177,6 +180,15 @@ sub get_since_id_for {
         return;
     }
 }
+sub get_oldest_id_for {
+    my $user = shift;
+    my $oldest_tweet = get_oldest_tweet_by($user);
+    if ($oldest_tweet) {
+        return $oldest_tweet->tweet_id - 1;
+    } else {
+        return;
+    }
+}
 
 sub get_most_recent_tweet_by {
     my $user = get_user_record(shift);
@@ -185,10 +197,24 @@ sub get_most_recent_tweet_by {
                              ->get_column('tweeted_at')->max;
         my $most_recent = $user->twitter_account->tweets
                                 ->find({tweeted_at => $since});
+        return $most_recent;
     } else {
         return;
     }
 }
+sub get_oldest_tweet_by {
+    my $user = get_user_record(shift);
+    if ($user->has_twitter_account and $user->twitter_account->has_tweets) {
+        my $first = $user->twitter_account->tweets
+                             ->get_column('tweeted_at')->min;
+        my $oldest = $user->twitter_account->tweets
+                                ->find({tweeted_at => $first});
+        return $oldest;
+    } else {
+        return;
+    }
+}
+    
 
 =head2 [ResultRow] get_tweet_record( tweet_id, screen_name )
 
@@ -263,6 +289,7 @@ sub update_user_info {
             created_at        => $user->created_at,
             profile_image_url => $user->profile_image_url,
             profile_bkg_url   => $user->profile_background_image_url,
+            tweet_total       => $user->statuses_count,
         });
 }
 
