@@ -25,6 +25,7 @@ create TABLE twitteraccount (
     twitter_id TEXT,
     screen_name TEXT PRIMARY KEY,
     friends_count INTEGER,
+    tweet_total INTEGER,
     created_at DATETIME,
     profile_image_url TEXT,
     profile_bkg_url TEXT,
