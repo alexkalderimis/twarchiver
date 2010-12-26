@@ -85,7 +85,7 @@ our %EXPORT_TAGS = (
     /],
 );
 
-my $mentions_re  = qr/(\@\w+\b)/;
+my $mentions_re  = qr/\@(\w+\b)/;
 my $hashtags_re  = qr/(\#[\w-]+)/;
 my $urls_re      = qr{
     (
@@ -263,15 +263,18 @@ sub store_twitter_statuses {
 
         my @mentions = $text =~ /$mentions_re/g;
         for my $mention (@mentions) {
-            $tweet_rec->add_to_mentions({screen_name => $mention});
+            $tweet_rec->add_to_mentions({screen_name => $mention})
+                unless ($tweet_rec->mentions->search({screen_name => $mention})->count);
         }
         my @hashtags = $text =~ /$hashtags_re/g;
         for my $hashtag (@hashtags) {
-            $tweet_rec->add_to_hashtags({topic => $hashtag});
+            $tweet_rec->add_to_hashtags({topic => $hashtag})
+                unless $tweet_rec->hashtags->search({topic => $hashtag})->count;
         }
         my @urls = $text =~ /$urls_re/g;
         for my $url (@urls) {
-            $tweet_rec->add_to_urls({address => $url});
+            $tweet_rec->add_to_urls({address => $url})
+                unless $tweet_rec->urls->search({address => $url})->count;
         }
         $tweet_rec->update;
     }
@@ -570,9 +573,9 @@ Returns:   <List Context> DBIx::Class result rows
 sub get_tweets_with_mention {
     my ($username, $mention) = @_;
     return get_all_tweets_for($username)->search(
-        {'mention.screen_name'    => $mention },
+        {'tweet_mentions.mention'    => $mention },
         {
-            'join' => {tweet_mentions => 'mention'},
+            'join' => 'tweet_mentions',
         }
     );
 }
