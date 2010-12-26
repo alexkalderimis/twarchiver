@@ -802,9 +802,7 @@ sub make_mention_report_link {
         confess "No ", $_->[1] unless $_[$_->[0]];
     }
     return $html->a(
-        href => request->uri_for("show/mentions/of/" .  
-                    substr( $screen_name, 1 ) 
-        ),
+        href => request->uri_for("show/mentions/of/$screen_name"),
         text  => "($count mentions)",
         class => 'sidebarinternallink',
     );
