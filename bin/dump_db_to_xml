@@ -33,74 +33,59 @@ $writer->startTag("userdata");
 my $users = $schema->resultset('User')->search();
 $writer->startTag("users");
 
-my @user_cols = $schema->source('User')->columns();
-my %user_col_data_for;
-@user_col_data_for{@columns} = 
-    map {$schema->source('User')->column_info} @columns;
-
-my @tweet_columns = $schema->source('Tweet')->columns();
-my %tweet_col_data_for;
-@tweet_col_data_for{@tweet_columns} = 
-    map {$schema->source('Tweet')->column_info} @tweet_columns;
-
-my @tweet_columns = $schema->source('Tweet')->columns();
-my %tweet_col_data_for;
-@tweet_col_data_for{@tweet_columns} = 
-    map {$schema->source('Tweet')->column_info} @tweet_columns;
-
-my @mention_columns = $schema->source('Mention')->columns();
-my %mention_col_data_for;
-@mention_col_data_for{@mention_columns} = 
-    map {$schema->source('Mention')->column_info} @mention_columns;
-
-my @hashtag_columns = $schema->source('Hashtag')->columns();
-my %hashtag_col_data_for;
-@hashtag_col_data_for{@hashtag_columns} = 
-    map {$schema->source('Hashtag')->column_info} @hashtag_columns;
-
-my @tweet_columns = $schema->source('Tweet')->columns();
-my %tweet_col_data_for;
-@tweet_col_data_for{@tweet_columns} = 
-    map {$schema->source('Tweet')->column_info} @tweet_columns;
 while (my $user = $users->next()) {
-    my %attributes;
-    for my $col (@user_cols) {
-        next if ($col eq 'user_id');
-        next if ($user_col_data_for{$col}->is_foreign_key);
-        my $value = $user->get_column($col)->single;
-        $attributes{$col} = $value if (defined $value);
-    }
+    my %attributes = (
+        username => $user->username,
+        passhash => $user->passhash,
+        created_at => $user->created_at->epoch,
+        last_login => $user->last_login->epoch,
+        last_update => $user->last_update->epoch,
+    );
     $writer->startTag('user', %attributes);
-    my $tweets = $user->tweets;
+    my $twitter = $user->twitter_account;
+    %attributes = (
+        screen_name => $twitter->screen_name,
+        tweet_total => $twitter->tweet_total,
+        created_at => $twitter->created_at->epoch,
+        profile_image_url => $twitter->profile_image_url,
+        profile_bkg_url => $twitter->profile_bkg_url,
+        access_token => $twitter->access_token,
+        access_token_secret => $twitter->access_token_secret,
+    );
+    $writer->startTag('twitter_account', %attributes);
+    my $tweets = $twitter->tweets;
     while (my $tweet = $tweets->next()) {
-        my %attributes;
-        for my $col (@tweet_columns) {
-            next if ($tweet_col_data_for{$col}->is_foreign_key);
-            my $value = $user->get_column($col)->single;
-            $attributes{$col} = $value if (defined $value);
-        }
+        my %attributes = (
+            id => $tweet->tweet_id,
+            retweeted_count => $tweet->retweeted_count,
+            text => $tweet->text,
+            tweeted_at => $tweet->tweeted_at->epoch,
+        );
         $writer->startTag('tweet', %attributes);
-        my $mentions = $user->mentions;
-        while (my $mention = $mentions->next()) {
-
-        }
-        my $hashtags = $user->hashtags;
-        while (my $hashtag = $hashtags->next()) {
-
-        }
-        my $tags = $user->tags;
+        my $tags = $tweet->tags;
         while (my $tag = $tags->next()) {
-
+            $writer->emptyTag('tag', tag_text => $tag->tag_text);
         }
-        my $urls = $user->urls;
+        my $mentions = $tweet->mentions;
+        while (my $mention = $mentions->next()) {
+            $writer->emptyTag('mention', screen_name => $mention->screen_name);
+        }
+        my $hashtags = $tweet->hashtags;
+        while (my $hashtag = $hashtags->next()) {
+            $writer->emptyTag('hashtag', topic => $hashtag->topic);
+        }
+        my $urls = $tweet->urls;
         while (my $url = $urls->next()) {
-
+            $writer->emptyTag('url', address => $url->address);
         }
-
-
+        $writer->endTag();
     }
+    $writer->endTag();
+    $writer->endTag();
 }
 
+$writer->endTag();
+$writer->endTag();
 # Then dump the tweets, with their mentions, urls, tags and hashtags
 # inlined.
 
