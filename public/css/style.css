@@ -15,9 +15,11 @@ color: #333;
 }
 
 h1 {
-font-size: 28px;
-color: #000;
-}
+    font-size: 28px;
+    background: -webkit-gradient(linear, left top, left bottom, from(#eee), to(#333));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    }
 
 a  {color: #03c}
 a:hover {
