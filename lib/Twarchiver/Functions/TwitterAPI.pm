@@ -1,6 +1,7 @@
 package Twarchiver::Functions::TwitterAPI;
 
 use Dancer ':syntax';
+use Math::BigInt;
 
 use feature ':5.10';
 
@@ -21,28 +22,28 @@ use Exporter 'import';
 
 our @EXPORT_OK = qw/
   authorise 
-  download_latest_tweets_for
+  download_latest_tweets
   get_twitter
   has_been_authorised
   needs_authorisation
   request_tokens_for 
-  download_tweets_from
+  download_tweets
   /;
 
 our %EXPORT_TAGS = (
     'all' => [qw/
         authorise 
-        download_latest_tweets_for
+        download_latest_tweets
         get_twitter
         has_been_authorised
         needs_authorisation
         request_tokens_for 
-        download_tweets_from
+        download_tweets
     /],
     'routes' => [qw/
     authorise needs_authorisation
-    download_latest_tweets_for
-    download_tweets_from
+    download_latest_tweets
+    download_tweets
     /]
 );
 
@@ -166,29 +167,51 @@ Arguments: The user's twitter screen name
 
 =cut
 
-sub download_tweets_from {
+sub download_tweets {
+    my %args = @_;
     my $username = session('username');
-    my $maxId = shift || get_oldest_id_for($username);
-    my $twitter_ac = get_user_record($username)->twitter_account;
+    my $screen_name = $args{by} 
+        || get_user_record($username)->twitter_account->screen_name;
+    my $maxId = $args{from} 
+        || get_oldest_id_for($screen_name);
+    $maxId = Math::BigInt->new($maxId);
+    $maxId->bsub(1);
+
+    my $twitter_ac = get_twitter_account($screen_name);
+    if (has_been_updated_recently($twitter_ac)) {
+        return {
+            isFinished => \1,
+            got => $twitter_ac->tweets->count,
+            total => $twitter_ac->tweet_total,
+        };
+    }
+
     my @tokens  = restore_tokens($username);
     my $twitter = get_twitter(@tokens);
 
     if ( $twitter->authorized ) {
-        update_user_info_for($twitter_ac);
-        my $args = { count => setting('downloadbatchsize') };
-        $args->{max_id} = $maxId if $maxId;
-        my $statuses = $twitter->user_timeline($args);
-        my $response = {};
-        if (@$statuses) {
-            store_twitter_statuses($username, @$statuses);
-            $response->{isFinished} = \0;
-            $response->{nextBatchFromId} = $statuses->[-1]->id - 1;
+        download_user_info(for => $twitter_ac, from => $twitter);
+        my $args = { 
+            id    => get_twitter_account($screen_name)->twitter_id,
+            count => setting('downloadbatchsize') 
+        };
+        $args->{max_id} = "$maxId" if $maxId;
+        debug(to_dumper($args));
+        my $response = {isFinished => \0};
+        my $statuses = eval {$twitter->user_timeline($args)};
+        if (my $e = $@) {
+            error($e);
+            $maxId->badd(1);
+            $response->{nextBatchFromId} = "$maxId";
+        } elsif (@$statuses) {
+            store_twitter_statuses(@$statuses);
+            $response->{nextBatchFromId} = $statuses->[-1]->id;
         } else {
-            download_latest_tweets_for($username);
+            download_latest_tweets(by => $screen_name);
             $response->{isFinished} = \1;
             $response->{nextBatchFromId} = 0;
         }
-        $response->{got} = get_all_tweets_for($username)->count;
+        $response->{got} = $twitter_ac->tweets->count;
         $response->{total} = $twitter_ac->tweet_total;
         debug(to_dumper($response));
         return $response;
@@ -197,46 +220,59 @@ sub download_tweets_from {
     }
 
 }
-
-sub download_latest_tweets_for {
-    my $user    = shift;
-    my $user_rec = get_user_record($user);
-    my $last_update = $user_rec->last_update();
+sub has_been_updated_recently {
+    my $account = shift;
+    my $last_update = $account->last_update();
     my $five_minutes_ago = DateTime->now()->subtract(minutes => 5);
-    if ($last_update and $last_update > $five_minutes_ago) {
+    if ($last_update and $last_update < $five_minutes_ago) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
+sub download_latest_tweets {
+    my %args = @_;
+    my $user = session('username');
+    my $screen_name    = $args{by}
+        || get_user_record($user)->twitter_account->screen_name;
+    my $twitter_ac = get_twitter_account($screen_name);
+    if (has_been_updated_recently($twitter_ac)) {
         return;
     }
 
     my @tokens  = restore_tokens($user);
     my $twitter = get_twitter(@tokens);
-    my $since   = get_since_id_for($user);
+    my $since   = get_since_id_for($screen_name);
 
     if ( $twitter->authorized ) {
-        update_user_info_for($user_rec->twitter_account);
-
-        for ( my $page = 1 ; ; ++$page ) {
-            debug("Getting page $page of twitter statuses");
-            my $args = { count => setting('downloadbatchsize'), page => $page };
-            $args->{since_id} = $since if $since;
-            my $statuses = $twitter->user_timeline($args);
+        download_user_info(for => $twitter_ac, from => $twitter);
+        my %nt_args = ( 
+            id => $twitter_ac->twitter_id,
+            count => setting('downloadbatchsize'), 
+        );
+        $nt_args{since_id} = $since if $since;
+        for ( $nt_args{page} = 1; ; $nt_args{page}++ ) {
+            debug("Getting page $nt_args{page} of twitter statuses");
+            my $statuses = $twitter->user_timeline(\%nt_args);
             last unless @$statuses;
-            store_twitter_statuses($user, @$statuses);
+            store_twitter_statuses(@$statuses);
         }
-        $user_rec->update({last_update => DateTime->now()});
+        $twitter_ac->update({last_update => DateTime->now()});
         for my $new_mention (mentions_added_since($since)) {
-            update_user_info_for($new_mention, $user);
+            download_user_info(for => $new_mention, from => $twitter);
         }
     } else {
         die "Not authorised.";
     }
 }
 
-sub update_user_info_for {
-    my $twitter_account = shift;
+sub download_user_info {
+    my %args = @_;
+    my $twitter_account = $args{for};
     confess ("no twitter account" ) unless $twitter_account;
-    my $username = shift || $twitter_account->user->username;
-    my @tokens  = restore_tokens($username);
-    my $twitter = get_twitter(@tokens);
+    my $twitter = $args{from};
+    confess("no connection to twitter") unless $twitter;
 
     my $users = eval {$twitter->lookup_users({
             screen_name => $twitter_account->screen_name})};
@@ -247,7 +283,7 @@ sub update_user_info_for {
         unless ($users && ref $users eq 'ARRAY');
     confess "More than one user found"
         if (@$users > 1);
-    update_user_info($users->[0]);
+    store_user_info($users->[0]);
 }
 
 true;

@@ -62,8 +62,6 @@ __PACKAGE__->add_columns(
   { data_type => "integer", is_nullable => 1 },
   "last_login",
   { data_type => "datetime", is_nullable => 1 },
-  "last_update",
-  { data_type => "datetime", is_nullable => 1 },
   "twitter_account",
   { data_type => "text", is_nullable => 1, 
     is_foreign_key => 1},

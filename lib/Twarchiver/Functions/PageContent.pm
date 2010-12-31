@@ -148,6 +148,23 @@ sub make_highlit_content {
     }
     return make_content(@tweets);
 }
+=head2 [String] make_diverse_user_content( tweets )
+
+Function:  Orchestrate the construction of content for tweets from
+           more than one user. 
+Arguments: A list of DBIx::Class Tweet result rows
+Returns:   A <ol > li> list of tweets, or <p>apology</p> if no tweets found
+
+=cut
+
+sub make_diverse_user_content {
+    my @tweets = @_;
+    if (@tweets) {
+        return $html->ol( $html->li_group( {class => "tweet"}, [ map { make_tweet_li_with_pic($_) } @tweets ] ) );
+    } else {
+        return $html->p("No tweets found");
+    }
+}
 
 =head2 [String] make_content( tweets )
 
@@ -183,12 +200,6 @@ sub linkify_text {
     my @things  = $text =~ /$re/g;
     if (@things) {
         @things = uniq(@things);
-        debug(
-            sprintf(
-                "Found %d things of interest: %s\nfrom text: %s",
-                scalar(@things), join( ', ', @things ), $text
-            )
-        );
         my %link_for;
         for my $thing (@things) {
             ( my $cleaned_thing = $thing ) =~ s/$span_re//g;
@@ -259,6 +270,20 @@ sub make_tweet_li {
     return $return_value;
 }
 
+sub make_tweet_li_with_pic {
+    my $tweet = shift;
+    return '' unless $tweet;
+    my $return_value = eval {
+        my $tweet_box    = make_tweet_display_box_with_pic($tweet);
+        my $tagging_form = make_tweet_tagger_form($tweet);
+
+        return $tweet_box . $tagging_form;
+    };
+    if (my $e = $@) {
+        confess "Problem making tweet list item: $e";
+    }
+    return $return_value;
+}
 
 =head2 [String] make_tweet_display_box( tweet )
 
@@ -278,7 +303,6 @@ sub make_tweet_display_box {
     my $tweet     = shift;
 
     my $id        = $tweet->tweet_id;
-    debug("id is $id");
     my $text      = get_linkified_text(
         $tweet->{highlighted_text} || $tweet->text
     );
@@ -295,6 +319,26 @@ sub make_tweet_display_box {
     return $div_start . $heading . $body . $div_end . $tag_box;
 }
 
+sub make_tweet_display_box_with_pic {
+    my $tweet     = shift;
+
+    my $id        = $tweet->tweet_id;
+    my $text      = get_linkified_text(
+        $tweet->{highlighted_text} || $tweet->text
+    );
+    my $div_start = $html->div_start( 
+        onclick => "toggleForm('$id');" 
+    );
+    my $pic = $tweet->twitter_account->profile_image_url;
+    my $heading   = $html->img({src => $pic}) 
+                    . $html->h2( 
+        $tweet->tweeted_at->strftime(DATE_FORMAT) 
+    );
+    my $body      = $html->p($text);
+    my $tag_box   = make_tag_list_box($tweet);
+    my $div_end   = $html->div_end;
+    return $div_start . $heading . $body . $div_end . $tag_box;
+}
 =head2 [String] make_tag_list_box( tweet )
 
 Function: Return the div element that displays the list
@@ -339,8 +383,19 @@ Returns:   An html string with the above structure.
 
 sub make_tags_list {
     my $tweet = shift;
+    my $username = session('username');
     if ($tweet->tags->count) {
-        my @tags = $tweet->tags->get_column("tag_text")->all;
+        my @tags = $tweet->tags->search(
+            {
+                '-or' => [
+                'tweet_tags.private_to' => undef,
+                'tweet_tags.private_to.username' => $username
+                ]
+            },
+            {
+                'join' => {'tweet_tags' => 'private_to'},
+            }
+        )->get_column("tag_text")->all;
         my @li_elems = map {
             make_tweet_tags_list_item(
                 $tweet->twitter_account->screen_name, $_, $tweet->tweet_id)} @tags;
@@ -361,7 +416,7 @@ sub make_tweet_tags_list_item {
     my $deleter = $html->a(
         style => 'display: none',
         href => '#',
-        onclick => "removeTag('$username', '$tweet_id', '$tag_text')",
+        onclick => "removeTag('$tweet_id', '$tag_text')",
         text => 'delete',
         id => $deleterId,
     );
@@ -454,10 +509,10 @@ Function: Make a sidebar summarising retweeted and favourited tweets
 =cut
 
 sub make_retweeted_sidebar {
-    my $username = shift;
+    my $screen_name = shift;
     my $column   = 'retweeted_count';
-    my $user     = get_user_record($username);
-    my $total    = $user->twitter_account->tweets
+    my $account  = get_twitter_account($screen_name);
+    my $total    = $account->tweets
                         ->search( { $column => { '>' => 0 } } )
                         ->count;
     my $list     = $html->li_group(
@@ -469,7 +524,7 @@ sub make_retweeted_sidebar {
         ]
     );
     if ($total) {
-        my @rows = get_retweet_summary( $username );
+        my @rows = get_retweet_summary( $screen_name );
         $list .= $html->li_group(
             [
                 map { make_retweet_link( 
@@ -523,10 +578,10 @@ Function: Make a html list section for each year of the form:
 =cut
 
 sub make_year_group {
-    my ( $username, $year ) = @_;
-    my @months = get_months_in( $username, $year );
+    my ( $screen_name, $year ) = @_;
+    my @months = get_months_in( $screen_name, $year );
     my $month_group =
-      $html->li_group( [ map { make_month_link( $username, $year, $_ ) } @months ] );
+      $html->li_group( [ map { make_month_link( $screen_name, $year, $_ ) } @months ] );
     my $list_item = $html->h3($year) . "\n" . $html->ul($month_group);
     return $list_item;
 }

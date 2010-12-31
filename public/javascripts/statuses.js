@@ -223,19 +223,31 @@ function loadSummary(data) {
     document.getElementById('tag_count').innerHTML = data.tag_count;
     document.getElementById('retweet_count').innerHTML = data.retweet_count;
 }
-
+var screenNameForSession;
 function updateTags() {
-    $("#tagLinksList").load("/load/tags");
-    $.get("/load/summary", null, loadSummary, "json");
+    var data = {};
+    if (screenNameForSession) {
+        data.screen_name = screenNameForSession;
+    }
+    $("#tagLinksList").load("/load/tags", data);
+    $.get("/load/summary", data, loadSummary, "json");
 }
 
-function updateSideBars() {
-    $("#timeline-list").load("/load/timeline");
-    $("#mentions-list").load("/load/mentions");
-    $("#hashtags-list").load("/load/hashtags");
-    $("#urls-list").load("/load/urls");
-    $("#retweetedLinksList").load("/load/retweeteds");
-    updateTags();
+function updateSideBars(screenName) {
+    if (screenName) {
+        screenNameForSession = screenName;
+    }
+    var data = {};
+    if (screenNameForSession) {
+        data.screen_name = screenNameForSession;
+    }
+    console.log(data);
+    $("#timeline-list").load("/load/timeline", data);
+    $("#mentions-list").load("/load/mentions", data);
+    $("#hashtags-list").load("/load/hashtags", data);
+    $("#urls-list").load("/load/urls", data);
+    $("#retweetedLinksList").load("/load/retweeteds", data);
+    updateTags(screenName);
 }
 /**
 *

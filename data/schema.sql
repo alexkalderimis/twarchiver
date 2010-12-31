@@ -17,11 +17,11 @@ CREATE TABLE user (
     preferred_page_size INTEGER,
     last_login DATETIME,
     created_at DATETIME,
-    last_update DATETIME,
     twitter_account TEXT REFERENCES twitteraccount(screen_name)
 );
 
 create TABLE twitteraccount (
+    last_update DATETIME,
     twitter_id TEXT,
     screen_name TEXT PRIMARY KEY,
     friends_count INTEGER,
@@ -54,7 +54,8 @@ CREATE TABLE hashtag (
 CREATE TABLE tweet_tag (
     id INTEGER PRIMARY KEY,
     tweet INTEGER REFERENCES tweet(tweet_id),
-    tag INTEGER REFERENCES tag(tag_id)
+    tag INTEGER REFERENCES tag(tag_id),
+    private_to INTEGER REFERENCES user(user_id)
 );
 
 CREATE TABLE tag (

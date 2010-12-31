@@ -42,19 +42,25 @@ get '/show/mentions/of/:mention' => sub {
     my $title = sprintf "Statuses from %s mentioning %s",
         make_user_home_link(), $mention;
 
-    return_tweet_analysis_page($content_url, $title);
+    return_tweet_analysis_page(
+        content_url => $content_url, 
+        title => $title
+    );
 };
 
 sub return_tweet_analysis_page {
-    my $content_url = shift;
-    my $title = shift;
+    my %args = @_;
+    my $content_url = $args{content_url};
+    my $title = $args{title};
     my $username = session('username');
-    my $params = shift;
+    my $params = $args{params};
+    my $screen_name = $args{screen_name} 
+        || get_user_record($username)->twitter_account->screen_name;
     my $text_url = request->uri_for(request->path . '.txt', $params);
     my $tsv_url  = request->uri_for(request->path . '.tsv', $params);
     my $csv_url  = request->uri_for(request->path . '.csv', $params);
-    my $profile_image = get_user_record($username)
-                            ->twitter_account->profile_image_url
+    my $profile_image = get_twitter_account($screen_name)
+                            ->profile_image_url
                         || '/images/' . settings("headericon");
     return template statuses => {
         content_url => $content_url,
@@ -64,8 +70,63 @@ sub return_tweet_analysis_page {
         tsv_export_url => $tsv_url,
         csv_export_url => $csv_url,
         profile_image => $profile_image,
+        screen_name => $screen_name,
     };
 }
+
+get '/show/tweets' => sub {
+
+    my $title       = "Twistory for " . session('username');
+    my $content_url = 'tweets';
+
+    return_tweet_analysis_page(
+        content_url => $content_url, 
+        title => $title
+    );
+};
+
+get qr{/show/(\d{4})-(\d{1,2}).(\w{3,4})} => sub {
+    my ($year, $month, $format) = splat;
+    $format = lc $format;
+    my $screen_name = params->{screen_name}
+        || get_user_record(session('username'))
+                ->twitter_account->screen_name;
+
+    if ($format eq 'html') {
+        redirect "/show/$year-$month";
+    } else {
+        my @tweets  = get_tweets_in_month(
+            $screen_name, $year, $month);
+        return export_tweets_in_format($format, @tweets);
+    }
+};
+
+
+get qr{/show/(\d{4})-(\d{1,2})} => sub {
+    my ($year, $month) = splat;
+
+    my $content_url = "$year-$month";
+
+    my $title = sprintf "Statuses by %s from %s %s",
+        make_user_home_link(), get_month_name_for($month), $year;
+
+    return_tweet_analysis_page(
+        content_url => $content_url, 
+        title => $title
+    );
+};
+
+get '/show/:username' => sub {
+    my $twitter_user = params->{username};
+    my $title       = "Twistory for " . $twitter_user;
+    my $content_url = 'by/' . $twitter_user;
+
+    return_tweet_analysis_page(
+        content_url => $content_url, 
+        title => $title,
+        screen_name => $twitter_user,
+    );
+};
 
 get '/show/tweets/on/:topic.:format' => sub {
     my $format = lc params->{format};
@@ -88,7 +149,10 @@ get '/show/tweets/on/:topic' => sub {
     my $title = sprintf "Statuses from %s about %s",
         make_user_home_link(), $topic;
 
-    return_tweet_analysis_page($content_url, $title);
+    return_tweet_analysis_page(
+        content_url => $content_url, 
+        title => $title
+    );
 };
 
 get '/show/links/to' => sub {
@@ -99,7 +163,10 @@ get '/show/links/to' => sub {
     my $title = sprintf "Statuses from %s with a link to %s",
         make_user_home_link(), $address;
 
-    return_tweet_analysis_page($content_url, $title);
+    return_tweet_analysis_page(
+        content_url => $content_url, 
+        title => $title
+    );
 };
 
 get '/show/links/to.:format' => sub {
@@ -148,7 +215,10 @@ get '/show/tweets/tagged/:tag' => sub {
     my $title = sprintf "Statuses from %s tagged with: %s",
         make_user_home_link(), $tag;
 
-    return_tweet_analysis_page("$content_url", $title);
+    return_tweet_analysis_page(
+        content_url => "$content_url", 
+        title => $title
+    );
 };
 
 
@@ -168,38 +238,7 @@ get '/show/tweets.:format' => sub {
         return export_tweets_in_format($format, @tweets);
     }
 };
-get '/show/tweets' => sub {
 
-    my $title       = "Twistory for " . session('username');
-    my $content_url = 'tweets';
-
-    return_tweet_analysis_page($content_url, $title);
-};
-
-
-get qr{/show/(\d{4})-(\d{1,2}).(\w{3,4})} => sub {
-    my ($year, $month, $format) = splat;
-    $format = lc $format;
-
-    if ($format eq 'html') {
-        redirect "/show/$year-$month";
-    } else {
-        my @tweets  = get_tweets_in_month(
-            session('username'), $year, $month);
-        return export_tweets_in_format($format, @tweets);
-    }
-};
-
-get qr{/show/(\d{4})-(\d{1,2})} => sub {
-    my ($year, $month) = splat;
-
-    my $content_url = "$year-$month";
-
-    my $title = sprintf "Statuses by %s from %s %s",
-        make_user_home_link(), get_month_name_for($month), $year;
-
-    return_tweet_analysis_page($content_url, $title);
-};
 
 get '/show/tweets/from/:epoch.:format' => sub {
     my $epoch = params->{epoch};
@@ -231,7 +270,11 @@ get '/show/tweets/from/:epoch' => sub {
         $start->ymd;
 
     my $params = {days => $days};
-    return_tweet_analysis_page($content_url, $title, $params);
+    return_tweet_analysis_page(
+        content_url => $content_url, 
+        title => $title, 
+        params => $params
+    );
 };
 
 get '/show/tweets/retweeted.:format' => sub {
@@ -267,7 +310,11 @@ get '/show/tweets/retweeted' => sub {
         }
     }
 
-    return_tweet_analysis_page($content_url, $title, $params);
+    return_tweet_analysis_page(
+        content_url => $content_url, 
+        title => $title, 
+        params => $params
+    );
 };
 
 get '/download/tweets.:format' => sub {
@@ -307,7 +354,10 @@ get '/search/tweets' => sub {
         i          => $case_insensitive,
     );
 
-    return_tweet_analysis_page($content_url, $title, );
+    return_tweet_analysis_page(
+        content_url => $content_url, 
+        title => $title, 
+    );
 };
 
 =head2 /load/content/:username/search/:searchterm?i=isCaseInsensitive
@@ -322,12 +372,15 @@ get '/load/content/tweets/tagged/:tag' => sub {
 
     my $user = session('username');
     my $tag  = params->{tag};
+    my $screen_name = params->{screen_name}
+        || get_user_record($user)
+                ->twitter_account->screen_name;
 
     return $html->p("Not Authorised") if ( needs_authorisation($user) );
 
-    download_latest_tweets_for($user);
+    download_latest_tweets();
 
-    my @tweets = get_tweets_with_tag($user, $tag);
+    my @tweets = get_tweets_with_tag($screen_name, $tag);
     my $content = make_content(@tweets);
     return $content;
 };
@@ -335,12 +388,15 @@ get '/load/content/tweets/tagged/:tag' => sub {
 get '/load/content/mentions/of/:mention' => sub {
     my $user = session('username');
     my $mention = params->{mention};
+    my $screen_name = params->{screen_name}
+        || get_user_record($user)
+                ->twitter_account->screen_name;
 
     return $html->p("Not Authorised") if ( needs_authorisation($user) );
 
-    download_latest_tweets_for($user);
+    download_latest_tweets();
 
-    my @tweets  = get_tweets_with_mention($user, $mention);
+    my @tweets  = get_tweets_with_mention($screen_name, $mention);
     my $content = make_highlit_content('@'.$mention, @tweets);
     return $content;
 };
@@ -348,25 +404,45 @@ get '/load/content/mentions/of/:mention' => sub {
 get '/load/content/tweets/on/:topic' => sub {
     my $topic = '#' . params->{topic};
     my $user = session('username');
+    my $screen_name = params->{screen_name}
+        || get_user_record($user)
+                ->twitter_account->screen_name;
 
     return $html->p("Not Authorised") if ( needs_authorisation($user) );
 
-    download_latest_tweets_for($user);
+    download_latest_tweets();
 
-    my @tweets  = get_tweets_with_hashtag($user, $topic);
+    my @tweets  = get_tweets_with_hashtag($screen_name, $topic);
     my $content = make_highlit_content($topic, @tweets);
+    return $content;
+};
+
+get '/load/content/by/:screenname' => sub {
+    my $screen_name = params->{screenname};
+    my $user = session('username');
+
+    return $html->p("Not Authorised") if ( needs_authorisation($user) );
+
+    download_latest_tweets(by => $screen_name);
+
+    my @tweets = get_twitter_account($screen_name)->tweets->all;
+    my $content = make_content(@tweets);
+
     return $content;
 };
 
 get '/load/content/links/to' => sub {
     my $address = params->{address};
     my $user = session('username');
+    my $screen_name = params->{screen_name}
+        || get_user_record($user)
+                ->twitter_account->screen_name;
 
     return $html->p("Not Authorised") if ( needs_authorisation($user) );
 
-    download_latest_tweets_for($user);
+    download_latest_tweets();
 
-    my @tweets  = get_tweets_with_url($user, $address);
+    my @tweets  = get_tweets_with_url($screen_name, $address);
     my $content = make_highlit_content($address, @tweets);
     return $content;
 };
@@ -375,12 +451,15 @@ get '/load/content/links/to' => sub {
 get '/load/content/retweeted' => sub {
     my $user = session('username');
     my $count  = params->{count};
+    my $screen_name = params->{screen_name}
+        || get_user_record($user)
+                ->twitter_account->screen_name;
 
     return $html->p("Not Authorised") if ( needs_authorisation($user) );
 
-    download_latest_tweets_for($user);
+    download_latest_tweets();
 
-    my @tweets  = get_retweeted_tweets($user, $count);
+    my @tweets  = get_retweeted_tweets($screen_name, $count);
     my $content = make_content(@tweets);
     return $content;
 };
@@ -389,20 +468,23 @@ get '/load/content/search' => sub {
     my $user = session('username');
     my $searchterm          = params->{searchterm};
     my $is_case_insensitive = params->{i};
+    my $screen_name = params->{screen_name}
+        || get_user_record($user)
+                ->twitter_account->screen_name;
 
     return $html->p("Not Authorised") if ( needs_authorisation($user) );
 
-    download_latest_tweets_for($user);
+    download_latest_tweets();
 
     my ($re, @tweets) = get_tweets_matching_search(
-                $user, $searchterm, $is_case_insensitive);
+                $screen_name, $searchterm, $is_case_insensitive);
 
     my $content = make_highlit_content($re, @tweets);
     return $content;
 };
 
 sub get_tweets_matching_search {
-    my $user = shift;
+    my $screen_name = shift;
     my $searchterm = shift;
     my $is_case_insensitive = shift;
     my $re = eval { ($is_case_insensitive) 
@@ -414,7 +496,7 @@ sub get_tweets_matching_search {
           ? qr/\Q$searchterm\E/i
           : qr/\Q$searchterm\E/;
     }
-    my $rs = get_all_tweets_for($user);
+    my $rs = get_twitter_account($screen_name)->tweets;
     my @tweets;
     while ( my $tweet = $rs->next() ) {
         if ( $tweet->text =~ $re ) {
@@ -426,20 +508,24 @@ sub get_tweets_matching_search {
 }
 
 
-get '/load/timeline' => sub {
-    my $username = session('username');
-    my @years = get_years_for($username);
+ajax '/load/timeline' => sub {
+    my $screen_name = params->{screen_name}
+        || get_user_record(session('username'))
+                ->twitter_account->screen_name;
+    my @years = get_years_for($screen_name);
     if (@years) {
         return $html->li_group([
-            map {make_year_group($username, $_)} @years]);
+            map {make_year_group($screen_name, $_)} @years]);
     } else {
         return $html->p("No tweets found");
     }
 };
 
-get '/load/mentions' => sub {
-    my $username = session('username');
-    my @mentions = get_mentions_for($username)->all;
+ajax '/load/mentions' => sub {
+    my $screen_name = params->{screen_name}
+        || get_user_record(session('username'))
+                ->twitter_account->screen_name;
+    my @mentions = get_mentions_for($screen_name)->all;
     if (@mentions) {
         return $html->li_group([
             map {make_mention_sidebar_item($_)} @mentions]);
@@ -448,9 +534,11 @@ get '/load/mentions' => sub {
     }
 };
 
-get '/load/hashtags' => sub {
-    my $username = session('username');
-    my @hashtags = get_hashtags_for($username)->all;
+ajax '/load/hashtags' => sub {
+    my $screen_name = params->{screen_name}
+        || get_user_record(session('username'))
+                ->twitter_account->screen_name;
+    my @hashtags = get_hashtags_for($screen_name)->all;
     if (@hashtags) {
         return $html->li_group([
             map {make_hashtag_sidebar_item($_)} @hashtags]);
@@ -459,9 +547,11 @@ get '/load/hashtags' => sub {
     }
 };
 
-get '/load/urls' => sub {
-    my $username = session('username');
-    my @urls = get_urls_for($username)->all;
+ajax '/load/urls' => sub {
+    my $screen_name = params->{screen_name}
+        || get_user_record(session('username'))
+                ->twitter_account->screen_name;
+    my @urls = get_urls_for($screen_name)->all;
     if (@urls) {
         return $html->li_group([
             map {make_url_sidebar_item($_)} @urls]);
@@ -470,9 +560,11 @@ get '/load/urls' => sub {
     }
 };
 
-get '/load/tags' => sub {
-    my $username = session('username');
-    my @tags = get_tags_for($username)->all;
+ajax '/load/tags' => sub {
+    my $screen_name = params->{screen_name}
+        || get_user_record(session('username'))
+                ->twitter_account->screen_name;
+    my @tags = get_tags_for($screen_name)->all;
     if (@tags) {
         return $html->li_group([
             map {make_tag_sidebar_item($_)} @tags]);
@@ -481,9 +573,11 @@ get '/load/tags' => sub {
     }
 };
 
-get '/load/retweeteds' => sub {
-    my $username = session('username');
-    return make_retweeted_sidebar($username);
+ajax '/load/retweeteds' => sub {
+    my $screen_name = params->{screen_name}
+        || get_user_record(session('username'))
+                ->twitter_account->screen_name;
+    return make_retweeted_sidebar($screen_name);
 };
 
 =head2 /load/content/:username
@@ -496,7 +590,7 @@ Returns:  The content html string
 get '/load/content/tweets' => sub {
     my $user = session('username');
     return $html->p("Not Authorised") if ( needs_authorisation($user) );
-    download_latest_tweets_for($user);
+    download_latest_tweets();
     my @tweets  = get_all_tweets_for($user);
     my $content = make_content(@tweets);
     return $content;
@@ -504,10 +598,13 @@ get '/load/content/tweets' => sub {
 get qr{/load/content/(\d{4})-(\d{1,2})} => sub {
     my $user = session('username');
     my ($year, $month) = splat;
+    my $screen_name = params->{screen_name}
+        || get_user_record($user)
+                ->twitter_account->screen_name;
 
     return $html->p("Not Authorised") if ( needs_authorisation($user) );
-    download_latest_tweets_for($user);
-    my @tweets = get_tweets_in_month($user, $year, $month);
+
+    my @tweets = get_tweets_in_month($screen_name, $year, $month);
     my $content = make_content(@tweets);
     return $content;
 };
@@ -516,32 +613,39 @@ get '/load/content/tweets/from/:epoch' => sub {
     my $user = session('username');
     my $epoch = params->{epoch};
     my $days = params->{days};
+    my $screen_name = params->{screen_name}
+        || get_user_record($user)
+                ->twitter_account->screen_name;
     return $html->p("Not Authorised") if ( needs_authorisation($user) );
 
-    my @tweets = get_tweets_from($user, $epoch, $days);
+    my @tweets = get_tweets_from($screen_name, $epoch, $days);
     my $content = make_content(@tweets);
     return $content;
 };
 
-get '/load/summary' => sub {
-    my $username = session('username');
-    download_latest_tweets_for($username);
-    my $user     = get_user_record($username);
+ajax '/load/summary' => sub {
+    my $screen_name = params->{screen_name}
+        || get_user_record(session('username'))
+                ->twitter_account->screen_name;
+    download_latest_tweets();
     my %data;
-    $data{tweet_count}     = get_tweet_count($username);
-    $data{retweet_count}   = get_retweet_count($username);
-    $data{hashtag_count}   = get_hashtags_for($username)->count;
-    $data{tag_count}       = get_tags_for($username)->count;
-    $data{mention_count}   = get_mentions_for($username)->count;
-    $data{urls_total}      = get_urls_for($username)->count;
-    $data{beginning}       = $user->twitter_account->created_at->dmy();
-    $data{most_recent}     = get_most_recent_tweet_by($username)->tweeted_at->dmy();
+    $data{tweet_count}     = get_tweet_count($screen_name);
+    $data{retweet_count}   = get_retweet_count($screen_name);
+    $data{hashtag_count}   = get_hashtags_for($screen_name)->count;
+    $data{tag_count}       = get_tags_for($screen_name)->count;
+    $data{mention_count}   = get_mentions_for($screen_name)->count;
+    $data{urls_total}      = get_urls_for($screen_name)->count;
+    $data{beginning}       = get_twitter_account($screen_name)
+                                ->created_at->dmy();
+    $data{most_recent}     = get_most_recent_tweet_by($screen_name)
+                                ->tweeted_at->dmy();
     return to_json( \%data );
 };
 
 get '/downloadtweets' => sub {
     my $maxId = params->{maxId};
-    my $response = download_tweets_from($maxId);
+    my $twitterer = params->{by};
+    my $response = download_tweets(from => $maxId, by => $twitterer);
     return to_json( $response );
 };
 

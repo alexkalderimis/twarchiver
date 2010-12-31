@@ -77,6 +77,8 @@ __PACKAGE__->add_columns(
   { data_type => "text", is_nullable => 1 },
   "access_token_secret",
   { data_type => "text", is_nullable => 1 },
+  "last_update",
+  { data_type => "datetime", is_nullable => 1 },
   "user",
   { data_type => "integer", is_foreign_key => 1, is_nullable => 0 },
   );

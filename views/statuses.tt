@@ -141,7 +141,16 @@
 
             </div>
 
-            <div id="content"><p>Loading</p></div>
+            <div id="content">
+                <p id="progress">
+                    Downloading your tweets - please be patient:
+                    <span id='elipsis'>...</span>
+                    <span id='got-and-total' style="display: none">
+                        Got <span id="got"></span>
+                        of <span id="total"></span>
+                    </span>
+                </p>
+            </div>
 
         </div>
     </div>
@@ -149,10 +158,35 @@
 
 <script> 
 // Asynchronously load the content
+var screenName = "<% screen_name %>";
 window.onload = function() {
-    $("#content").load("/load/content/<% content_url %>", null, function() {
-        updateSideBars();
-    });
+    downloadTweets();
+};
+function downloadTweets(fromId) {
+    var data = {by: screenName};
+    if (fromId != null) {
+        data.maxId = fromId;
+    }
+    console.log(data);
+    $.get("/downloadtweets", data, updateProgress, "json");
+}
+function updateProgress(data) {
+    console.log(data);
+    document.getElementById('elipsis').style.display = "none";
+    document.getElementById('got-and-total').style.display = 'inline';
+    document.getElementById('got').innerHTML = data.got;
+    document.getElementById('total').innerHTML = data.total;
+    if (data.isFinished) {
+        allDone();
+    } else {
+        downloadTweets(data.nextBatchFromId);
+    }
+}
+function allDone() {
+    var url = "/load/content/<% content_url %>";
+    ensureHidden('progress');
+    $("#content").load(url, null, function() {});
+    updateSideBars("<% screen_name %>");
     $.throbberShow({
         image : "/images/ajax-loader.gif",
         parent : '#content',

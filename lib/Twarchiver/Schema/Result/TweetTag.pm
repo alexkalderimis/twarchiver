@@ -46,6 +46,8 @@ __PACKAGE__->add_columns(
   { data_type => "integer", is_foreign_key => 1, is_nullable => 1 },
   "tag",
   { data_type => "integer", is_foreign_key => 1, is_nullable => 1 },
+  "private_to",
+  { data_type => "integer", is_foreign_key => 1, is_nullable => 1 },
 );
 __PACKAGE__->set_primary_key("id");
 
@@ -63,6 +65,26 @@ __PACKAGE__->belongs_to(
   "tag",
   "Twarchiver::Schema::Result::Tag",
   { tag_id => "tag" },
+  {
+    is_deferrable => 1,
+    join_type     => "LEFT",
+    on_delete     => "CASCADE",
+    on_update     => "CASCADE",
+  },
+);
+
+=head2 private_to
+
+Type: belongs_to
+
+Related object: L<Twarchiver::Schema::Result::User>
+
+=cut
+
+__PACKAGE__->belongs_to(
+  "private_to",
+  "Twarchiver::Schema::Result::User",
+  { user_id => "private_to" },
   {
     is_deferrable => 1,
     join_type     => "LEFT",
