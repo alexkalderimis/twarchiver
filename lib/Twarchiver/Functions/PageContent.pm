@@ -162,7 +162,7 @@ sub make_diverse_user_content {
     if (@tweets) {
         return $html->ol( $html->li_group( {class => "tweet"}, [ map { make_tweet_li_with_pic($_) } @tweets ] ) );
     } else {
-        return $html->p("No tweets found");
+        return no_tweets_found();
     }
 }
 
@@ -176,12 +176,42 @@ Returns:   A <ol > li> list of tweets, or <p>apology</p> if no tweets found
 
 sub make_content {
     my @tweets = @_;
+
     if (@tweets) {
-        return $html->ol( $html->li_group( {class => "tweet"}, [ map { make_tweet_li($_) } @tweets ] ) );
+        my $last_id = $tweets[-1]->tweeted_at->ymd;
+        my $no_of_tweets = @tweets;
+        my $more_button = make_more_button($last_id, $no_of_tweets);
+        my $list_items = $html->li_group( 
+            {class => "tweet"}, 
+            [ map { make_tweet_li($_) } @tweets ] 
+        );
+        return $list_items . $more_button;
     } else {
-        return $html->p("No tweets found");
+        return no_tweets_found();
     }
 }
+
+sub make_more_button {
+    my ($id, $page_size) = @_;
+    if ($page_size < setting('pageSize')) {
+        return ''; # There aren't any more
+    }
+    my $url = URI->new(request->path());
+    my $params = params();
+    delete $params->{from};
+    $url->query_form(from => $id, %{(params)});
+    my $button = $html->input(
+        type => "button",
+        onclick => "getMore(this, '$url')",
+        value => "Get More",
+    );
+    return $button;
+}
+
+sub no_tweets_found {
+    return $html->p("No tweets found");
+}
+
 
 =head2 linkify_text( Str type, Str text )
 
@@ -410,9 +440,6 @@ sub make_tweet_tags_list_item {
     my $tag_text = shift;
     my $tweet_id = shift;
     my $deleterId = $tweet_id . '-' . $tag_text;
-    my $span = $html->span(
-        { onclick => "toggleElem('$deleterId')"},
-        $tag_text);
     my $deleter = $html->a(
         style => 'display: none',
         href => '#',
@@ -420,7 +447,14 @@ sub make_tweet_tags_list_item {
         text => 'delete',
         id => $deleterId,
     );
-    return $span . '   ' . $deleter;
+    my $span = $html->span(
+        { 
+            onmouseover => "toggleElem('$deleterId')",
+            onmouseout => "toggleElem('$deleterId')",
+            tag        => $tag_text,
+        },
+        $tag_text . '   ' . $deleter);
+    return $span;
 }
 
 =head2 [String] make_tweet_tagger_form( tweet )

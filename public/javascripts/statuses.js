@@ -111,11 +111,15 @@ function addTagToTweet(tag, tagListElem, tweetId) {
 
     var spanElem = document.createElement("span");
     var tagText = document.createTextNode(tag);
-    spanElem.setAttribute("onclick", 
+    spanElem.setAttribute("onmouseover", 
             "toggleElem('" + tweetId + '-' + tag + "')");
+    spanElem.setAttribute("onmouseout", 
+            "toggleElem('" + tweetId + '-' + tag + "')");
+    spanElem.setAttribute("tag", tag);
     spanElem.appendChild(tagText);
 
     var spacer = document.createTextNode("   ");
+    spanElem.appendChild(spacer);
 
     var aElem = document.createElement("a");
     aElem.setAttribute("style", "display: none");
@@ -125,19 +129,33 @@ function addTagToTweet(tag, tagListElem, tweetId) {
         "removeTag('" + tweetId + "', '" + tag + "')");
     var aText = document.createTextNode("delete");
     aElem.appendChild(aText);
+    spanElem.appendChild(aElem);
 
     liElem.appendChild(spanElem);
-    liElem.appendChild(spacer);
-    liElem.appendChild(aElem);
     // then add it onto the list
     tagListElem.appendChild(liElem);
+}
+
+function getMore(elem, url) {
+    $(elem).slideToggle('fast', function() {
+        $.ajax({
+            url: url,
+            data: null,
+            success: addMoarContent,
+            dataType: "html"
+        });
+    });
+}
+
+function addMoarContent(data) {
+    $('#content-ol').append(data);
 }
 
 function removeTagFromTagList(tag, tagListElem) {
     var tagLiElems = tagListElem.children;
     for (j=0;j < tagLiElems.length; j++) {
         var firstKid = tagLiElems[j].children[0];
-        if (firstKid.innerHTML == tag) {
+        if (firstKid.getAttribute('tag') == tag) {
             var tagLi = tagLiElems[j];
             var parentNode = tagLi.parentNode;
             $().add(tagLi).slideToggle('fast', function() {

@@ -46,6 +46,7 @@ our @EXPORT_OK = qw/
     mentions_added_since
     get_oldest_id_for
     get_twitter_account
+    get_tweets_by
 /;
 our %EXPORT_TAGS = (
     'all' => [qw/
@@ -60,6 +61,7 @@ our %EXPORT_TAGS = (
     get_most_recent_tweet_by
     get_tweets_from
     get_twitter_account
+    get_tweets_by
     /],
     'routes' => [qw/
     get_all_tweets_for get_tweets_with_tag get_retweeted_tweets 
@@ -72,6 +74,7 @@ our %EXPORT_TAGS = (
     get_tweet_count
     get_retweet_count
     get_twitter_account
+    get_tweets_by
     /],
     'pagecontent' => [qw/
     get_user_record get_retweet_summary get_months_in 
@@ -599,8 +602,7 @@ sub unlink_tag_from_tweet {
     $link->delete;
 }
 
-=head2 [Results] get_tweets_with_tag( screen_name, tag )
-
+=head2 [Results] get_tweets_with_tag( screen_name, tag, [max_id] )
 Function:  Get all the tweets tagged with a particular tag by a given user
 Arguments: (String) The user's twitter screen name
            (String) The tag we are searching by
@@ -610,18 +612,23 @@ Returns:   <List Context> DBIx::Class result rows
 =cut
 
 sub get_tweets_with_tag {
-    my ($screen_name, $tag) = @_;
+    my ($screen_name, $tag, $max_id) = @_;
     my $username = Dancer::session('username');
-    return get_twitter_account($screen_name)->tweets->search(
+    my $rs = get_twitter_account($screen_name)->tweets->search(
         {
             'tag.tag_text' => $tag,
             'tweet_tags.private_to' => [undef, $username],
         },
         {'join' => {tweet_tags => 'tag'}}
     );
+    if (wantarray) {
+        return tweet_page_from_rs($rs, $max_id);
+    } else {
+        return $rs;
+    }
 }
 
-=head2 [Results] get_tweets_with_mention( screen_name, mention )
+=head2 [Results] get_tweets_with_mention( screen_name, mention, [max_id] )
 
 Function:  Get all the tweets tagged with a particular mention by a given user
 Arguments: (String) The user's twitter screen name
@@ -632,16 +639,21 @@ Returns:   <List Context> DBIx::Class result rows
 =cut
 
 sub get_tweets_with_mention {
-    my ($screen_name, $mention) = @_;
-    return get_twitter_account($screen_name)->tweets->search(
+    my ($screen_name, $mention, $max_id) = @_;
+    my $rs = get_twitter_account($screen_name)->tweets->search(
         {'tweet_mentions.mention'    => $mention },
         {
             'join' => 'tweet_mentions',
         }
     );
+    if (wantarray) {
+        return tweet_page_from_rs($rs, $max_id);
+    } else {
+        return $rs;
+    }
 }
 
-=head2 [Results] get_tweets_with_hashtag( screen_name, hashtag )
+=head2 [Results] get_tweets_with_hashtag( screen_name, hashtag, [max_id])
 
 Function:  Get all the tweets tagged with a particular hashtag by a given user
 Arguments: (String) The user's twitter screen name
@@ -652,14 +664,19 @@ Returns:   <List Context> DBIx::Class result rows
 =cut
 
 sub get_tweets_with_hashtag {
-    my ($screen_name, $hashtag) = @_;
-    return get_twitter_account($screen_name)->tweets->search(
+    my ($screen_name, $hashtag, $max_id) = @_;
+    my $rs = get_twitter_account($screen_name)->tweets->search(
         {'hashtag.topic'           => $hashtag },
         {'join' => {tweet_hashtags => 'hashtag'}}
     );
+    if (wantarray) {
+        return tweet_page_from_rs($rs, $max_id);
+    } else {
+        return $rs;
+    }
 }
 
-=head2 [Results] get_tweets_with_url( screen_name, url )
+=head2 [Results] get_tweets_with_url( screen_name, url, [max_id] )
 
 Function:  Get all the tweets tagged with a particular url by a given user
 Arguments: (String) The user's twitter screen name
@@ -670,14 +687,19 @@ Returns:   <List Context> DBIx::Class result rows
 =cut
 
 sub get_tweets_with_url {
-    my ($screen_name, $address) = @_;
-    return get_twitter_account($screen_name)->tweets->search(
+    my ($screen_name, $address, $max_id) = @_;
+    my $rs = get_twitter_account($screen_name)->tweets->search(
         {'url.address'           => $address },
         {'join' => {tweet_urls => 'url'}}
     );
+    if (wantarray) {
+        return tweet_page_from_rs($rs, $max_id);
+    } else {
+        return $rs;
+    }
 }
 
-=head2 [Results] get_retweeted_tweets( screen_name, count? )
+=head2 [Results] get_retweeted_tweets( screen_name, [count], [max_id] )
 
 Function:  Get the tweets by a given user retweeted by 
            other users (optionally: at least count times)
@@ -689,12 +711,18 @@ Returns:   <List Context> DBIx::Class result rows
 =cut
 
 sub get_retweeted_tweets {
-    my ($screen_name, $count) = @_;
+    my ($screen_name, $count, $max_id) = @_;
     my $column = 'retweeted_count';
     my $condition = ($count) 
         ? {$column => $count}
         : {$column => {'>' => 0}};
-    return get_twitter_account($screen_name)->tweets->search($condition);
+    my $rs = get_twitter_account($screen_name)->tweets
+                                              ->search($condition);
+    if (wantarray) {
+        return tweet_page_from_rs($rs, $max_id);
+    } else {
+        return $rs;
+    }
 }
 
 =pod 
@@ -778,42 +806,77 @@ sub get_months_in {
     return @months;
 }
 
-=head2 [Results] get_tweets_in_month( screen_name, year, month )
+=head2 [Results] get_tweets_in_month( screen_name, year, month, [max_id] )
 
 Function:  Get the tweets by a given user from a given month
 Arguments: (String) The user's twitter screen name
            (Number) The year (4 digit)
            (Number) The month (1 - 12)
-Returns:   <List Context> DBIx::Class result rows
-           <Scalar Context> A DBIx::Class result set
+Returns:   List of DBIx::Class result rows
 
 =cut
 
 sub get_tweets_in_month {
-    my ($screen_name, $year, $month) = @_;
+    my ($screen_name, $year, $month, $max_id) = @_;
     my $start_of_month = DateTime->new(
         year => $year, month => $month, day => 1);
     my $end_of_month = DateTime->new(
         year => $year, month => $month, day => 1
     )->add( months => 1 );
 
-    return get_twitter_account($screen_name)->tweets->search(
+    my $rs = get_twitter_account($screen_name)->tweets->search(
                 { tweeted_at => {'!='  => undef                }},
                 { order_by   => {-desc => 'tweeted_at'         }})
         ->search({tweeted_at => {'>='  => $start_of_month->ymd }})
         ->search({tweeted_at => {'<'   => $end_of_month->ymd   }});
+
+    if (wantarray) {
+        return tweet_page_from_rs($rs, $max_id);
+    } else {
+        return $rs;
+    };
+
 }
 
+sub tweet_page_from_rs {
+    my ($rs, $max) = @_;
+    if ($max) {
+        $rs = $rs->search({tweeted_at => {'<' => $max}});
+    } 
+    my @returners;
+    while (my $tweet = $rs->next()) {
+        last if (@returners >= Dancer::setting('pageSize'));
+        push @returners, $tweet;
+    }
+    return @returners;
+}
+
+
 sub get_tweets_from {
-    my ($screen_name, $epoch, $days) = @_;
+    my ($screen_name, $epoch, $days, $max_id) = @_;
     my $from = DateTime->from_epoch( epoch => $epoch);
     my $to = ($days)
         ? DateTime->from_epoch( epoch => $epoch)
                         ->add( days => $days)
         : DateTime->now();
-    return get_twitter_account($screen_name)->tweets
+    my $rs = get_twitter_account($screen_name)->tweets
                         ->search({tweeted_at => {'>=', $from->ymd}})
                         ->search({tweeted_at => {'<', $to->ymd}});
+    if (wantarray) {
+        return tweet_page_from_rs($rs, $max_id);
+    } else {
+        return $rs;
+    };
+}
+
+sub get_tweets_by {
+    my ($screen_name, $max_id) = @_;
+    my $rs = get_twitter_account($screen_name)->tweets;
+    if (wantarray) {
+        return tweet_page_from_rs($rs, $max_id);
+    } else {
+        return $rs;
+    };
 }
 
 sub validate_user {

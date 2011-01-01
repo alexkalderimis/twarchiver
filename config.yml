@@ -41,6 +41,7 @@ session: "YAML"
 headericon: "header_icon.png"
 
 downloadbatchsize: 100
+pageSize: 20
 
 historyquotes:
     - "History, history! We fools, what do we know or care. - Williams Carlos Williams" 

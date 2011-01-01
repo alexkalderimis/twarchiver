@@ -61,7 +61,7 @@ sub return_tweet_analysis_page {
     my $csv_url  = request->uri_for(request->path . '.csv', $params);
     my $profile_image = get_twitter_account($screen_name)
                             ->profile_image_url
-                        || '/images/' . settings("headericon");
+                        || '/images/' . setting("headericon");
     return template statuses => {
         content_url => $content_url,
         title => $title,
@@ -222,7 +222,7 @@ get '/show/tweets/tagged/:tag' => sub {
 };
 
 
-=head2 /show
+=head2 /show/tweets
 
 Function: return a page loading all the statuses from a user
 
@@ -372,6 +372,7 @@ get '/load/content/tweets/tagged/:tag' => sub {
 
     my $user = session('username');
     my $tag  = params->{tag};
+    my $max_id = params->{from};
     my $screen_name = params->{screen_name}
         || get_user_record($user)
                 ->twitter_account->screen_name;
@@ -380,13 +381,14 @@ get '/load/content/tweets/tagged/:tag' => sub {
 
     download_latest_tweets();
 
-    my @tweets = get_tweets_with_tag($screen_name, $tag);
+    my @tweets = get_tweets_with_tag($screen_name, $tag, $max_id);
     my $content = make_content(@tweets);
     return $content;
 };
 
 get '/load/content/mentions/of/:mention' => sub {
     my $user = session('username');
+    my $max_id = params->{from};
     my $mention = params->{mention};
     my $screen_name = params->{screen_name}
         || get_user_record($user)
@@ -396,13 +398,14 @@ get '/load/content/mentions/of/:mention' => sub {
 
     download_latest_tweets();
 
-    my @tweets  = get_tweets_with_mention($screen_name, $mention);
+    my @tweets  = get_tweets_with_mention($screen_name, $mention, $max_id);
     my $content = make_highlit_content('@'.$mention, @tweets);
     return $content;
 };
 
 get '/load/content/tweets/on/:topic' => sub {
     my $topic = '#' . params->{topic};
+    my $max_id = params->{from};
     my $user = session('username');
     my $screen_name = params->{screen_name}
         || get_user_record($user)
@@ -412,20 +415,21 @@ get '/load/content/tweets/on/:topic' => sub {
 
     download_latest_tweets();
 
-    my @tweets  = get_tweets_with_hashtag($screen_name, $topic);
+    my @tweets  = get_tweets_with_hashtag($screen_name, $topic, $max_id);
     my $content = make_highlit_content($topic, @tweets);
     return $content;
 };
 
 get '/load/content/by/:screenname' => sub {
     my $screen_name = params->{screenname};
+    my $max_id = params->{from};
     my $user = session('username');
 
     return $html->p("Not Authorised") if ( needs_authorisation($user) );
 
     download_latest_tweets(by => $screen_name);
 
-    my @tweets = get_twitter_account($screen_name)->tweets->all;
+    my @tweets = get_tweets_by($screen_name, $max_id);
     my $content = make_content(@tweets);
 
     return $content;
@@ -433,6 +437,7 @@ get '/load/content/by/:screenname' => sub {
 
 get '/load/content/links/to' => sub {
     my $address = params->{address};
+    my $max_id = params->{from};
     my $user = session('username');
     my $screen_name = params->{screen_name}
         || get_user_record($user)
@@ -442,7 +447,7 @@ get '/load/content/links/to' => sub {
 
     download_latest_tweets();
 
-    my @tweets  = get_tweets_with_url($screen_name, $address);
+    my @tweets  = get_tweets_with_url($screen_name, $address, $max_id);
     my $content = make_highlit_content($address, @tweets);
     return $content;
 };
@@ -451,6 +456,7 @@ get '/load/content/links/to' => sub {
 get '/load/content/retweeted' => sub {
     my $user = session('username');
     my $count  = params->{count};
+    my $max_id = params->{from};
     my $screen_name = params->{screen_name}
         || get_user_record($user)
                 ->twitter_account->screen_name;
@@ -459,7 +465,7 @@ get '/load/content/retweeted' => sub {
 
     download_latest_tweets();
 
-    my @tweets  = get_retweeted_tweets($screen_name, $count);
+    my @tweets  = get_retweeted_tweets($screen_name, $count, $max_id);
     my $content = make_content(@tweets);
     return $content;
 };
@@ -589,22 +595,25 @@ Returns:  The content html string
 
 get '/load/content/tweets' => sub {
     my $user = session('username');
+    my $max_id = params->{from};
+    my $screen_name = get_user_record($user)->twitter_account->screen_name;
     return $html->p("Not Authorised") if ( needs_authorisation($user) );
     download_latest_tweets();
-    my @tweets  = get_all_tweets_for($user);
+    my @tweets = get_tweets_by($screen_name, $max_id);
     my $content = make_content(@tweets);
     return $content;
 };
 get qr{/load/content/(\d{4})-(\d{1,2})} => sub {
     my $user = session('username');
     my ($year, $month) = splat;
+    my $max_id = params->{from};
     my $screen_name = params->{screen_name}
         || get_user_record($user)
                 ->twitter_account->screen_name;
 
     return $html->p("Not Authorised") if ( needs_authorisation($user) );
 
-    my @tweets = get_tweets_in_month($screen_name, $year, $month);
+    my @tweets = get_tweets_in_month($screen_name, $year, $month, $max_id);
     my $content = make_content(@tweets);
     return $content;
 };
@@ -613,12 +622,13 @@ get '/load/content/tweets/from/:epoch' => sub {
     my $user = session('username');
     my $epoch = params->{epoch};
     my $days = params->{days};
+    my $max_id = params->{from};
     my $screen_name = params->{screen_name}
         || get_user_record($user)
                 ->twitter_account->screen_name;
     return $html->p("Not Authorised") if ( needs_authorisation($user) );
 
-    my @tweets = get_tweets_from($screen_name, $epoch, $days);
+    my @tweets = get_tweets_from($screen_name, $epoch, $days, $max_id);
     my $content = make_content(@tweets);
     return $content;
 };
