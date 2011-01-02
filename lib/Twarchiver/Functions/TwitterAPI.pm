@@ -10,6 +10,7 @@ our $VERSION = '0.1';
 use Net::Twitter;
 use Carp qw/confess/;
 use DateTime;
+use Scalar::Util qw/blessed/;
 
 use Twarchiver::Functions::DBAccess ':twitterapi';
 
@@ -28,6 +29,7 @@ our @EXPORT_OK = qw/
   needs_authorisation
   request_tokens_for 
   download_tweets
+  download_user_info
   /;
 
 our %EXPORT_TAGS = (
@@ -39,11 +41,13 @@ our %EXPORT_TAGS = (
         needs_authorisation
         request_tokens_for 
         download_tweets
+        download_user_info
     /],
     'routes' => [qw/
     authorise needs_authorisation
     download_latest_tweets
     download_tweets
+    download_user_info
     /]
 );
 
@@ -224,9 +228,14 @@ sub has_been_updated_recently {
     my $account = shift;
     my $last_update = $account->last_update();
     my $five_minutes_ago = DateTime->now()->subtract(minutes => 5);
-    if ($last_update and $last_update < $five_minutes_ago) {
+    if ($last_update and $last_update > $five_minutes_ago) {
+        debug("Has been updated recently " . $last_update->datetime());
         return true;
     } else {
+        debug("Has not been updated recently");
+        if ($last_update) {
+            debug("Last update at " . $last_update->datetime());
+        }
         return false;
     }
 }
@@ -254,14 +263,18 @@ sub download_latest_tweets {
         $nt_args{since_id} = $since if $since;
         for ( $nt_args{page} = 1; ; $nt_args{page}++ ) {
             debug("Getting page $nt_args{page} of twitter statuses");
+            debug(to_dumper({%nt_args}));
             my $statuses = $twitter->user_timeline(\%nt_args);
             last unless @$statuses;
             store_twitter_statuses(@$statuses);
+            debug("Stored " . scalar(@$statuses) . " statuses");
         }
-        $twitter_ac->update({last_update => DateTime->now()});
-        for my $new_mention (mentions_added_since($since)) {
-            download_user_info(for => $new_mention, from => $twitter);
-        }
+        my $now = DateTime->now();
+        debug("Updated at " . $now->datetime());
+        $twitter_ac->update({last_update => $now});
+#        for my $new_mention (mentions_added_since($since)) {
+#            download_user_info(for => $new_mention, from => $twitter);
+#        }
     } else {
         die "Not authorised.";
     }
@@ -271,8 +284,15 @@ sub download_user_info {
     my %args = @_;
     my $twitter_account = $args{for};
     confess ("no twitter account" ) unless $twitter_account;
+    unless (blessed $twitter_account) {
+        $twitter_account = get_twitter_account($twitter_account);
+    }
     my $twitter = $args{from};
-    confess("no connection to twitter") unless $twitter;
+    unless ($twitter) {
+        my $user = session('username');
+        my @tokens  = restore_tokens($user);
+        $twitter = get_twitter(@tokens);
+    }
 
     my $users = eval {$twitter->lookup_users({
             screen_name => $twitter_account->screen_name})};

@@ -623,7 +623,7 @@ sub make_year_group {
     return $list_item;
 }
 
-=head2 make_user_home_link
+=head2 make_user_home_link( [screen_name] )
 
 Function: get the link to the user's home status list
 Returns:  '<a href="/show/username">username</a>'
@@ -638,7 +638,7 @@ sub make_user_home_link {
                                                 ->screen_name;
     }
     my $link = $html->a(
-        href => request->uri_for( '/show/tweets' ),
+        href => request->uri_for( "/show/$screen_name" ),
         text => $screen_name,
     );
     return $link;
@@ -653,7 +653,9 @@ Returns:  '<a href="/show/username/2010/12">December (7 tweets)</a>'
 
 sub make_month_link {
     my ( $user, $y, $m ) = @_;
-    my $screen_name = params->{screen_name};
+    my $screen_name = params->{screen_name} ||
+                      get_user_record(session('username'))
+                        ->twitter_account->screen_name;
     my $number_of_tweets = get_tweets_in_month( $user, $y, $m )->count;
     my $uri = URI->new(request->uri_for("show/$screen_name/$y-$m"));
     my $text = sprintf( 
@@ -875,7 +877,8 @@ sub get_mention_url {
     my $mention = shift;
     confess "Mention is undefined" unless (defined $mention);
     $mention = substr( $mention, 1 ) if ($mention =~ /^\@/);
-    return TWITTER_BASE . $mention;
+    # return TWITTER_BASE . $mention;
+    return request->uri_for("/show/$mention");
 }
 
 =head2 make_mention_link( mentioned_name )

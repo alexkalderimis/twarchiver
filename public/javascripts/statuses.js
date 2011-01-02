@@ -212,6 +212,32 @@ function handleError(request, resultString) {
     alert(resultString);
 }
 
+var hasBeenOpened = {};
+
+function toggleExpensiveDiv(divid) {
+    console.log(hasBeenOpened);
+    toggleDiv(divid);
+    if (! hasBeenOpened[divid]) {
+        var target = '#' + divid + '-list';
+        /* $.throbberShow({
+                image : "/images/ajax-loader.gif",
+                parent : target,
+                ajax: false
+            }); */
+        var data = {};
+        if (screenNameForSession) {
+            data.screen_name = screenNameForSession;
+        }
+        console.log(data);
+        if (divid == "summary" || divid == 'usertags') {
+            updateTags();
+        } else {
+            $(target).load("/load/" + divid, data);
+        }
+        hasBeenOpened[divid] = true;
+    }
+}
+
 function toggleDiv(divid, othersSelector){
     if (othersSelector != null) {
         $(othersSelector).each(function() {
@@ -261,11 +287,7 @@ function updateSideBars(screenName) {
     }
     console.log(data);
     $("#timeline-list").load("/load/timeline", data);
-    $("#mentions-list").load("/load/mentions", data);
-    $("#hashtags-list").load("/load/hashtags", data);
-    $("#urls-list").load("/load/urls", data);
     $("#retweetedLinksList").load("/load/retweeteds", data);
-    updateTags(screenName);
 }
 /**
 *

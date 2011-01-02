@@ -871,7 +871,10 @@ sub get_tweets_from {
 
 sub get_tweets_by {
     my ($screen_name, $max_id) = @_;
-    my $rs = get_twitter_account($screen_name)->tweets;
+    my $rs = get_twitter_account($screen_name)->tweets->search(
+        undef,
+        {order_by => {-desc => 'tweeted_at'}},
+    );
     if (wantarray) {
         return tweet_page_from_rs($rs, $max_id);
     } else {

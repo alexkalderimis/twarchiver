@@ -122,6 +122,8 @@ get '/show/:username' => sub {
     my $title       = "Twistory for " . $twitter_user;
     my $content_url = 'by/' . $twitter_user;
 
+    download_user_info(for => $twitter_user);
+
     return_tweet_analysis_page(
         content_url => $content_url, 
         title => $title,
@@ -241,7 +243,7 @@ get '/show/tweets.:format' => sub {
     my $format = lc params->{format};
 
     if ($format eq 'html') {
-        redirect '/show';
+        redirect '/show/tweets';
     } else {
         my @tweets  = get_all_tweets_for(session('username'));
         return export_tweets_in_format($format, @tweets);
@@ -249,32 +251,34 @@ get '/show/tweets.:format' => sub {
 };
 
 
-get '/show/tweets/from/:epoch.:format' => sub {
+get '/show/:screen_name/from/:epoch.:format' => sub {
     my $epoch = params->{epoch};
     my $days = params->{days};
+    my $screen_name = params->{screen_name};
+
     my $format = lc params->{format};
     if ($format eq 'html') {
-        my $url = "/show/tweets/from/$epoch";
+        my $url = "/show/$screen_name/from/$epoch";
         $url .= "?days=$days" if $days;
         redirect $url;
     } else {
-        my @tweets = get_tweets_from(
-            session('username'), $epoch, $days);
+        my @tweets = get_tweets_from($screen_name, $epoch, $days);
         return export_tweets_in_format($format, @tweets);
     }
 };
 
-get '/show/tweets/from/:epoch' => sub {
+get '/show/:screen_name/from/:epoch' => sub {
     my $epoch = params->{epoch};
     my $days = params->{days};
+    my $screen_name = params->{screen_name};
 
-    my $content_url = "tweets/from/$epoch";
+    my $content_url = "$screen_name/from/$epoch";
     $content_url .= "?days=$days" if $days;
 
     my $start = DateTime->from_epoch(epoch => $epoch);
 
     my $title = sprintf "Statuses by %s %sfrom %s",
-        make_user_home_link(), 
+        make_user_home_link($screen_name), 
         (($days) ? "in the $days days " : ''),
         $start->ymd;
 
@@ -282,7 +286,8 @@ get '/show/tweets/from/:epoch' => sub {
     return_tweet_analysis_page(
         content_url => $content_url, 
         title => $title, 
-        params => $params
+        params => $params,
+        screen_name => $screen_name,
     );
 };
 
@@ -419,21 +424,17 @@ get '/load/content/:screen_name/on/:topic' => sub {
 
     return $html->p("Not Authorised") if ( needs_authorisation($user) );
 
-    download_latest_tweets();
-
     my @tweets  = get_tweets_with_hashtag($screen_name, $topic, $max_id);
     my $content = make_highlit_content($topic, @tweets);
     return $content;
 };
 
-get '/load/content/by/:screenname' => sub {
-    my $screen_name = params->{screenname};
+get '/load/content/by/:screen_name' => sub {
+    my $screen_name = params->{screen_name};
     my $max_id = params->{from};
     my $user = session('username');
 
     return $html->p("Not Authorised") if ( needs_authorisation($user) );
-
-    download_latest_tweets(by => $screen_name);
 
     my @tweets = get_tweets_by($screen_name, $max_id);
     my $content = make_content(@tweets);
@@ -449,8 +450,6 @@ get '/load/content/:screen_name/links/to' => sub {
 
     return $html->p("Not Authorised") if ( needs_authorisation($user) );
 
-    download_latest_tweets();
-
     my @tweets  = get_tweets_with_url($screen_name, $address, $max_id);
     my $content = make_highlit_content($address, @tweets);
     return $content;
@@ -464,8 +463,6 @@ get '/load/content/:screen_name/retweeted' => sub {
     my $screen_name = params->{screen_name};
 
     return $html->p("Not Authorised") if ( needs_authorisation($user) );
-
-    download_latest_tweets();
 
     my @tweets  = get_retweeted_tweets($screen_name, $count, $max_id);
     my $content = make_content(@tweets);
@@ -481,8 +478,6 @@ get '/load/content/search' => sub {
                 ->twitter_account->screen_name;
 
     return $html->p("Not Authorised") if ( needs_authorisation($user) );
-
-    download_latest_tweets();
 
     my ($re, @tweets) = get_tweets_matching_search(
                 $screen_name, $searchterm, $is_case_insensitive);
@@ -600,7 +595,7 @@ get '/load/content/tweets' => sub {
     my $max_id = params->{from};
     my $screen_name = get_user_record($user)->twitter_account->screen_name;
     return $html->p("Not Authorised") if ( needs_authorisation($user) );
-    download_latest_tweets();
+
     my @tweets = get_tweets_by($screen_name, $max_id);
     my $content = make_content(@tweets);
     return $content;
@@ -620,14 +615,12 @@ get qr{/load/content/(\d{4})-(\d{1,2})} => sub {
     return $content;
 };
 
-get '/load/content/tweets/from/:epoch' => sub {
+get '/load/content/:screen_name/from/:epoch' => sub {
     my $user = session('username');
+    my $screen_name = params->{screen_name};
     my $epoch = params->{epoch};
     my $days = params->{days};
     my $max_id = params->{from};
-    my $screen_name = params->{screen_name}
-        || get_user_record($user)
-                ->twitter_account->screen_name;
     return $html->p("Not Authorised") if ( needs_authorisation($user) );
 
     my @tweets = get_tweets_from($screen_name, $epoch, $days, $max_id);
@@ -639,7 +632,7 @@ ajax '/load/summary' => sub {
     my $screen_name = params->{screen_name}
         || get_user_record(session('username'))
                 ->twitter_account->screen_name;
-    download_latest_tweets();
+
     my %data;
     $data{tweet_count}     = get_tweet_count($screen_name);
     $data{retweet_count}   = get_retweet_count($screen_name);

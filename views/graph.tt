@@ -10,56 +10,71 @@
                 </div>
             </li>
             <li>
-                <h3><a href="javascript:toggleDiv('mentions');">Mentions</a></h3>
+                <h3><a href="#" onclick="javascript:toggleExpensiveDiv('mentions');">Mentions</a></h3>
                 <div id="mentions" style="display: none;">
                     <ul id="mentions-list"><li>Loading<li></ul>
                 </div>
-            <li>
             </li>
-                <h3><a href="javascript:toggleDiv('hashtags');">Hash-Tags</a></h3>
+            <li>
+                <h3><a href="#" onclick="javascript:toggleExpensiveDiv('hashtags');">Hash-Tags</a></h3>
                 <div id="hashtags" style="display: none;">
                     <ul id="hashtags-list"><li>Loading<li></ul>
                 </div>
             </li>
-            </li>
-                <h3><a href="javascript:toggleDiv('usertags');">Your tags</a></h3>
+            <li>
+                <h3><a href="#" onclick="javascript:toggleExpensiveDiv('usertags');">Your tags</a></h3>
                 <div id="usertags" style="display: none;">
                     <ul id="tagLinksList">
                     <li>Loading<li></ul>
                 </div>
             </li>
             <li>
-                <h3><a href="javascript:toggleDiv('retweeteds');">Retweeted Statuses</a></h3>
+                <h3><a href="#" onclick="javascript:toggleDiv('retweeteds');">Retweeted Statuses</a></h3>
                 <div id="retweeteds" style="display: none;">
                     <ul id="retweetedLinksList"><li>Loading<li></ul>
                 </div>
             </li>
             <li>
-                <h3><a href="javascript:toggleDiv('withurls');">Statuses with Links</a></h3>
-                <div id="withurls" style="display: none;">
+                <h3><a href="#" onclick="javascript:toggleExpensiveDiv('urls');">Statuses with Links</a></h3>
+                <div id="urls" style="display: none;">
                     <ul id="urls-list"><li>Loading<li></ul>
                 </div>
             </li>
             <li>
-                <h3>Your Tweet History</h3>
-
-                <ul>
-                    <li>Tweeting since: <span id="beginning">
-                    </span></li>
-                    <li>Most recent tweet: <span id="most_recent">
-                    </span></li>
-                    <li>Number of Tweets: <span id="tweet_count">
-                    </span></li>
-                    <li>Number of mentions: <span id="mention_count">
-                    </span></li>
-                    <li>Number of Hashtags: <span id="hashtag_count">
-                    </span></li>
-                    <li>Number of Tags: <span id="tag_count">
-                    </span></li>
-                    <li>Retweeted tweets: <span id="retweet_count">
-                    </span></li>
-                </ul>
-          </li>
+                <h3><a href='#' onclick="javascript:toggleExpensiveDiv('summary');">Your Tweet History</a></h3>
+                <div id="summary" style="display: none;">
+                <table id="summary-list">
+                    <tr>
+                    <td>Tweeting since:</td>
+                    <td><span id="beginning">Loading</span></td>
+                    </tr>
+                    <tr>
+                    <td>Most recent tweet:</td>
+                    <td><span id="most_recent">Loading</span></td>
+                    </tr>
+                    <tr>
+                    <td>Number of Tweets:</td>
+                    <td><span id="tweet_count">Loading</span></td>
+                    </tr>
+                    <tr>
+                    <td>Number of mentions:</td>
+                    <td><span id="mention_count">Loading</span></td>
+                    </tr>
+                    <tr>
+                    <td>Number of Hashtags:</td>
+                    <td><span id="hashtag_count">Loading</span></td>
+                    </tr>
+                    <tr>
+                    <td>Number of Tags:</td>
+                    <td><span id="tag_count">Loading</span></td>
+                    </tr>
+                    <tr>
+                    <td>Retweeted tweets:</td>
+                    <td><span id="retweet_count">Loading</span></td>
+                    </tr>
+                </table>
+                </div>
+            </li>
         </ul>
       </div>
 
@@ -217,7 +232,7 @@
         var unit = 1;
         var checked = 0;
         var cumulativeCB = document.getElementById("cumulative");
-        var mainurl = "/graph/tweets/by/" + interval;
+        var mainurl = "/graph/<% screen_name %>/by/" + interval;
         if (cumulativeCB.checked) {
             checked = 1;
             mainurl = mainurl + "?cumulative=1";
@@ -249,7 +264,7 @@
 
         options.bars.barWidth = dayInMillis * days * unit;
 
-        var dataurl = "/graphdata/tweets/by/" + interval;
+        var dataurl = "/graphdata/<% screen_name %>/by/" + interval;
         if (showCumulative != null && showCumulative > 0) {
             dataurl = dataurl + "?cumulative=1";
         }
@@ -294,7 +309,7 @@
     });
 
     placeholder.bind("plotclick", function (event, pos, item) {
-        var url = "/show/tweets/from/";
+        var url = "/show/<% screen_name %>/from/";
         if (item && item.series.label != "Cumulative total") {
             url = url + (item.datapoint[0].toFixed(0) / 1000);
             var parts = item.series.label.toLowerCase().split(" ");
@@ -329,7 +344,7 @@
             dataType: 'json',
             success: onDataReceived
         });
-        updateSideBars();
+        updateSideBars('<% screen_name %>');
     };
 </script>
 

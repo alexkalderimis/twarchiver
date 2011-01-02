@@ -2,13 +2,14 @@ package Twarchiver::Routes::Graph;
 
 use Dancer ':syntax';
 
-use Twarchiver::Functions::DBAccess 'get_user_record';
+use Twarchiver::Functions::DBAccess 'get_twitter_account';
 use Twarchiver::Functions::TwitterAPI qw/authorise needs_authorisation/;
 use Twarchiver::Functions::PageContent qw/make_user_home_link/;
 
-get '/graphdata/tweets/by/:interval' => sub {
+get '/graphdata/:screen_name/by/:interval' => sub {
+    my $screen_name = params->{screen_name};
     my $interval = lc params->{interval};
-    my $twitter_account = get_user_record(session('username'))->twitter_account;
+    my $twitter_account = get_twitter_account($screen_name);
     my $creation = DateTime->from_epoch(epoch => $twitter_account->created_at->epoch);
     my %addition;
     if ($interval eq "month") {
@@ -78,23 +79,25 @@ get '/graphdata/tweets/by/:interval' => sub {
     return to_json(\@json);
 };
 
-get '/graph/tweets/by/:interval' => sub {
+get '/graph/:screen_name/by/:interval' => sub {
+    my $screen_name = params->{screen_name};
     my $interval = params->{interval};
     my $cumulative = params->{cumulative};
     my $unit = params->{unit} || 1;
 
-    my $profile_image = get_user_record(session('username'))
-                            ->twitter_account->profile_image_url
+    my $profile_image = get_twitter_account($screen_name)
+                            ->profile_image_url
                         || '/images/squirrel_icon64.gif';
-    my $graphdataurl = "/graphdata/tweets/by/$interval";
+    my $graphdataurl = "/graphdata/$screen_name/by/$interval";
     $graphdataurl .= "?unit=" . $unit;
     $graphdataurl .= "&cumulative=1" if $cumulative;
     template 'graph' => {
-        title => "Timeline for " . make_user_home_link(),
+        title => "Timeline for " . make_user_home_link($screen_name),
         profile_image => $profile_image,
         graphdataurl => $graphdataurl,
         interval => $interval,
         unit => $unit,
+        screen_name => $screen_name,
     };
 };
 
