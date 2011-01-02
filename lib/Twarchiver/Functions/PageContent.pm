@@ -552,7 +552,8 @@ sub make_retweeted_sidebar {
     my $list     = $html->li_group(
         [
             $html->a(
-                href => request->uri_for( "/show/tweets/retweeted" ),
+                href => request->uri_for( 
+                    "/show/$screen_name/retweeted" ),
                 text => "All Retweeted Statuses ($total)",
             )
         ]
@@ -580,6 +581,7 @@ Returns:  '<a href="/show/user/retweeted?count=2">Retweeted twice (7)</a>'
 sub make_retweet_link {
     my $retweet_count   = shift;
     my $number_of_tweets = shift;
+    my $screen_name = params->{screen_name};
     confess "retweet count '$retweet_count' is not a number" 
         unless $retweet_count =~ /^\d+$/;
     confess "number of tweets '$number_of_tweets' is not a number"
@@ -595,10 +597,11 @@ sub make_retweet_link {
     }
     $text .= " ($number_of_tweets)";
 
-    my $uri = URI->new( request->uri_for( "/show/tweets/retweeted" ) );
+    my $uri = URI->new( 
+        request->uri_for( "/show/$screen_name/retweeted" ) );
     $uri->query_form( count => $retweet_count );
     return $html->a(
-        href => $uri,
+        href => "$uri",
         text => $text,
     );
 }
@@ -628,9 +631,12 @@ Returns:  '<a href="/show/username">username</a>'
 =cut
 
 sub make_user_home_link {
-    my $user = session('username');
-    confess "No username provided" unless $user;
-    my $screen_name = get_user_record($user)->twitter_account->screen_name;
+    my $screen_name = shift;
+    unless ($screen_name) {
+        my $user = session('username');
+        my $screen_name = get_user_record($user)->twitter_account
+                                                ->screen_name;
+    }
     my $link = $html->a(
         href => request->uri_for( '/show/tweets' ),
         text => $screen_name,
@@ -647,10 +653,17 @@ Returns:  '<a href="/show/username/2010/12">December (7 tweets)</a>'
 
 sub make_month_link {
     my ( $user, $y, $m ) = @_;
+    my $screen_name = params->{screen_name};
     my $number_of_tweets = get_tweets_in_month( $user, $y, $m )->count;
+    my $uri = URI->new(request->uri_for("show/$screen_name/$y-$m"));
+    my $text = sprintf( 
+        "%s (%s tweets)", 
+        get_month_name_for($m), 
+        $number_of_tweets 
+    );
     return $html->a(
-        href => request->uri_for("show/$y-$m"),
-        text => sprintf( "%s (%s tweets)", get_month_name_for($m), $number_of_tweets ),
+        href => "$uri",
+        text => $text,
     );
 }
 
@@ -683,9 +696,10 @@ Returns:  '<a href="/show/user/url?address=this">(linked to 7 times)</a>'
 
 sub make_url_report_link {
     my ( $address, $count ) = @_;
+    my $screen_name = params->{screen_name};
     confess "no address" unless $address;
     confess "no count" unless defined $count;
-    my $uri = URI->new( request->uri_for( "show/links/to" ));
+    my $uri = URI->new( request->uri_for( "show/$screen_name/links/to" ));
     $uri->query_form( address => $address );
 
     return $html->a(
@@ -722,11 +736,14 @@ Returns: '<a href="show/user/tag/tagtext">tagtext (7)</a>'
 
 sub make_tag_link {
     my ( $username, $tag, $count ) = @_;
+    my $screen_name = params->{screen_name};
     for ([0, 'username'], [1, 'tag'], [2, 'count']) {
         confess "No ", $_->[1] unless $_[$_->[0]];
     };
+    my $href = URI->new(
+        request->uri_for( "show/$screen_name/tagged/$tag" ));
     return $html->a(
-        href => request->uri_for( "show/tweets/tagged/$tag" ),
+        href => "$href",
         text => "$tag ($count)",
     );
 }
@@ -793,6 +810,7 @@ Returns:  '<a href="show/user/on/hashtag">(7 hashtags)</a>'
 
 sub make_hashtag_report_link {
     my ( $topic, $count ) = @_;
+    my $screen_name = params->{screen_name};
     for ([0, 'topic'], [1, 'count']) {
         confess "No ", $_->[1] unless $_[$_->[0]];
     }
@@ -800,7 +818,7 @@ sub make_hashtag_report_link {
         unless ($topic =~ /^#/);
     return $html->a(
         href => URI->new(
-            request->uri_for("show/tweets/on/" . substr( $topic, 1 ) )
+            request->uri_for("show/$screen_name/on/" . substr( $topic, 1 ) )
         ),
         text  => "($count hashtags)",
         class => 'sidebarinternallink',
@@ -886,12 +904,13 @@ Returns:  '<a href="show/user/to/mentioned_name" class="sidebarinternallink">(7 
 =cut
 
 sub make_mention_report_link {
+    my $me = params->{screen_name};
     my ( $screen_name, $count ) = @_;
     for ([0, 'mention'], [1, 'count']) {
         confess "No ", $_->[1] unless $_[$_->[0]];
     }
     return $html->a(
-        href => request->uri_for("show/mentions/of/$screen_name"),
+        href => request->uri_for("show/$me/to/$screen_name"),
         text  => "($count mentions)",
         class => 'sidebarinternallink',
     );

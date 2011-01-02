@@ -22,29 +22,31 @@ before sub {
     }
 };
 
-get '/show/mentions/of/*.*' => sub {
+get '/show/:screen_name/to/*.*' => sub {
+    my $screen_name = params->{screen_name};
     my ($mention, $format) = splat;
     $format = lc $format;
 
     if ($format eq 'html') {
-        redirect "/show/mentions/of/$mention";
+        redirect "/show/$screen_name/to/$mention";
     } else {
-        my $username = session('username');
-        my @tweets  = get_tweets_with_mention($username, $mention);
+        my @tweets  = get_tweets_with_mention($screen_name, $mention);
         return export_tweets_in_format($format, @tweets);
     }
 };
 
-get '/show/mentions/of/:mention' => sub {
+get '/show/:screen_name/to/:mention' => sub {
     my $mention = params->{mention};
+    my $screen_name = params->{screen_name};
 
-    my $content_url = "mentions/of/$mention";
+    my $content_url = "$screen_name/to/$mention";
     my $title = sprintf "Statuses from %s mentioning %s",
-        make_user_home_link(), $mention;
+        make_user_home_link($screen_name), $mention;
 
     return_tweet_analysis_page(
         content_url => $content_url, 
-        title => $title
+        title => $title,
+        screen_name => $screen_name,
     );
 };
 
@@ -85,15 +87,12 @@ get '/show/tweets' => sub {
     );
 };
 
-get qr{/show/(\d{4})-(\d{1,2}).(\w{3,4})} => sub {
-    my ($year, $month, $format) = splat;
+get qr{/show/([[:alnum:]]+)/(\d{4})-(\d{1,2}).(\w{3,4})} => sub {
+    my ($screen_name, $year, $month, $format) = splat;
     $format = lc $format;
-    my $screen_name = params->{screen_name}
-        || get_user_record(session('username'))
-                ->twitter_account->screen_name;
 
     if ($format eq 'html') {
-        redirect "/show/$year-$month";
+        redirect "/show/$screen_name/$year-$month";
     } else {
         my @tweets  = get_tweets_in_month(
             $screen_name, $year, $month);
@@ -102,17 +101,19 @@ get qr{/show/(\d{4})-(\d{1,2}).(\w{3,4})} => sub {
 };
 
 
-get qr{/show/(\d{4})-(\d{1,2})} => sub {
-    my ($year, $month) = splat;
+get qr{/show/([[:alnum:]]+)/(\d{4})-(\d{1,2})} => sub {
+    my ($screen_name, $year, $month) = splat;
 
-    my $content_url = "$year-$month";
+    my $content_url = "$year-$month?screen_name=$screen_name";
 
     my $title = sprintf "Statuses by %s from %s %s",
-        make_user_home_link(), get_month_name_for($month), $year;
+        make_user_home_link($screen_name), 
+        get_month_name_for($month), $year;
 
     return_tweet_analysis_page(
         content_url => $content_url, 
-        title => $title
+        title => $title,
+        screen_name => $screen_name,
     );
 };
 
@@ -128,11 +129,13 @@ get '/show/:username' => sub {
     );
 };
 
-get '/show/tweets/on/:topic.:format' => sub {
+get '/show/:screen_name/on/:topic.:format' => sub {
     my $format = lc params->{format};
+    my $screen_name = params->{screen_name};
+    my $topic = params->{topic};
 
     if ($format eq 'html') {
-        redirect "/show/tweets/on/" . params->{topic};
+        redirect "/show/$screen_name/on/$topic";
     } else {
         my $username = session('username');
         
@@ -142,82 +145,88 @@ get '/show/tweets/on/:topic.:format' => sub {
     }
 };
 
-get '/show/tweets/on/:topic' => sub {
+get '/show/:screen_name/on/:topic' => sub {
+    my $screen_name = params->{screen_name};
     my $topic = params->{topic};
 
-    my $content_url = "tweets/on/$topic";
+    my $content_url = "$screen_name/on/$topic";
     my $title = sprintf "Statuses from %s about %s",
-        make_user_home_link(), $topic;
+        make_user_home_link($screen_name), $topic;
 
     return_tweet_analysis_page(
         content_url => $content_url, 
-        title => $title
+        title => $title,
+        screen_name => $screen_name,
     );
 };
 
-get '/show/links/to' => sub {
-    my $address  = params->{address};
-
-    my $content_url = URI->new('links/to');
-    $content_url->query_form(address => $address);
-    my $title = sprintf "Statuses from %s with a link to %s",
-        make_user_home_link(), $address;
-
-    return_tweet_analysis_page(
-        content_url => $content_url, 
-        title => $title
-    );
-};
-
-get '/show/links/to.:format' => sub {
+get '/show/:screen_name/links/to.:format' => sub {
+    my $screen_name = params->{screen_name};
     my $format = lc params->{format};
 
     if ($format eq 'html') {
-        my $url = URI->new('/show/links/to');
+        my $url = URI->new("/show/$screen_name/links/to");
         $url->query_form(address => params->{address});
         redirect "$url";
     } else {
-        my $username = session('username');
         my $address = params->{address};
         my @tweets;
         if ($address) {
-            @tweets  = get_tweets_with_url($username, $address);
+            @tweets  = get_tweets_with_url($screen_name, $address);
         } else {
-            my @addresses = get_urls_for($username)
+            my @addresses = get_urls_for($screen_name)
                                 ->get_column('address')
                                 ->all;
-            @tweets = map {get_tweets_with_url($username, $_)->all}
+            @tweets = map {get_tweets_with_url($screen_name, $_)->all}
                             @addresses;
         }
         return export_tweets_in_format($format, @tweets);
     }
 };
 
-get '/show/tweets/tagged/:tag.:format' => sub {
+get '/show/:screen_name/links/to' => sub {
+    my $screen_name = params->{screen_name};
+    my $address  = params->{address};
+
+    my $content_url = URI->new("$screen_name/links/to");
+    $content_url->query_form(address => $address);
+    my $title = sprintf "Statuses from %s with a link to %s",
+        make_user_home_link($screen_name), $address;
+
+    return_tweet_analysis_page(
+        content_url => $content_url, 
+        title => $title,
+        screen_name => $screen_name,
+    );
+};
+
+
+get '/show/:screen_name/tagged/:tag.:format' => sub {
     my $format = lc params->{format};
     my $tag = params->{tag};
+    my $screen_name = params->{screen_name};
 
     if ($format eq 'html') {
-        my $uri = URI->new("/show/tweets/tagged/$tag");
+        my $uri = URI->new("/show/$screen_name/tagged/$tag");
         redirect "$uri";
     } else {
-        my $username = session('username');
-        
-        my @tweets  = get_tweets_with_tag($username, $tag);
+        my @tweets  = get_tweets_with_tag($screen_name, $tag);
         return export_tweets_in_format($format, @tweets);
     }
 };
 
-get '/show/tweets/tagged/:tag' => sub {
+get '/show/:screen_name/tagged/:tag' => sub {
+    my $screen_name = params->{screen_name};
     my $tag  = params->{tag};
 
-    my $content_url = URI->new("tweets/tagged/$tag");
+    my $content_url = URI->new("$screen_name/tagged/$tag");
     my $title = sprintf "Statuses from %s tagged with: %s",
-        make_user_home_link(), $tag;
+        make_user_home_link($screen_name), $tag;
 
     return_tweet_analysis_page(
         content_url => "$content_url", 
-        title => $title
+        title => $title,
+        screen_name => $screen_name,
     );
 };
 
@@ -277,27 +286,29 @@ get '/show/tweets/from/:epoch' => sub {
     );
 };
 
-get '/show/tweets/retweeted.:format' => sub {
+get '/show/:screen_name/retweeted.:format' => sub {
     my $format = lc params->{format};
+    my $screen_name = params->{screen_name};
     my $count = params->{count};
 
     if ($format eq 'html') {
-        my $path = "/show/tweets/retweeted";
+        my $path = "/show/$screen_name/retweeted";
         redirect request->uri_for( $path, params );
     } else {
-        my @tweets  = get_retweeted_tweets(session('username'), $count);
+        my @tweets  = get_retweeted_tweets($screen_name, $count);
         return export_tweets_in_format($format, @tweets);
     }
 };
 
-get '/show/tweets/retweeted' => sub {
-    my $count    = params->{count};
+get '/show/:screen_name/retweeted' => sub {
+    my $count       = params->{count};
+    my $screen_name = params->{screen_name};
 
-    my $content_url = "retweeted";
+    my $content_url = "$screen_name/retweeted";
     my $params = {count => $count};
 
     my $title = sprintf "Statuses by %s which have been retweeted",
-        make_user_home_link();
+        make_user_home_link($screen_name);
 
     if ($count) {
         $content_url .= "?count=$count";
@@ -313,7 +324,8 @@ get '/show/tweets/retweeted' => sub {
     return_tweet_analysis_page(
         content_url => $content_url, 
         title => $title, 
-        params => $params
+        params => $params,
+        screen_name => $screen_name,
     );
 };
 
@@ -368,14 +380,12 @@ Returns:  The content html string
 
 =cut
 
-get '/load/content/tweets/tagged/:tag' => sub {
+get '/load/content/:screen_name/tagged/:tag' => sub {
 
     my $user = session('username');
     my $tag  = params->{tag};
     my $max_id = params->{from};
-    my $screen_name = params->{screen_name}
-        || get_user_record($user)
-                ->twitter_account->screen_name;
+    my $screen_name = params->{screen_name};
 
     return $html->p("Not Authorised") if ( needs_authorisation($user) );
 
@@ -386,13 +396,11 @@ get '/load/content/tweets/tagged/:tag' => sub {
     return $content;
 };
 
-get '/load/content/mentions/of/:mention' => sub {
+get '/load/content/:screen_name/to/:mention' => sub {
     my $user = session('username');
     my $max_id = params->{from};
     my $mention = params->{mention};
-    my $screen_name = params->{screen_name}
-        || get_user_record($user)
-                ->twitter_account->screen_name;
+    my $screen_name = params->{screen_name};
 
     return $html->p("Not Authorised") if ( needs_authorisation($user) );
 
@@ -403,13 +411,11 @@ get '/load/content/mentions/of/:mention' => sub {
     return $content;
 };
 
-get '/load/content/tweets/on/:topic' => sub {
+get '/load/content/:screen_name/on/:topic' => sub {
     my $topic = '#' . params->{topic};
     my $max_id = params->{from};
     my $user = session('username');
-    my $screen_name = params->{screen_name}
-        || get_user_record($user)
-                ->twitter_account->screen_name;
+    my $screen_name = params->{screen_name};
 
     return $html->p("Not Authorised") if ( needs_authorisation($user) );
 
@@ -435,13 +441,11 @@ get '/load/content/by/:screenname' => sub {
     return $content;
 };
 
-get '/load/content/links/to' => sub {
+get '/load/content/:screen_name/links/to' => sub {
     my $address = params->{address};
     my $max_id = params->{from};
     my $user = session('username');
-    my $screen_name = params->{screen_name}
-        || get_user_record($user)
-                ->twitter_account->screen_name;
+    my $screen_name = params->{screen_name};
 
     return $html->p("Not Authorised") if ( needs_authorisation($user) );
 
@@ -453,13 +457,11 @@ get '/load/content/links/to' => sub {
 };
 
 
-get '/load/content/retweeted' => sub {
+get '/load/content/:screen_name/retweeted' => sub {
     my $user = session('username');
     my $count  = params->{count};
     my $max_id = params->{from};
-    my $screen_name = params->{screen_name}
-        || get_user_record($user)
-                ->twitter_account->screen_name;
+    my $screen_name = params->{screen_name};
 
     return $html->p("Not Authorised") if ( needs_authorisation($user) );
 
