@@ -78,13 +78,9 @@ sub return_tweet_analysis_page {
 
 get '/show/tweets' => sub {
 
-    my $title       = "Twistory for " . session('username');
-    my $content_url = 'tweets';
-
-    return_tweet_analysis_page(
-        content_url => $content_url, 
-        title => $title
-    );
+    my $screen_name = get_user_record(session('username'))
+                        ->twitter_account->screen_name;
+    redirect request->uri_for("/show/$screen_name");
 };
 
 get qr{/show/([[:alnum:]]+)/(\d{4})-(\d{1,2}).(\w{3,4})} => sub {
