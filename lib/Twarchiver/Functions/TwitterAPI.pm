@@ -152,6 +152,7 @@ sub get_twitter {
         traits          => [qw/OAuth API::REST InflateObjects/],
         consumer_key    => CONS_KEY,
         consumer_secret => CONS_SEC,
+        decode_html_entities => 1,
     );
     if ( @tokens == 2 ) {
         @args{qw/access_token access_token_secret/} = @tokens;
@@ -199,7 +200,7 @@ sub download_tweets {
             id    => get_twitter_account($screen_name)->twitter_id,
             count => setting('downloadbatchsize') 
         };
-        $args->{max_id} = "$maxId" if $maxId;
+        $args->{max_id} = "$maxId" if ($maxId && $maxId > 0);
         debug(to_dumper($args));
         my $response = {isFinished => \0};
         my $statuses = eval {$twitter->user_timeline($args)};
