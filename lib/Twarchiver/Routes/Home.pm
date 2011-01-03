@@ -14,8 +14,8 @@ get '/' => sub {
         my $username = session('username');
         my $user = get_user_record($username);
         return authorise($username) if needs_authorisation($username);
-        my $tweet_count = get_user_record($username)
-                            ->twitter_account->tweet_total;
+        my $screen_name = $user->twitter_account->screen_name;
+        my $tweet_count = $user->twitter_account->tweet_total;
         my $user_creation = $user->created_at->strftime(LONG_MONTH_FORMAT);
 
         template 'loggedin_index' => {
@@ -23,7 +23,7 @@ get '/' => sub {
             tweet_count => $tweet_count,
             username => $username,
             user_creation => $user_creation,
-            
+            screen_name => $screen_name,
         };
 
     } else {
