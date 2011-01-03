@@ -4,24 +4,24 @@
             <li>
                 <h3><a href="#" onclick="javascript:toggleDiv('timeline');">Timeline</a></h3>
                 <div id="timeline" style="display: none;">
-                    <a href="/graph/tweets/by/week">View as Graph</a>
+                    <a href="/graph/<% screen_name %>/by/week">View as Graph</a>
                     <ul id="timeline-list"><li>Loading<li></ul>
                 </div>
             </li>
             <li>
-                <h3><a href="#" onclick="javascript:toggleDiv('mentions');">Mentions</a></h3>
+                <h3><a href="#" onclick="javascript:toggleExpensiveDiv('mentions');">Mentions</a></h3>
                 <div id="mentions" style="display: none;">
                     <ul id="mentions-list"><li>Loading<li></ul>
                 </div>
             </li>
             <li>
-                <h3><a href="#" onclick="javascript:toggleDiv('hashtags');">Hash-Tags</a></h3>
+                <h3><a href="#" onclick="javascript:toggleExpensiveDiv('hashtags');">Hash-Tags</a></h3>
                 <div id="hashtags" style="display: none;">
                     <ul id="hashtags-list"><li>Loading<li></ul>
                 </div>
             </li>
             <li>
-                <h3><a href="javascript:toggleDiv('usertags');">Your tags</a></h3>
+                <h3><a href="#" onclick="javascript:toggleExpensiveDiv('usertags');">Your tags</a></h3>
                 <div id="usertags" style="display: none;">
                     <ul id="tagLinksList">
                     <li>Loading<li></ul>
@@ -34,43 +34,45 @@
                 </div>
             </li>
             <li>
-                <h3><a href="#" onclick="javascript:toggleDiv('withurls');">Statuses with Links</a></h3>
-                <div id="withurls" style="display: none;">
+                <h3><a href="#" onclick="javascript:toggleExpensiveDiv('urls');">Statuses with Links</a></h3>
+                <div id="urls" style="display: none;">
                     <ul id="urls-list"><li>Loading<li></ul>
                 </div>
             </li>
             <li>
-                <h3>Your Tweet History</h3>
-                <table>
+                <h3><a href='#' onclick="javascript:toggleExpensiveDiv('summary');">Your Tweet History</a></h3>
+                <div id="summary" style="display: none;">
+                <table id="summary-list">
                     <tr>
                     <td>Tweeting since:</td>
-                    <td><span id="beginning"></span></td>
+                    <td><span id="beginning">Loading</span></td>
                     </tr>
                     <tr>
                     <td>Most recent tweet:</td>
-                    <td><span id="most_recent"></span></td>
+                    <td><span id="most_recent">Loading</span></td>
                     </tr>
                     <tr>
                     <td>Number of Tweets:</td>
-                    <td><span id="tweet_count"></span></td>
+                    <td><span id="tweet_count">Loading</span></td>
                     </tr>
                     <tr>
                     <td>Number of mentions:</td>
-                    <td><span id="mention_count"></span></td>
+                    <td><span id="mention_count">Loading</span></td>
                     </tr>
                     <tr>
                     <td>Number of Hashtags:</td>
-                    <td><span id="hashtag_count"></span></td>
+                    <td><span id="hashtag_count">Loading</span></td>
                     </tr>
                     <tr>
                     <td>Number of Tags:</td>
-                    <td><span id="tag_count"></span></td>
+                    <td><span id="tag_count">Loading</span></td>
                     </tr>
                     <tr>
                     <td>Retweeted tweets:</td>
-                    <td><span id="retweet_count"></span></td>
+                    <td><span id="retweet_count">Loading</span></td>
                     </tr>
                 </table>
+                </div>
             </li>
         </ul>
     </div>
@@ -197,7 +199,7 @@
     }
     function allDone() {
         ensureHidden('progress');
-        updateSideBars();
+        updateSideBars('<% screen_name %>');
     }
 </script>
 
