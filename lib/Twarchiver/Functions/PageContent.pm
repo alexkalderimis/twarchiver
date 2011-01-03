@@ -12,6 +12,8 @@ use HTML::EasyTags;
 use List::MoreUtils qw(uniq);
 use URI;
 use Carp qw/confess/;
+use Encode;
+use DateTime::Format::SQLite;
 
 use constant {
     TWITTER_BASE   => 'http://twitter.com/',
@@ -178,9 +180,10 @@ sub make_content {
     my @tweets = @_;
 
     if (@tweets) {
-        my $last_id = $tweets[-1]->tweeted_at->ymd;
+        my $dt = $tweets[-1]->tweeted_at;
+        my $time_stamp = DateTime::Format::SQLite->format_datetime($dt);
         my $no_of_tweets = @tweets;
-        my $more_button = make_more_button($last_id, $no_of_tweets);
+        my $more_button = make_more_button($time_stamp, $no_of_tweets);
         my $list_items = $html->li_group( 
             {class => "tweet"}, 
             [ map { make_tweet_li($_) } @tweets ] 
