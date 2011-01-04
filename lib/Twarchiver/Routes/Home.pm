@@ -12,8 +12,8 @@ get '/' => sub {
     my $quote = get_quote();
     if (session('username')) {
         my $username = session('username');
-        my $user = get_user_record($username);
         return authorise($username) if needs_authorisation($username);
+        my $user = get_user_record($username);
         my $screen_name = $user->twitter_account->screen_name;
         my $tweet_count = $user->twitter_account->tweet_total;
         my $user_creation = $user->created_at->strftime(LONG_MONTH_FORMAT);

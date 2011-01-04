@@ -122,7 +122,10 @@ sub get_db {
         $schema = Twarchiver::Schema->connect(
             "dbi:SQLite:dbname=". Dancer::setting('database'),
             undef, undef,
-            {AutoCommit => 1}
+            {
+                AutoCommit => 1,
+                sqlite_unicode => 1,
+            }
         );
     }
 
