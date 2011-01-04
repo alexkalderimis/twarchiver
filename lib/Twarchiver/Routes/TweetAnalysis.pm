@@ -355,12 +355,20 @@ get '/search/tweets.:format' => sub {
 };
 
 get '/search/tweets' => sub {
+    my $screen_name = get_user_record(session('username'))
+                        ->twitter_account->screen_name;
+    redirect request->uri_for("/search/$screen_name");
+};
+
+
+get '/search/:screen_name' => sub {
     my $searchterm = params->{searchterm};
+    my $screen_name = params->{screen_name};
     my $case_insensitive = params->{i};
 
     my $title = sprintf "Tweets by %s matching $searchterm",
-                    make_user_home_link();
-    my $content_url = URI->new( 'search' );
+                    make_user_home_link($screen_name);
+    my $content_url = URI->new( "search/$screen_name" );
 
     $content_url->query_form(
         searchterm => $searchterm,
@@ -370,6 +378,7 @@ get '/search/tweets' => sub {
     return_tweet_analysis_page(
         content_url => $content_url, 
         title => $title, 
+        screen_name => $screen_name,
     );
 };
 
@@ -465,15 +474,12 @@ get '/load/content/:screen_name/retweeted' => sub {
     return $content;
 };
 
-get '/load/content/search' => sub {
+get '/load/content/search/:screen_name' => sub {
     my $user = session('username');
+    return $html->p("Not Authorised") if ( needs_authorisation($user) );
+    my $screen_name = params->{screen_name};
     my $searchterm          = params->{searchterm};
     my $is_case_insensitive = params->{i};
-    my $screen_name = params->{screen_name}
-        || get_user_record($user)
-                ->twitter_account->screen_name;
-
-    return $html->p("Not Authorised") if ( needs_authorisation($user) );
 
     my ($re, @tweets) = get_tweets_matching_search(
                 $screen_name, $searchterm, $is_case_insensitive);
