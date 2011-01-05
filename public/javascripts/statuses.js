@@ -241,13 +241,13 @@ function toggleExpensiveDiv(divid) {
 function toggleDiv(divid, othersSelector){
     if (othersSelector != null) {
         $(othersSelector).each(function() {
-            console.log(this);
             if (this.style.display != "none" && this.id != divid) {
                 $(this).slideToggle('fast', function() {});
             }
         });
     }
-    $("#" + divid).slideToggle('fast', function() {});
+    var selector = '#' + divid;
+    $(selector).slideToggle('fast', function() {});
 };
 
 function toggleForm(divId) {

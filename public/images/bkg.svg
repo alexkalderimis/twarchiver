@@ -107,7 +107,7 @@
        d="m 495.71429,284.28571 c 0,110.45695 -97.21816,200 -217.14285,200 -119.92468,0 -217.142851,-89.54305 -217.142851,-200 0,-110.45695 97.218171,-200.000004 217.142851,-200.000004 119.92469,0 217.14285,89.543054 217.14285,200.000004 z"
        transform="matrix(1.0709673,0,0,1.1627645,-48.340905,471.80485)" />
     <rect
-       style="fill:#c2d2ad;fill-opacity:0.86000001;stroke:#ffffff;stroke-width:0.09970311;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none"
+       style="fill:#d8efee;fill-opacity:0.55686277;stroke:#ffffff;stroke-width:0.09970311000000000;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;opacity:1"
        id="rect3757"
        width="501.42886"
        height="499.87546"

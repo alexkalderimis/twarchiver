@@ -3,7 +3,7 @@
         
         <div id="header">
           <h1><% settings.sitename %></h1>
-          <h2><% quote %></h2>
+          <h2 id="quote"><% quote %></h2>
         </div>
 
         <div id="menu">
@@ -65,7 +65,7 @@
               </div>
           </div>
           <div id="content">
-              <h2>Welcome to Twistory</h2>
+              <h2 id="welcome">Welcome to Twistory</h2>
 
               <p id="failure_message">
               <% failure_message %>

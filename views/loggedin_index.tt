@@ -80,7 +80,7 @@
     <div id="main">
         <div id="header">
           <h1><% settings.sitename %></h1>
-          <h2><% quote %></h2>
+          <h2 id="quote"><% quote %></h2>
         </div>
 
         <div id="menu">
@@ -145,7 +145,7 @@
           </div>
 
           <div id="content">
-              <h2>Welcome to Your Twistory, <% username %></h2>
+              <h2 id="welcome">Welcome to Your Twistory, <% username %></h2>
 
               <p id="progress">
               Downloading your tweets - please be patient:

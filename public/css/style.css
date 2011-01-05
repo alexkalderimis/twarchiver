@@ -4,18 +4,19 @@ font-family: 'Linux Libertine', Palatino, 'Palatino Linotype', 'Book Antiqua', G
 margin: 0;
 margin-bottom: 25px;
 padding: 0;
-background-color: #CAD8B8;
+background-color: #E9F6F6;
 background-image: url("/images/bkg.png"); 
 background-repeat: no-repeat;
 background-position: top left;
 
-font-family: "Lucida Grande", "Bitstream Vera Sans", "Verdana";
+font-family: 'Vollkorn', arial, serif;
 font-size: 13px;
 color: #333;
 }
 
 h1 {
     font-size: 28px;
+    font-family: 'Lobster', arial, serif;
     background: -webkit-gradient(linear, left top, left bottom, from(#eee), to(#333));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
@@ -34,7 +35,7 @@ span.key-term {
 }
 
 #page {
-background-color: #CAD8B8;
+background-color: #E9F6F6;
 width: 800px;
 margin: auto;
 margin-left: auto;
@@ -54,6 +55,10 @@ border-radius: 15px;
 #sidebar {
 float: right;
 width: 225px;
+}
+
+#sidebar h3 {
+    font-family: 'Lobster', arial, serif;
 }
 
 a.sidebarinternallink {
@@ -96,10 +101,19 @@ font-size: 14px;
 }
 
 #menu {
+    font-family: 'Lobster', arial, serif;
   right: 0px;
   top: 0px;
   float: right;
 }
+
+#quote {
+    font-family: 'Lobster', arial, serif;
+}
+#main-content, #welcome {
+    font-family: 'Vollkorn', arial, serif;
+}
+
 #menu a {
   background-color: #333;
 }
@@ -282,8 +296,8 @@ list-style-type: none;
 margin-bottom: 5px;
 }
 
-h1, h2, h3, h4, h5 {
-font-family: sans-serif;
+h2, h3, h4, h5 {
+font-family: 'Lobster', arial, serif;
 margin: 1.2em 0 0.6em 0;
 }
 
