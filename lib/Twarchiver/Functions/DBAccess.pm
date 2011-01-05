@@ -47,6 +47,7 @@ our @EXPORT_OK = qw/
     get_oldest_id_for
     get_twitter_account
     get_tweets_by
+    get_user_count_summary 
 /;
 our %EXPORT_TAGS = (
     'all' => [qw/
@@ -62,6 +63,7 @@ our %EXPORT_TAGS = (
     get_tweets_from
     get_twitter_account
     get_tweets_by
+    get_user_count_summary 
     /],
     'routes' => [qw/
     get_all_tweets_for get_tweets_with_tag get_retweeted_tweets 
@@ -75,6 +77,7 @@ our %EXPORT_TAGS = (
     get_retweet_count
     get_twitter_account
     get_tweets_by
+    get_user_count_summary 
     /],
     'pagecontent' => [qw/
     get_user_record get_retweet_summary get_months_in 
@@ -486,6 +489,93 @@ sub get_tweet_features_for_user {
         }
     );
     return $search;
+}
+
+sub get_user_count_summary {
+    my $screen_name = shift;
+    my $mention_count_query = get_db()->resultset('TwitterAccount')->search(
+        {
+            'tweet.twitter_account' => $screen_name,
+        },
+        {
+            'select' => {count => 'screen_name'},
+            'as'     => [qw/mention_count/],
+            'join'   => {tweet_mentions => 'tweet'},
+        }
+    )->as_query;
+    my $hashtags_count_query = get_db()->resultset('Hashtag')->search(
+        {
+            'tweet.twitter_account' => $screen_name,
+        },
+        {
+            'select' => {count => 'hashtag_id'},
+            'as'     => [qw/hashtag_count/],
+            'join'   => {tweet_hashtags => 'tweet'},
+        }
+    )->as_query;
+    my $urls_count_query = get_db()->resultset('Url')->search(
+        {
+            'tweet.twitter_account' => $screen_name,
+        },
+        {
+            'select' => {count => 'url_id'},
+            'as'     => [qw/url_count/],
+            'join'   => {tweet_urls => 'tweet'},
+        }
+    )->as_query;
+    my $tag_count_query = get_db()->resultset('Tag')->search(
+        {
+            'tweet.twitter_account' => $screen_name,
+        },
+        {
+            'select' => {count => 'tag_id'},
+            'as'     => [qw/tag_count/],
+            'join'   => {tweet_tags => 'tweet'},
+        }
+    )->as_query;
+    my $tweet_count_query = get_db()->resultset('Tweet')->search(
+        {
+            'twitter_account.screen_name' => $screen_name,
+        },
+        {
+            'select' => [{count => 'me.tweet_id'}],
+            'as'  => [qw/tweet_count/],
+            'join' => 'twitter_account',
+        }
+    )->as_query;
+    my $retweet_count_query = get_db()->resultset('Tweet')->search(
+        {
+            'twitter_account.screen_name' => $screen_name,
+            'me.retweeted_count' => {'>' => 0},
+        },
+        {
+            'select' => [{count => 'me.tweet_id'}],
+            'as'   => [qw/retweet_count/],
+            'join' => 'twitter_account',
+        }
+    )->as_query;
+    return get_db()->resultset('TwitterAccount')->search(
+        {
+            screen_name => $screen_name,
+        },
+        {
+            'select' => [
+                $tweet_count_query,
+                $retweet_count_query,
+                $hashtags_count_query,
+                $tag_count_query,
+                $mention_count_query,
+                $urls_count_query,
+                'created_at',
+            ],
+            as => [qw/
+                tweet_count retweet_count hashtag_count 
+                tag_count mention_count urls_total
+                created_at
+                /
+            ],
+        }
+    );
 }
 
 =head2 [HashRef] add_tags_to_tweets([tags], [tweet_ids])

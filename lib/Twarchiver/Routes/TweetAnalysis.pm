@@ -636,14 +636,20 @@ ajax '/load/summary' => sub {
                 ->twitter_account->screen_name;
 
     my %data;
-    $data{tweet_count}     = get_tweet_count($screen_name);
-    $data{retweet_count}   = get_retweet_count($screen_name);
-    $data{hashtag_count}   = get_hashtags_for($screen_name)->count;
-    $data{tag_count}       = get_tags_for($screen_name)->count;
-    $data{mention_count}   = get_mentions_for($screen_name)->count;
-    $data{urls_total}      = get_urls_for($screen_name)->count;
-    $data{beginning}       = get_twitter_account($screen_name)
-                                ->created_at->dmy();
+    my $summary = get_user_count_summary($screen_name)->single;
+    for (qw/tweet_count retweet_count hashtag_count tag_count
+        mention_count urls_total/) {
+        $data{$_} = $summary->get_column($_);
+    }
+    $data{beginning} = $summary->created_at->dmy();
+#    $data{tweet_count}     = get_tweet_count($screen_name);
+#    $data{retweet_count}   = get_retweet_count($screen_name);
+#    $data{hashtag_count}   = get_hashtags_for($screen_name)->count;
+#    $data{tag_count}       = get_tags_for($screen_name)->count;
+#    $data{mention_count}   = get_mentions_for($screen_name)->count;
+#    $data{urls_total}      = get_urls_for($screen_name)->count;
+#    $data{beginning}       = get_twitter_account($screen_name)
+#                                ->created_at->dmy();
     $data{most_recent}     = get_most_recent_tweet_by($screen_name)
                                 ->tweeted_at->dmy();
     return to_json( \%data );
