@@ -113,6 +113,25 @@ get qr{/show/([[:alnum:]]+)/(\d{4})-(\d{1,2})} => sub {
     );
 };
 
+get '/show/tweets.:format' => sub {
+    my $format = lc params->{format};
+    my $screen_name = get_user_record(session('username'))
+                        ->twitter_account->screen_name;
+    redirect request->uri_for("/show/$screen_name.$format");
+};
+
+get '/show/:screen_name.:format' => sub {
+    my $format = lc params->{format};
+    my $screen_name = params->{screen_name};
+
+    if ($format eq 'html') {
+        redirect "/show/$screen_name";
+    } else {
+        my @tweets = get_tweets_by($screen_name)->all;
+        return export_tweets_in_format($format, @tweets);
+    }
+};
+
 get '/show/:username' => sub {
     my $twitter_user = params->{username};
     my $title       = "Twistory for " . $twitter_user;
@@ -234,17 +253,6 @@ get '/show/:screen_name/tagged/:tag' => sub {
 Function: return a page loading all the statuses from a user
 
 =cut
-
-get '/show/tweets.:format' => sub {
-    my $format = lc params->{format};
-
-    if ($format eq 'html') {
-        redirect '/show/tweets';
-    } else {
-        my @tweets  = get_all_tweets_for(session('username'));
-        return export_tweets_in_format($format, @tweets);
-    }
-};
 
 
 get '/show/:screen_name/from/:epoch.:format' => sub {
