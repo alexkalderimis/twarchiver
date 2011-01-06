@@ -35,12 +35,12 @@ get '/graphdata/:screen_name/by/:interval' => sub {
         $creation->truncate(to => "week");
         $addition{weeks} = 1;
         $addition{weeks} *= params->{unit} if params->{unit};
-        $sample_size = 12;
+        $sample_size = 8;
     } elsif ($interval eq "day") {
         $creation->truncate( to => "day" );
         $addition{days} = 1;
         $addition{days} *= params->{unit} if params->{unit};
-        $sample_size = 91;
+        $sample_size = 7;
     } else {
         pass and return false;
     }
