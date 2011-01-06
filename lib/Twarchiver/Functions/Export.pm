@@ -7,6 +7,7 @@ our $VERSION = '0.1';
 
 use Text::CSV;
 use Carp qw/confess/;
+use Encode;
 
 use Twarchiver::Functions::Util 'DATE_FORMAT';
 
@@ -111,12 +112,12 @@ Function: Transform a tweet into a text string, with date, text and tags
 sub tweet_to_text {
     my $tweet = shift;
     my $date  = $tweet->tweeted_at->strftime(DATE_FORMAT);
-    my $text  = $tweet->text;
+    my $text  = decode_utf8($tweet->text);
     my @tags  = $tweet->tags->get_column('tag_text')->all;
-    my $tags =
+    my $tags = decode_utf8(
       (@tags)
       ? 'Tags: ' . join( ', ', @tags )
-      : '';
+      : '');
     my $result;
     eval {
         local $SIG{__WARN__};
@@ -136,7 +137,7 @@ $tags
     if ( my $e = $@ ) {
         error( "Problem with " . $tweet->text . $e );
     }
-    return $result;
+    return decode_utf8($result);
 }
 
 true;
