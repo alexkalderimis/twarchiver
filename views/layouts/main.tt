@@ -8,6 +8,12 @@
 <link href='http://fonts.googleapis.com/css?family=Lobster' rel='stylesheet' type='text/css'>
 <link href='http://fonts.googleapis.com/css?family=Just+Another+Hand' rel='stylesheet' type='text/css'>
 <link href='http://fonts.googleapis.com/css?family=Vollkorn' rel='stylesheet' type='text/css'>
+<link href='http://fonts.googleapis.com/css?family=Copse' rel='stylesheet' type='text/css'>
+<link href='http://fonts.googleapis.com/css?family=Gruppo' rel='stylesheet' type='text/css'>
+<link href='http://fonts.googleapis.com/css?family=Ubuntu' rel='stylesheet' type='text/css'>
+<link href='http://fonts.googleapis.com/css?family=Yanone+Kaffeesatz' rel='stylesheet' type='text/css'>
+<link href='http://fonts.googleapis.com/css?family=Neucha' rel='stylesheet' type='text/css'>
+<link href='http://fonts.googleapis.com/css?family=Molengo' rel='stylesheet' type='text/css'>
 
 <!-- Grab Google CDN's jQuery. fall back to local if necessary -->
 <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.4.2/jquery.min.js"></script>
@@ -15,7 +21,6 @@
 <script language="javascript" type="text/javascript" src="/javascripts/statuses.js">
 </script>
 <script language="javascript" type="text/javascript" src="/javascripts/jquery.throbber.js"></script>
-<script type="text/JavaScript" src="/javascripts/jquery.fadeSliderToggle.js"></script>
 </head>
 <body>
     <div id="body-content">
