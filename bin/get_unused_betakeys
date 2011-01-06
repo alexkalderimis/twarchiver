@@ -1,0 +1,34 @@
+#!/usr/bin/perl
+
+use strict;
+use warnings;
+
+use lib 'lib';
+
+use Twarchiver::Schema;
+my $db = shift;
+
+die ("Please supply the db name\n") 
+    unless ($db);
+die ("DB does not exist\n") 
+    unless (-e $db);
+
+my $schema = Twarchiver::Schema->connect(
+    "dbi:SQLite:dbname=$db",
+    undef, undef,
+    {
+        AutoCommit => 1,
+        sqlite_unicode => 1,
+    }
+);
+
+my @unused_keys = $schema->resultset('Betakey')->search({user_id => undef});
+
+print  scalar(@unused_keys), " keys available\n", '-' x 40, "\n";
+for my $betakey (@unused_keys) {
+    my $key = $betakey->key;
+    $key =~ s/^\{SSHA\}//;
+    print "$key\n";
+}
+
+exit();

@@ -56,10 +56,15 @@
                     <td>Confirm Password:</td>
                     <td><input type="password" name="confirm_password">
                     </input></td>
+                    </tr><tr>
+                    <td>Beta Key:</td>
+                    <td><input type="text" name="beta_key">
+                    </input></td>
                     </tr>
                     </table>
                     <input type="hidden" name="url" value="<% callback_url %>"></input>
                     <input type="submit" value="Register" />
+                    <br/>We're still in beta at the moment - so please enter your beta key
                     <br/>Clicking "register" will redirect you to twitter to authorise this connection.</td>
                 </form>
               </div>

@@ -36,6 +36,10 @@ post '/login' => sub {
 
 post '/register' => sub {
     my $user = params->{reg_user};
+    my $beta_key = params->{beta_key};
+    if ($beta_key !~ /^\{SSHA\}/) {
+        $beta_key = '{SSHA}' . $beta_key;
+    }
 
     if (exists_user($user)) {
         debug "User already exists";
@@ -45,20 +49,27 @@ post '/register' => sub {
             redirect '/?failed=nopass';
         } elsif (params->{reg_password} ne params->{confirm_password}) {
             redirect '/?failed=notmatchingpass';
+        } elsif (not beta_key_is_valid_and_unused($beta_key)) {
+            redirect '/?failed=notinbeta';
         } else {
             my $csh = Crypt::SaltedHash->new(algorithm => 'SHA-1');
             $csh->add(params->{reg_password});
             my $passhash = $csh->generate;
             my $user_rec = get_user_record($user);
-            $user_rec->update(
-                {
+            eval {
+                assign_beta_key(key => $beta_key, user => $user_rec);
+            };
+            if (my $e = $@) {
+                redirect '/?failed=notinbeta';
+            } else {
+                $user_rec->update({
                     passhash => $passhash,
                     created_at => DateTime->now(),
                     last_login => DateTime->now(),
-                }
-            );
-            session username => $user;
-            redirect params->{url} || '/';
+                });
+                session username => $user;
+                redirect params->{url} || '/';
+            }
         }
     }
 };

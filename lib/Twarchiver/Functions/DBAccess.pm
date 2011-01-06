@@ -3,7 +3,7 @@ package Twarchiver::Functions::DBAccess;
 use strict;
 use warnings;
 use Carp qw/confess/;
-require Dancer;
+use Dancer;
 use Twarchiver::Schema;
 use List::MoreUtils qw(uniq);
 use Data::Dumper;
@@ -48,6 +48,8 @@ our @EXPORT_OK = qw/
     get_twitter_account
     get_tweets_by
     get_user_count_summary 
+    beta_key_is_valid_and_unused
+    assign_beta_key
 /;
 our %EXPORT_TAGS = (
     'all' => [qw/
@@ -64,6 +66,8 @@ our %EXPORT_TAGS = (
     get_twitter_account
     get_tweets_by
     get_user_count_summary 
+    beta_key_is_valid_and_unused
+    assign_beta_key
     /],
     'routes' => [qw/
     get_all_tweets_for get_tweets_with_tag get_retweeted_tweets 
@@ -94,6 +98,8 @@ our %EXPORT_TAGS = (
     /],
     login => [qw/
     exists_user validate_user get_user_record
+    beta_key_is_valid_and_unused
+    assign_beta_key
     /],
 );
 
@@ -1015,5 +1021,25 @@ sub get_retweet_count {
         return 0;
     }
 }
+
+sub beta_key_is_valid_and_unused {
+    my $key = shift;
+    my $key_rec = get_db->resultset('Betakey')->find({key => $key});
+    unless ($key_rec) {
+        return false;
+    }
+    if ($key_rec->has_user) {
+        return false;
+    }
+    return true;
+}
+
+sub assign_beta_key {
+    my %args = @_;
+    my $key_rec = get_db->resultset('Betakey')->find({key => $args{key}});
+    confess "Key not valid: $args{key}" unless $key_rec;
+    $key_rec->update({user => $args{user}});
+}
+
 
 1;

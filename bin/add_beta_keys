@@ -1,0 +1,47 @@
+#!/usr/bin/perl
+
+use strict;
+use warnings;
+use lib 'lib';
+use Scalar::Util qw/looks_like_number/;
+use Twarchiver::Schema;
+use Crypt::SaltedHash;
+
+my $db = shift;
+
+my $no_of_keys = shift;
+
+die ("Please supply the number of keys you want\n")
+    unless (defined $no_of_keys);
+die ("bad number of keys: $no_of_keys\n") 
+    if (not $no_of_keys or not looks_like_number($no_of_keys));
+
+die ("Please supply the db name\n") 
+    unless ($db);
+die ("DB does not exist\n") 
+    unless (-e $db);
+
+my $schema = Twarchiver::Schema->connect(
+    "dbi:SQLite:dbname=$db",
+    undef, undef,
+    {
+        AutoCommit => 1,
+        sqlite_unicode => 1,
+    }
+);
+
+my $no_of_keys_created = 0;
+
+until ($no_of_keys_created >= $no_of_keys) {
+    my $csh = Crypt::SaltedHash->new(algorithm => 'SHA-1');
+    $csh->add("Twarchiver-Beta");
+    my $betakey = $csh->generate;
+    $schema->resultset('Betakey')->create({
+            key => $betakey,
+        });
+    $no_of_keys_created++;
+}
+
+print "$no_of_keys_created keys created\n";
+
+exit();
