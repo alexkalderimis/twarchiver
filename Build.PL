@@ -14,6 +14,7 @@ my $build = Module::Build->new(
         'Dancer::Plugin::Ajax'          => 0,
         'Crypt::SaltedHash'             => 0,
         URI                             => 0,
+        Template                        => 0,
         DateTime                        => 0,
         'DateTime::Format::SQLite'      => 0,
         'Statistics::Basic'             => 0,

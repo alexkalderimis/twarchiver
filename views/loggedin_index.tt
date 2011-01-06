@@ -79,7 +79,7 @@
 
     <div id="main">
         <div id="header">
-          <h1><% settings.sitename %></h1>
+          <h1><% settings.site.name %></h1>
           <h2 id="quote"><% quote %></h2>
         </div>
 
@@ -118,7 +118,7 @@
             </div>
 
             <div id="search" style="display: none;">
-            <form method="get" action="/search/tweets"/>
+            <form method="get" action="/search/<% user.twitter_account.screen_name %>"/>
                 <p>Search Term:
                     <input type="text" name="searchterm" size="30" />
                     <input type="submit" value="Find" />
@@ -145,10 +145,10 @@
           </div>
 
           <div id="content">
-              <h2 id="welcome">Welcome to Your Twistory, <% username %></h2>
+              <h2 id="welcome">Welcome to Your <% settings.site.name %>, <% user.username %></h2>
 
               <p id="progress">
-              Downloading your tweets - please be patient:
+              Downloading tweets for <% user.twitter_account.screen_name %> - please be patient:
               <span id='elipsis'>...</span>
               <span id='got-and-total' style="display: none">
                 Got <span id="got"></span>
@@ -156,18 +156,18 @@
               </span>
               </p>
               <p>
-              Twistory is a twitter archive webapp - designed to make 
+              <% settings.site.name %> is a twitter archive webapp - designed to make 
               searching through your tweets easy (did you know for
-              instance that you have <% tweet_count %> of them?). - you know that though,
-              you've been with us since <% user_creation %>!
+              instance that you have <% user.twitter_account.tweets_rs.count %> of them?) - you know that though,
+              you've been with us since <% user.created_at.strftime(date_format) %>!
               </p>
               <p>
               Look around: you'll find a million ways to slice and dice your tweets,
               starting with the links on the right, or just click 
-              <a href="/show/tweets">here</a> to show all your tweets
+              <a href="/show/<% user.twitter_account.screen_name %>">here</a> to show all your tweets
               on a single page.
               </p>
-              <em>All is not lost: It's Twistory!</em>
+              <em><% settings.site.byline %></em>
               </p>
             </div>
         </div>
@@ -199,7 +199,7 @@
     }
     function allDone() {
         ensureHidden('progress');
-        updateSideBars('<% screen_name %>');
+        updateSideBars('<% user.twitter_account.screen_name %>');
     }
 </script>
 

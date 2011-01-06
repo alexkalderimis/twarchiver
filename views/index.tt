@@ -2,7 +2,7 @@
     <div id="main">
         
         <div id="header">
-          <h1><% settings.sitename %></h1>
+          <h1><% settings.site.name %></h1>
           <h2 id="quote"><% quote %></h2>
         </div>
 
@@ -23,7 +23,7 @@
 
               <div id="login_content" style="display: none;">
                 <form id="login_form" action="/login" method="post">
-                    Please enter your <% settings.sitename %> login details. 
+                    Please enter your <% settings.site.name %> login details. 
                     <table>
                     <tr>
                     <td>Login Name:</td>
@@ -35,13 +35,13 @@
                     </input></td>
                     </tr>
                     </table>
-                    <input type="hidden" name="url" value="<% callback_url %>"></input>
+                    <input type="hidden" name="url" value="<% requested_path %>"></input>
                     <input type="submit" value="login" />
                 </form>
               </div>
               <div id="register_content" style="display: none;">
                 <form id="register_form" action="/register" method="post">
-                    Please choose a login name and password for <% settings.sitename %> - please
+                    Please choose a login name and password for <% settings.site.name %> - please
                     <em>do not enter your twitter login details</em>
                     <table>
                     <tr>
@@ -56,33 +56,39 @@
                     <td>Confirm Password:</td>
                     <td><input type="password" name="confirm_password">
                     </input></td>
+                    <% IF settings.in_beta %>
                     </tr><tr>
                     <td>Beta Key:</td>
                     <td><input type="text" name="beta_key">
                     </input></td>
+                    <% END %>
                     </tr>
                     </table>
-                    <input type="hidden" name="url" value="<% callback_url %>"></input>
+                    <input type="hidden" name="url" value="<% requested_path %>"></input>
                     <input type="submit" value="Register" />
-                    <br/>We're still in beta at the moment - so please enter your beta key
+                    <% IF settings.in_beta %>
+                    <br/><% settings.in_beta_message %>
+                    <% END %>
                     <br/>Clicking "register" will redirect you to twitter to authorise this connection.</td>
                 </form>
               </div>
           </div>
           <div id="content">
-              <h2 id="welcome">Welcome to Twistory</h2>
+              <h2 id="welcome">Welcome to <% settings.site.name %></h2>
 
               <p id="failure_message">
-              <% failure_message %>
+              <% IF failed %>
+              <% settings.failure_messages.$failed %>
+              <% END %>
               </p>
               <p>
-              Twistory is a twitter archive webapp - designed to make 
+              <% settings.site.name %> is a twitter archive webapp - designed to make 
               searching through your tweets easy. Did you tweet some really
               cool link a couple of months back? Was there some question
               someone asked you just realised the answer to? 
               </p>
               <p>
-              <em>All is not lost: It's Twistory!</em>
+              <em><% settings.site.byline %></em>
               </p>
            </div>
       </div>

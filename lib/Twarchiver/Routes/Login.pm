@@ -49,7 +49,7 @@ post '/register' => sub {
             redirect '/?failed=nopass';
         } elsif (params->{reg_password} ne params->{confirm_password}) {
             redirect '/?failed=notmatchingpass';
-        } elsif (not beta_key_is_valid_and_unused($beta_key)) {
+        } elsif (setting("in_beta") and not beta_key_is_valid_and_unused($beta_key)) {
             redirect '/?failed=notinbeta';
         } else {
             my $csh = Crypt::SaltedHash->new(algorithm => 'SHA-1');

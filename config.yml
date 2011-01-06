@@ -5,8 +5,11 @@
 # Your application's name
 appname: "twarchiver"
 
-sitename: "Twarchiver"
-contactaddress: "contact@twarchiver.org"
+site:
+    name: "Twarchiver"
+    byline: "All is not lost - It's Twistory!"
+
+contactaddress: "contact@twarchiver.com"
 
 # The default layout to use for your application (located in
 # views/layouts/main.tt)
@@ -21,12 +24,12 @@ charset: "UTF-8"
 # simple: default and very basic template engine
 # template_toolkit: TT
 
-template: "simple"
+# template: "simple"
 
-# template: "template_toolkit"
-# engines:
-#   template_toolkit:
-#     ENCODING: 'utf8'
+template: "template_toolkit"
+engines:
+  template_toolkit:
+    ENCODING: 'utf8'
 #     START_TAG: '[%'
 #     END_TAG: '%]
 
@@ -42,6 +45,9 @@ headericon: "header_icon.png"
 
 downloadbatchsize: 100
 pageSize: 20
+
+in_beta: 0
+in_beta_message: "We're still in beta at the moment - so please don't forget to enter your beta key. If you don't have one, just email us to request one - <a href=\"mailto:contact@twarchiver.com\">request a beta key</a>"
 
 historyquotes:
     - "History, history! We fools, what do we know or care. - Williams Carlos Williams" 
@@ -76,3 +82,11 @@ historyquotes:
     - "History does not usually make sense until long afterward. - Bruce Catton" 
     - "History does not belong to us; we belong to it. - Hans-Georg Gadamer" 
 
+failure_messages:
+    incorrect: "Incorrect login details, I'm afraid - please try again"
+    notexists: "There is no user with that username - please register"
+    exists: "There is already a user with that username - please login"
+    nopass: "You must supply both a password and a confirmation password"
+    notmatchingpass: "The passwords don't match - please try again"
+    notinbeta: "You didn't supply a valid beta key, or the one you gave has been used already. Sorry"
+    
