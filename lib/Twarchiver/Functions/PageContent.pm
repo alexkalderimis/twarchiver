@@ -427,6 +427,7 @@ sub make_tags_list {
             },
             {
                 'join' => {'tweet_tags' => 'private_to'},
+                distinct => 1,
             }
         )->get_column("tag_text")->all;
         my @li_elems = map {
