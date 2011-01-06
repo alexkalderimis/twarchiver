@@ -5,8 +5,8 @@
 # Your application's name
 appname: "twarchiver"
 
-sitename: "Twistory"
-contactaddress: "contact@twistory.org"
+sitename: "Twarchiver"
+contactaddress: "contact@twarchiver.org"
 
 # The default layout to use for your application (located in
 # views/layouts/main.tt)
