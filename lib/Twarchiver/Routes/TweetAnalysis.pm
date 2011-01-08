@@ -5,12 +5,14 @@ use Dancer::Plugin::Ajax;
 use HTML::EasyTags;
 use DateTime;
 use URI;
+use Template;
 
 use Twarchiver::Functions::DBAccess    ':routes';
 use Twarchiver::Functions::PageContent ':routes';
 use Twarchiver::Functions::TwitterAPI  ':routes';
 use Twarchiver::Functions::Util        ':routes';
 use Twarchiver::Functions::Export 'export_tweets_in_format';
+use DateTime::Format::SQLite;
 
 my $digits = qr/^\d+$/;
 my $html = HTML::EasyTags->new();
@@ -409,9 +411,8 @@ get '/load/content/:screen_name/tagged/:tag' => sub {
 
     download_latest_tweets();
 
-    my @tweets = get_tweets_with_tag($screen_name, $tag, $max_id);
-    my $content = make_content(@tweets);
-    return $content;
+    my $tweets = get_tweets_with_tag($screen_name, $tag, $max_id);
+    template 'tweets' => {tweets => $tweets}, {layout => 0};
 };
 
 get '/load/content/:screen_name/to/:mention' => sub {
@@ -424,9 +425,9 @@ get '/load/content/:screen_name/to/:mention' => sub {
 
     download_latest_tweets();
 
-    my @tweets  = get_tweets_with_mention($screen_name, $mention, $max_id);
-    my $content = make_highlit_content('@'.$mention, @tweets);
-    return $content;
+    my $tweets  = get_tweets_with_mention($screen_name, $mention, $max_id);
+    my $re = qr/\@$mention/;
+    template 'tweets' => {tweets => $tweets, re => $re}, {layout => 0};
 };
 
 get '/load/content/:screen_name/on/:topic' => sub {
@@ -437,9 +438,9 @@ get '/load/content/:screen_name/on/:topic' => sub {
 
     return $html->p("Not Authorised") if ( needs_authorisation($user) );
 
-    my @tweets  = get_tweets_with_hashtag($screen_name, $topic, $max_id);
-    my $content = make_highlit_content($topic, @tweets);
-    return $content;
+    my $tweets  = get_tweets_with_hashtag($screen_name, $topic, $max_id);
+    my $re = qr/$topic/;
+    template 'tweets' => {tweets => $tweets, re => $re}, {layout => 0};
 };
 
 get '/load/content/by/:screen_name' => sub {
@@ -449,10 +450,18 @@ get '/load/content/by/:screen_name' => sub {
 
     return $html->p("Not Authorised") if ( needs_authorisation($user) );
 
-    my @tweets = get_tweets_by($screen_name, $max_id);
-    my $content = make_content(@tweets);
+    my $tweets = get_tweets_by($screen_name, $max_id);
+    template 'tweets' => {tweets => $tweets}, {layout => 0};
+};
 
-    return $content;
+before_template sub {
+    my $tokens = shift;
+    $tokens->{get_linkified_text} = \&get_linkified_text;
+    $tokens->{highlight} = \&highlight;
+    $tokens->{get_tags_for} = \&get_tags_from_tweet;
+    $tokens->{date_format} = DATE_FORMAT, 
+    $tokens->{sqlite_date} =
+        sub {DateTime::Format::SQLite->format_datetime(shift)},
 };
 
 get '/load/content/:screen_name/links/to' => sub {
@@ -463,9 +472,9 @@ get '/load/content/:screen_name/links/to' => sub {
 
     return $html->p("Not Authorised") if ( needs_authorisation($user) );
 
-    my @tweets  = get_tweets_with_url($screen_name, $address, $max_id);
-    my $content = make_highlit_content($address, @tweets);
-    return $content;
+    my $tweets  = get_tweets_with_url($screen_name, $address, $max_id);
+    my $re = qr/\Q$address\E/;
+    template 'tweets' => {tweets => $tweets, re => $re}, {layout => 0};
 };
 
 
@@ -477,23 +486,21 @@ get '/load/content/:screen_name/retweeted' => sub {
 
     return $html->p("Not Authorised") if ( needs_authorisation($user) );
 
-    my @tweets  = get_retweeted_tweets($screen_name, $count, $max_id);
-    my $content = make_content(@tweets);
-    return $content;
+    my $tweets  = get_retweeted_tweets($screen_name, $count, $max_id);
+    template 'tweets' => {tweets => $tweets}, {layout => 0};
 };
 
 get '/load/content/search/:screen_name' => sub {
-    my $user = session('username');
-    return $html->p("Not Authorised") if ( needs_authorisation($user) );
+    my $user        = session('username');
+    my $max_id      = params->{from};
     my $screen_name = params->{screen_name};
-    my $searchterm          = params->{searchterm};
-    my $is_case_insensitive = params->{i};
+    my $searchterm  = params->{searchterm};
+    return $html->p("Not Authorised") if ( needs_authorisation($user) );
+    #my $is_case_insensitive = params->{i};
 
-    my ($re, @tweets) = get_tweets_matching_search(
-                $screen_name, $searchterm, $is_case_insensitive);
-
-    my $content = make_highlit_content($re, @tweets);
-    return $content;
+    my $tweets = get_tweets_matching($screen_name, $searchterm, $max_id);
+    my $re = qr/\Q$searchterm\E/;
+    template 'tweets' => {tweets => $tweets, re => $re}, {layout => 0};
 };
 
 sub get_tweets_matching_search {
@@ -643,24 +650,12 @@ ajax '/load/summary' => sub {
         || get_user_record(session('username'))
                 ->twitter_account->screen_name;
 
-    my %data;
-    my $summary = get_user_count_summary($screen_name)->single;
-    for (qw/tweet_count retweet_count hashtag_count tag_count
-        mention_count urls_total/) {
-        $data{$_} = $summary->get_column($_);
-    }
-    $data{beginning} = $summary->created_at->dmy();
-#    $data{tweet_count}     = get_tweet_count($screen_name);
-#    $data{retweet_count}   = get_retweet_count($screen_name);
-#    $data{hashtag_count}   = get_hashtags_for($screen_name)->count;
-#    $data{tag_count}       = get_tags_for($screen_name)->count;
-#    $data{mention_count}   = get_mentions_for($screen_name)->count;
-#    $data{urls_total}      = get_urls_for($screen_name)->count;
-#    $data{beginning}       = get_twitter_account($screen_name)
-#                                ->created_at->dmy();
-    $data{most_recent}     = get_most_recent_tweet_by($screen_name)
+    my $data = get_user_count_summary($screen_name);
+    $data->{beginning} = DateTime::Format::SQLite->parse_datetime(
+        $data->{created_at})->dmy;
+    $data->{most_recent}     = get_most_recent_tweet_by($screen_name)
                                 ->tweeted_at->dmy();
-    return to_json( \%data );
+    return to_json( $data );
 };
 
 get '/downloadtweets' => sub {
