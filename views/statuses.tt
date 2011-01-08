@@ -1,162 +1,20 @@
 <div id="page">
-    <div id="sidebar">
-        <ul id="sidebar-items">
-            <li>
-                <h3><a href="#" onclick="javascript:toggleDiv('timeline');">Timeline</a></h3>
-                <div id="timeline" style="display: none;">
-                    <a href="/graph/<% screen_name %>/by/week">View as Graph</a>
-                    <ul id="timeline-list"><li>Loading<li></ul>
-                </div>
-            </li>
-            <li>
-                <h3><a href="#" onclick="javascript:toggleExpensiveDiv('mentions');">Mentions</a></h3>
-                <div id="mentions" style="display: none;">
-                    <ul id="mentions-list"><li>Loading<li></ul>
-                </div>
-            </li>
-            <li>
-                <h3><a href="#" onclick="javascript:toggleExpensiveDiv('hashtags');">Hash-Tags</a></h3>
-                <div id="hashtags" style="display: none;">
-                    <ul id="hashtags-list"><li>Loading<li></ul>
-                </div>
-            </li>
-            <li>
-                <h3><a href="#" onclick="javascript:toggleExpensiveDiv('usertags');">Your tags</a></h3>
-                <div id="usertags" style="display: none;">
-                    <ul id="tagLinksList">
-                    <li>Loading<li></ul>
-                </div>
-            </li>
-            <li>
-                <h3><a href="#" onclick="javascript:toggleDiv('retweeteds');">Retweeted Statuses</a></h3>
-                <div id="retweeteds" style="display: none;">
-                    <ul id="retweetedLinksList"><li>Loading<li></ul>
-                </div>
-            </li>
-            <li>
-                <h3><a href="#" onclick="javascript:toggleExpensiveDiv('urls');">Statuses with Links</a></h3>
-                <div id="urls" style="display: none;">
-                    <ul id="urls-list"><li>Loading<li></ul>
-                </div>
-            </li>
-            <li>
-                <h3><a href='#' onclick="javascript:toggleExpensiveDiv('summary');">Your Tweet History</a></h3>
-                <div id="summary" style="display: none;">
-                <table id="summary-list">
-                    <tr>
-                    <td>Tweeting since:</td>
-                    <td><span id="beginning">Loading</span></td>
-                    </tr>
-                    <tr>
-                    <td>Most recent tweet:</td>
-                    <td><span id="most_recent">Loading</span></td>
-                    </tr>
-                    <tr>
-                    <td>Number of Tweets:</td>
-                    <td><span id="tweet_count">Loading</span></td>
-                    </tr>
-                    <tr>
-                    <td>Number of mentions:</td>
-                    <td><span id="mention_count">Loading</span></td>
-                    </tr>
-                    <tr>
-                    <td>Number of Hashtags:</td>
-                    <td><span id="hashtag_count">Loading</span></td>
-                    </tr>
-                    <tr>
-                    <td>Number of Tags:</td>
-                    <td><span id="tag_count">Loading</span></td>
-                    </tr>
-                    <tr>
-                    <td>Retweeted tweets:</td>
-                    <td><span id="retweet_count">Loading</span></td>
-                    </tr>
-                </table>
-                </div>
-            </li>
-        </ul>
-    </div>
+
+    <% INCLUDE sidebar.tt %>
 
     <div id="main">
 
-        <div id="header" style="background-image: url(<% profile_image %>);">
-            <h1><% title %></h1>
-    <!--         <h2><% sub_title %></h2>
-            <br> -->
-        </div>
+        <% INCLUDE title.tt %>
 
-        <div id="menu">
-            <ul>
-                <li>
-                  <a href="#" onclick="toggleDiv('logout_content', '#drop-down-boxes > div');" id="logout_link">Logout</a>
-                </li>
-                <li><a href="#" onclick="javascript:toggleDiv('link-box', '#drop-down-boxes > div')">Export</a></li>
-                <li><a href="#" onclick="javascript:toggleDiv('search', '#drop-down-boxes > div')">Search</a></li>
-                <li><a href="#" onclick="javascript:toggleDiv('masstagger', '#drop-down-boxes > div')">Tag these Tweets</a></li>
-            </ul>
-        </div>
+        <% INCLUDE menu.tt %>
 
         <div id="main-content">
 
-            <div id="drop-down-boxes">
-              <div id="logout_content" style="display: none;">
-                <form id="logout_form" action="/logout" method="post">
-                    <table>
-                      <tr>
-                        <td>Really?</td>
-                        <td><input type="submit" id="logout-button" value="Yes"></input></td>
-                        <td><input type="button" id="no-button" value="No" onclick="toggleDiv('logout_content');" ></input></td>
-                      </tr>
-                    </table>
-                </form>
-              </div>
-
-              <div id="link-box" style="display: none;">
-                <ul>
-                    <li><a href="<% text_export_url %>">Download these tweets as text file</a></li>
-                    <li><a href="/download/tweets.txt">Download all tweets as text file</a></li>
-                    <li><a href="<% tsv_export_url %>">Download these tweets as tsv spreadsheet</a></li>
-                    <li><a href="/download/tweets.tsv">Download all tweets as tsv spreadsheet</a></li>
-                    <li><a href="<% csv_export_url %>">Download these tweets as csv spreadsheet</a></li>
-                    <li><a href="/download/tweets.csv">Download all tweets as csv spreadsheet</a></li>
-                </ul>
-              </div>
-
-              <div id="search" style="display: none;">
-                <form method="get" action="/search/<% screen_name %>"/>
-                    <p>Search Term:
-                        <input type="text" name="searchterm" size="30" />
-                        <input type="submit" value="Find" />
-                    </p>
-                </form>
-              </div>
-
-              <div id="masstagger" style="display: none;">
-                <form>
-                    <p>Tag list:
-                        <input type="text" id="masstag" size="20" />
-                        <input type="button" value="Add" onclick="javascript:addTagsToAll('<% username %>')" />
-                        <input type="button" value="Remove" onclick="javascript:removeTagsFromAll('<% username %>')" />
-                    </p>
-                </form>
-              </div>
-
-            </div>
-
+            <% INCLUDE dropdownboxes.tt %>
             <div id="content">
-                <p id="progress">
-                    Downloading tweets by <% screen_name %> 
-                    - Now might be a good time for a cuppa:
-                    <br/>
-                    <span id='elipsis'>...</span>
-                    <span id='got-and-total' style="display: none">
-                        Got <span id="got"></span>
-                        of <span id="total"></span>
-                    </span>
-                </p>
+                <% INCLUDE downloadprogress.tt %>
                 <ol id="content-ol"></ol>
             </div>
-
         </div>
     </div>
 </div>

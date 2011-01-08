@@ -1,0 +1,60 @@
+<!-- requires subs: get_linkified_text, highlight, get_tags_for, variables: [re], tweets, date_format -->
+<% processed = [] %>
+<% WHILE (tweet = tweets.next) %>
+<% processed.push(tweet) %>
+<% LAST IF processed.size > settings.pageSize %>
+<li>
+<div onclick="toggleForm('<% tweet.tweet_id %>')">
+    <h2><% tweet.tweeted_at.strftime(date_format) %></h2>
+    <p><% get_linkified_text(highlight(tweet.text, re)) %></p>
+</div>
+<div id="<% tweet.tweet_id %>-tags" class="tags-list">
+    <ul id="tagList-<% tweet.tweet_id %>" class="tags-ul">
+    <% taglist = get_tags_for(tweet, session.username) %>
+    <% FOREACH tag IN taglist %>
+    <% deleterId = tweet.tweet_id _ '-' _ tag %> 
+        <li>
+            <span 
+            onmouseover="toggleElem('<% deleterId %>')"
+            onmouseout="toggleElem('<% deleterId %>')"
+            tag="<% tag %>">
+            <% tag %>   
+            <a style="display: none;" href="#" id="<% deleterId %>"
+            onclick="removeTag('<% tweet.tweet_id %>', '<% tag %>')">
+                delete
+            </a>
+            </span>
+        </li>
+    <% END %>
+    </ul>
+</div>
+<form style="display: none;" class="tag-form" method="post" id="<% tweet.tweet_id %>">
+    <p>Tag:
+        <input type="text" id="tag-<% tweet.tweet_id %>"></input>
+        <input type="button" onclick="addTags('<% tweet.tweet_id %>')" value="Add">
+        </input>
+        <input type="button" onclick="removeTags('<% tweet.tweet_id %>')" value="Remove">
+        </input>
+        </input name="dummy" type="text" style="display:none;"></input>
+    </p>
+</form>
+</li>
+<% IF processed.size == settings.pageSize %>
+    <%
+        nextTweet = tweets.next 
+        parameters = params
+        parameters.from = sqlite_date(tweet.tweeted_at)
+        uri = request.uri_for(request.path, parameters) 
+    %>
+    <% IF nextTweet.defined %>
+        <input 
+            type="button" 
+            onclick="getMore(this, '<% uri %>')"
+            value="Get More"
+        ></input>
+    <% END %>
+<% END %>
+<% END %>
+<% IF processed.size == 0 %>
+    <p>No tweets found, sorry</p>
+<% END %>

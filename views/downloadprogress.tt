@@ -1,0 +1,10 @@
+<p id="progress">
+    Downloading tweets by <% screen_name %> 
+    - Now might be a good time for a cuppa:
+    <br/>
+    <span id='elipsis'>...</span>
+    <span id='got-and-total' style="display: none">
+        Got <span id="got"></span>
+        of <span id="total"></span>
+    </span>
+</p>

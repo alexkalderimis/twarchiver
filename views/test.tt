@@ -1,0 +1,13 @@
+<% WHILE (tweet = tweets.next) %>
+
+ID: <% tweet.tweet_id %>
+TEXT: <% tweet.text %>
+
+<% foo = get_tags_for(tweet, session.username) %>
+
+<% FOREACH tag IN foo %>
+TAG <% tag %>
+<% END %>
+
+<% END %>
+

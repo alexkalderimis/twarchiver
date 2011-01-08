@@ -1,0 +1,105 @@
+<div id="page">
+
+    <div id="main">
+
+        <div id="header" style="background-image: url(<% profile_image %>);">
+            <h1><% title %></h1>
+    <!--         <h2><% sub_title %></h2>
+            <br> -->
+        </div>
+
+        <div id="menu">
+            <ul>
+                <li>
+                  <a href="#" onclick="toggleDiv('logout_content', '#drop-down-boxes > div');" id="logout_link">Logout</a>
+                </li>
+                <li><a href="#" onclick="javascript:toggleDiv('link-box', '#drop-down-boxes > div')">Export</a></li>
+                <li><a href="#" onclick="javascript:toggleDiv('search', '#drop-down-boxes > div')">Search</a></li>
+                <li><a href="#" onclick="javascript:toggleDiv('masstagger', '#drop-down-boxes > div')">Tag these Tweets</a></li>
+            </ul>
+        </div>
+
+        <div id="main-content">
+
+            <div id="drop-down-boxes">
+              <div id="logout_content" style="display: none;">
+                <form id="logout_form" action="/logout" method="post">
+                    <table>
+                      <tr>
+                        <td>Really?</td>
+                        <td><input type="submit" id="logout-button" value="Yes"></input></td>
+                        <td><input type="button" id="no-button" value="No" onclick="toggleDiv('logout_content');" ></input></td>
+                      </tr>
+                    </table>
+                </form>
+              </div>
+
+              <div id="link-box" style="display: none;">
+                <ul>
+                    <li><a href="<% text_export_url %>">Download these tweets as text file</a></li>
+                    <li><a href="/download/tweets.txt">Download all tweets as text file</a></li>
+                    <li><a href="<% tsv_export_url %>">Download these tweets as tsv spreadsheet</a></li>
+                    <li><a href="/download/tweets.tsv">Download all tweets as tsv spreadsheet</a></li>
+                    <li><a href="<% csv_export_url %>">Download these tweets as csv spreadsheet</a></li>
+                    <li><a href="/download/tweets.csv">Download all tweets as csv spreadsheet</a></li>
+                </ul>
+              </div>
+
+              <div id="search" style="display: none;">
+                <form method="get" action="/search/tweets"/>
+                    <p>Search Term:
+                        <input type="text" name="searchterm" size="30" />
+                        <input type="submit" value="Find" />
+                    </p>
+                </form>
+              </div>
+
+              <div id="masstagger" style="display: none;">
+                <form>
+                    <p>Tag list:
+                        <input type="text" id="masstag" size="20" />
+                        <input type="button" value="Add" onclick="javascript:addTagsToAll('<% username %>')" />
+                        <input type="button" value="Remove" onclick="javascript:removeTagsFromAll('<% username %>')" />
+                    </p>
+                </form>
+              </div>
+
+            </div>
+
+            <div id="content">
+               <ol id="tweet-list">
+               </ol>
+               <input type="button" id="loadTweetsButton">
+                Load More
+               </input>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script> 
+// Asynchronously load the content
+window.onload = function() {
+    loadHashTags();
+};
+function loadHashTags(fromId) {
+    var data = {};
+    if (fromId != null) {
+        data.maxId = fromId;
+    }
+    $.get("/loadhashtagstream", data, addTweetsToContent, "json");
+}
+function addTweetsToContent(data) {
+    console.log(data);
+    document.getElementById('tweet-list').appendChild(data.tweets);
+    if (data.isFinished) {
+        allDone();
+    } else {
+        loadhashtagstream(data.nextBatchFromId);
+    }
+}
+function allDone() {
+}
+</script>
+

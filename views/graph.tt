@@ -1,146 +1,37 @@
  <!--[if IE]><script language="javascript" type="text/javascript" src="/javascripts/flot/excanvas.min.js"></script><![endif]-->
 <script language="javascript" type="text/javascript" src="/javascripts/flot/jquery.flot.js"></script>
 <div id="page">
-    <div id="sidebar">
-        <ul id="sidebar-items">
-            <li>
-                <h3><a href="javascript:toggleDiv('timeline');">Timeline</a></h3>
-                <div id="timeline" style="display: none;">
-                    <ul id="timeline-list"><li>Loading<li></ul>
-                </div>
-            </li>
-            <li>
-                <h3><a href="#" onclick="javascript:toggleExpensiveDiv('mentions');">Mentions</a></h3>
-                <div id="mentions" style="display: none;">
-                    <ul id="mentions-list"><li>Loading<li></ul>
-                </div>
-            </li>
-            <li>
-                <h3><a href="#" onclick="javascript:toggleExpensiveDiv('hashtags');">Hash-Tags</a></h3>
-                <div id="hashtags" style="display: none;">
-                    <ul id="hashtags-list"><li>Loading<li></ul>
-                </div>
-            </li>
-            <li>
-                <h3><a href="#" onclick="javascript:toggleExpensiveDiv('usertags');">Your tags</a></h3>
-                <div id="usertags" style="display: none;">
-                    <ul id="tagLinksList">
-                    <li>Loading<li></ul>
-                </div>
-            </li>
-            <li>
-                <h3><a href="#" onclick="javascript:toggleDiv('retweeteds');">Retweeted Statuses</a></h3>
-                <div id="retweeteds" style="display: none;">
-                    <ul id="retweetedLinksList"><li>Loading<li></ul>
-                </div>
-            </li>
-            <li>
-                <h3><a href="#" onclick="javascript:toggleExpensiveDiv('urls');">Statuses with Links</a></h3>
-                <div id="urls" style="display: none;">
-                    <ul id="urls-list"><li>Loading<li></ul>
-                </div>
-            </li>
-            <li>
-                <h3><a href='#' onclick="javascript:toggleExpensiveDiv('summary');">Your Tweet History</a></h3>
-                <div id="summary" style="display: none;">
-                <table id="summary-list">
-                    <tr>
-                    <td>Tweeting since:</td>
-                    <td><span id="beginning">Loading</span></td>
-                    </tr>
-                    <tr>
-                    <td>Most recent tweet:</td>
-                    <td><span id="most_recent">Loading</span></td>
-                    </tr>
-                    <tr>
-                    <td>Number of Tweets:</td>
-                    <td><span id="tweet_count">Loading</span></td>
-                    </tr>
-                    <tr>
-                    <td>Number of mentions:</td>
-                    <td><span id="mention_count">Loading</span></td>
-                    </tr>
-                    <tr>
-                    <td>Number of Hashtags:</td>
-                    <td><span id="hashtag_count">Loading</span></td>
-                    </tr>
-                    <tr>
-                    <td>Number of Tags:</td>
-                    <td><span id="tag_count">Loading</span></td>
-                    </tr>
-                    <tr>
-                    <td>Retweeted tweets:</td>
-                    <td><span id="retweet_count">Loading</span></td>
-                    </tr>
-                </table>
-                </div>
-            </li>
-        </ul>
-      </div>
+
+      <% INCLUDE sidebar.tt %>
 
       <div id="main">
-        <div id="header" style="background-image: url(<% profile_image %>);">
-          <h1><% title %></h1>
- <!--         <h2><% sub_title %></h2>
-          <br> -->
-        </div>
 
-            <div id="menu">
-            <ul>
-                <li>
-                  <a href="#" onclick="toggleDiv('logout_content');" id="logout_link">Logout</a>
-                </li>
-                <li><a href="javascript:toggleDiv('export')">Export</a></li>
-                <li><a href="javascript:toggleDiv('search')">Search</a></li>
-            </ul>
-            </div>
+        <% INCLUDE title.tt %>
+
+        <% INCLUDE menu.tt %>
+
         <div id="tweet-timeline">
-          <div id="logout_content" style="display: none;">
-            <form id="logout_form" action="/logout" method="post">
-                <table>
-                <tr>
-                <td>Really?</td>
-                <td><input type="submit" id="logout-button" value="Yes">
-                </input></td>
-                <td><input type="button" id="no-button" value="No" 
-                onclick="toggleDiv('logout_content');" >
-                </input></td> 
-                </tr>
-                </table>
-            </form>
-          </div>
 
-          <div id="export" style="display: none;">
-            <ul>
-                <li><a href="/download/tweets.txt">Download all tweets as text file</a></li>
-                <li><a href="/download/tweets.tsv">Download all tweets as tab separated value file</a></li>
-                <li><a href="/download/tweets.csv">Download all tweets as comma separated value file</a></li>
-            </ul>
-          </div>
-          <div id="search" style="display: none;">
-            <form method="get" action="/search/tweets"/>
-                <p>Search Term:
-                    <input type="text" name="searchterm" size="30" />
-                    <input type="submit" value="Find" />
-                </p>
-            </form>
-          </div>
-          <div id="timeline-graph" ></div>
-          <form id="intervalForm">
-            <select id="interval">
-                <option value="day">Day</option>
-                <option value="week">Week</option>
-                <option value="fortnight">Fortnight</option>
-                <option value="month">Month</option>
-                <option value="quarter">Quarter</option>
-            </select>
-            <input type="checkbox" id="cumulative">Show Cumulative Total</input>
-            <input type="button" onclick="javascript:refreshGraphFromForm();" value="Refresh Graph">
-            </input>
-          </form>
+            <% INCLUDE dropdownboxes.tt %>
+            <div id="content">
+
+                <div id="timeline-graph"></div>
+                <form id="intervalForm">
+                    <select id="interval">
+                        <option value="day">Day</option>
+                        <option value="week">Week</option>
+                        <option value="fortnight">Fortnight</option>
+                        <option value="month">Month</option>
+                        <option value="quarter">Quarter</option>
+                    </select>
+                    <input type="checkbox" id="cumulative">Show Cumulative Total</input>
+                    <input type="button" onclick="javascript:refreshGraphFromForm();" value="Refresh Graph">
+                    </input>
+                </form>
+            </div>
         </div>
-      </div>
     </div>
+</div>
 
 <script id="source" language="javascript" type="text/javascript">
     var dayInMillis = 24 * 60 * 60 * 1000;

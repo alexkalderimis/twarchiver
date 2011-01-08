@@ -1,0 +1,14 @@
+<div id="menu">
+    <ul>
+        <% IF session.username %>
+        <li>
+            <a href="#" onclick="toggleDiv('logout_content', '#drop-down-boxes > div');" id="logout_link">Logout</a>
+        </li>
+        <li><a href="#" onclick="javascript:toggleDiv('link-box', '#drop-down-boxes > div')">Export</a></li>
+        <li><a href="#" onclick="javascript:toggleDiv('search', '#drop-down-boxes > div')">Search</a></li>
+        <% END %>
+        <% IF request.path.match('^/(show|search)/') %>
+        <li><a href="#" onclick="javascript:toggleDiv('masstagger', '#drop-down-boxes > div')">Tag these Tweets</a></li>
+        <% END %>
+    </ul>
+</div>
