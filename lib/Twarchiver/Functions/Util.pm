@@ -36,6 +36,7 @@ our %EXPORT_TAGS = (
     /],
     'routes' => [qw/
         get_month_name_for
+        DATE_FORMAT
     /]
 );
 
