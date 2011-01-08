@@ -5,7 +5,8 @@ use Dancer ':syntax';
 use Twarchiver::Functions::DBAccess 'get_twitter_account';
 use Twarchiver::Functions::TwitterAPI qw/authorise needs_authorisation/;
 use Twarchiver::Functions::PageContent qw/make_user_home_link/;
-use Statistics::Basic qw(:all);
+use Statistics::Basic qw(mean);
+use Template;
 
 get '/graphdata/:screen_name/by/:interval' => sub {
     my $screen_name = params->{screen_name};
