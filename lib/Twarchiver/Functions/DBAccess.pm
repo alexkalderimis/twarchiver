@@ -50,6 +50,8 @@ our @EXPORT_OK = qw/
     get_user_count_summary 
     beta_key_is_valid_and_unused
     assign_beta_key
+    get_tags_from_tweet
+    get_tweets_matching
 /;
 our %EXPORT_TAGS = (
     'all' => [qw/
@@ -68,6 +70,8 @@ our %EXPORT_TAGS = (
     get_user_count_summary 
     beta_key_is_valid_and_unused
     assign_beta_key
+    get_tags_from_tweet
+    get_tweets_matching
     /],
     'routes' => [qw/
     get_all_tweets_for get_tweets_with_tag get_retweeted_tweets 
@@ -82,6 +86,8 @@ our %EXPORT_TAGS = (
     get_twitter_account
     get_tweets_by
     get_user_count_summary 
+    get_tags_from_tweet
+    get_tweets_matching
     /],
     'pagecontent' => [qw/
     get_user_record get_retweet_summary get_months_in 
@@ -560,7 +566,11 @@ sub get_user_count_summary {
             'join' => 'twitter_account',
         }
     )->as_query;
-    return get_db()->resultset('TwitterAccount')->search(
+
+    my $rs = get_db()->resultset('TwitterAccount');
+    # for speed
+    $rs->result_class('DBIx::Class::ResultClass::HashRefInflator');
+    return $rs->find(
         {
             screen_name => $screen_name,
         },
@@ -713,7 +723,7 @@ Returns:   <List Context> DBIx::Class result rows
 sub get_tweets_with_tag {
     my ($screen_name, $tag, $max_id) = @_;
     my $username = Dancer::session('username');
-    my $rs = get_twitter_account($screen_name)->tweets->search(
+    my $rs = get_tweets_by($screen_name, $max_id)->search(
         {
             'tag.tag_text' => $tag,
             'tweet_tags.private_to' => [undef, $username],
@@ -739,7 +749,7 @@ Returns:   <List Context> DBIx::Class result rows
 
 sub get_tweets_with_mention {
     my ($screen_name, $mention, $max_id) = @_;
-    my $rs = get_twitter_account($screen_name)->tweets->search(
+    my $rs = get_tweets_by($screen_name, $max_id)->search(
         {'tweet_mentions.mention'    => $mention },
         {
             'join' => 'tweet_mentions',
@@ -764,7 +774,7 @@ Returns:   <List Context> DBIx::Class result rows
 
 sub get_tweets_with_hashtag {
     my ($screen_name, $hashtag, $max_id) = @_;
-    my $rs = get_twitter_account($screen_name)->tweets->search(
+    my $rs = get_tweets_by($screen_name, $max_id)->search(
         {'hashtag.topic'           => $hashtag },
         {'join' => {tweet_hashtags => 'hashtag'}}
     );
@@ -787,7 +797,7 @@ Returns:   <List Context> DBIx::Class result rows
 
 sub get_tweets_with_url {
     my ($screen_name, $address, $max_id) = @_;
-    my $rs = get_twitter_account($screen_name)->tweets->search(
+    my $rs = get_tweets_by($screen_name, $max_id)->search(
         {'url.address'           => $address },
         {'join' => {tweet_urls => 'url'}}
     );
@@ -815,8 +825,7 @@ sub get_retweeted_tweets {
     my $condition = ($count) 
         ? {$column => $count}
         : {$column => {'>' => 0}};
-    my $rs = get_twitter_account($screen_name)->tweets
-                                              ->search($condition);
+    my $rs = get_tweets_by($screen_name, $max_id)->search($condition);
     if (wantarray) {
         return tweet_page_from_rs($rs, $max_id);
     } else {
@@ -923,7 +932,7 @@ sub get_tweets_in_month {
         year => $year, month => $month, day => 1
     )->add( months => 1 );
 
-    my $rs = get_twitter_account($screen_name)->tweets->search(
+    my $rs = get_tweets_by($screen_name, $max_id)->search(
                 { tweeted_at => {'!='  => undef                }},
                 { order_by   => {-desc => 'tweeted_at'         }})
         ->search({tweeted_at => {'>='  => $start_of_month->ymd }})
@@ -958,9 +967,9 @@ sub get_tweets_from {
         ? DateTime->from_epoch( epoch => $epoch)
                         ->add( days => $days)
         : DateTime->now();
-    my $rs = get_twitter_account($screen_name)->tweets
-                        ->search({tweeted_at => {'>=', $from->ymd}})
-                        ->search({tweeted_at => {'<', $to->ymd}});
+    my $rs = get_tweets_by($screen_name, $max_id)
+                    ->search({tweeted_at => {'>=', $from->ymd}})
+                    ->search({tweeted_at => {'<', $to->ymd}});
     if (wantarray) {
         return tweet_page_from_rs($rs, $max_id);
     } else {
@@ -970,8 +979,12 @@ sub get_tweets_from {
 
 sub get_tweets_by {
     my ($screen_name, $max_id) = @_;
+    my $condition = ($max_id)
+        ? { tweeted_at => { '<' => $max_id }}
+        : {};
+        
     my $rs = get_twitter_account($screen_name)->tweets->search(
-        undef,
+        $condition,
         {order_by => {-desc => 'tweeted_at'}},
     );
     if (wantarray) {
@@ -980,6 +993,13 @@ sub get_tweets_by {
         return $rs;
     };
 }
+
+sub get_tweets_matching { 
+    my ($screen_name, $searchterm, $max_id) = @_;
+    return get_tweets_by($screen_name, $max_id)->search(
+                {text => {like => '%' . $searchterm . '%'}});
+}
+    
 
 sub validate_user {
     my $username = shift;
@@ -1041,5 +1061,21 @@ sub assign_beta_key {
     $key_rec->update({user => $args{user}});
 }
 
+sub get_tags_from_tweet {
+    my ($tweet, $username) = @_;
+    my @tags = $tweet->tags->search(
+        {
+            '-or' => [
+            'tweet_tags.private_to' => undef,
+            'tweet_tags.private_to.username' => $username
+            ]
+        },
+        {
+            'join' => {'tweet_tags' => 'private_to'},
+            distinct => 1,
+        }
+    )->get_column("tag_text")->all;
+    return @tags;
+}
 
 1;
