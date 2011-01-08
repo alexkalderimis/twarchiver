@@ -50,6 +50,8 @@ our @EXPORT_OK = qw/
   make_url_sidebar_item 
   make_user_home_link 
   make_year_group
+  highlight
+  get_linkified_text
   /;
 
 our %EXPORT_TAGS = (
@@ -63,6 +65,9 @@ our %EXPORT_TAGS = (
         make_tag_sidebar_item 
         make_url_sidebar_item 
         make_retweeted_sidebar
+        get_linkified_text
+        highlight
+        get_linkified_text
       /],
     'all' => [qw/
         get_hashtag_url
@@ -92,6 +97,8 @@ our %EXPORT_TAGS = (
         make_url_sidebar_item 
         make_user_home_link 
         make_year_group
+        highlight
+        get_linkified_text
     /],
     'login' => [qw/
         get_normal_login_message_box
@@ -145,11 +152,18 @@ sub make_highlit_content {
     my ($searchterm, @tweets) = @_;
     for (0 .. $#tweets) {
         my $tweet = $tweets[$_];
-        ( $tweet->{highlighted_text} = $tweet->text ) 
-            =~ s{$searchterm}{<span class="key-term">$&</span>}g;
+        $tweet->{highlighted_text} = highlight($tweet->text, $searchterm);
     }
     return make_content(@tweets);
 }
+
+sub highlight {
+    my ($text, $re) = @_;
+    return $text unless $re;
+    $text =~  s{$re}{<span class="key-term">$&</span>}g;
+    return $text;
+}
+
 =head2 [String] make_diverse_user_content( tweets )
 
 Function:  Orchestrate the construction of content for tweets from
