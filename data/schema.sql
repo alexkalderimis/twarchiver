@@ -48,6 +48,7 @@ CREATE TABLE IF NOT EXISTS tweet_hashtag (
 
 CREATE TABLE IF NOT EXISTS hashtag (
     hashtag_id INTEGER PRIMARY KEY,
+    last_update DATETIME,
     topic TEXT NOT NULL
 );
 
