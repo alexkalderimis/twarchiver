@@ -81,6 +81,15 @@ background-position: top left;
 height: 110px;
 text-align: right;
 }
+
+div.tweetbox {
+    background-image: none;
+    background-repeat: no-repeat;
+    background-position: top left;
+    padding-left: 65px;
+    padding-right: 25px;
+}
+
 #header h1, #header h2 {
     margin: 0;
 }

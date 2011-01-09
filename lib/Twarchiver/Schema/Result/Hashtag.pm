@@ -32,11 +32,14 @@ __PACKAGE__->table("hashtag");
 
 =cut
 
+__PACKAGE__->load_components(qw/InflateColumn::DateTime Relationship::Predicate/);
 __PACKAGE__->add_columns(
   "hashtag_id",
   { data_type => "integer", is_auto_increment => 1, is_nullable => 0 },
   "topic",
   { data_type => "text", is_nullable => 0 },
+  "last_update",
+  { data_type => "datetime", is_nullable => 1 },
 );
 __PACKAGE__->set_primary_key("hashtag_id");
 

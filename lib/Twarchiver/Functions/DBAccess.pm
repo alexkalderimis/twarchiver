@@ -31,10 +31,11 @@ use Exporter 'import';
 our @EXPORT_OK = qw/
     get_db get_all_tweets_for get_user_record get_since_id_for 
     get_tweet_record get_urls_for get_mentions_for get_hashtags_for
-    get_tags_for store_twitter_statuses add_tags_to_tweets 
-    remove_tags_from_tweets restore_tokens save_user_info
-    get_tweets_with_tag get_tweets_in_month get_retweeted_tweets
-    get_months_in get_years_for get_retweet_summary
+    get_tags_for store_timeline_statuses store_search_statuses 
+    add_tags_to_tweets remove_tags_from_tweets 
+    restore_tokens save_user_info get_tweets_with_tag 
+    get_tweets_in_month get_retweeted_tweets get_months_in 
+    get_years_for get_retweet_summary
     get_tweets_with_mention get_tweets_with_hashtag get_tweets_with_url
     store_user_info
     get_most_recent_tweet_by
@@ -52,16 +53,18 @@ our @EXPORT_OK = qw/
     assign_beta_key
     get_tags_from_tweet
     get_tweets_matching
+    get_hashtag
 /;
 our %EXPORT_TAGS = (
     'all' => [qw/
     get_db get_all_tweets_for get_user_record get_since_id_for 
     get_tweet_record get_urls_for get_mentions_for get_hashtags_for
-    get_tags_for store_twitter_statuses add_tags_to_tweets 
+    get_tags_for store_timeline_statuses add_tags_to_tweets 
     remove_tags_from_tweets restore_tokens save_user_info
     get_tweets_with_tag get_tweets_in_month get_retweeted_tweets
     get_months_in get_years_for get_retweet_summary
     get_tweets_with_mention get_tweets_with_hashtag get_tweets_with_url
+    store_search_statuses
     store_user_info
     get_most_recent_tweet_by
     get_tweets_from
@@ -72,6 +75,7 @@ our %EXPORT_TAGS = (
     assign_beta_key
     get_tags_from_tweet
     get_tweets_matching
+    get_hashtag
     /],
     'routes' => [qw/
     get_all_tweets_for get_tweets_with_tag get_retweeted_tweets 
@@ -95,12 +99,16 @@ our %EXPORT_TAGS = (
     get_twitter_account
     /],
     twitterapi => [qw/
-    save_user_info restore_tokens store_twitter_statuses get_since_id_for
+    save_user_info restore_tokens 
+    store_timeline_statuses 
+    store_search_statuses
+    get_since_id_for
     store_user_info get_user_record
     mentions_added_since
     get_all_tweets_for
     get_oldest_id_for
     get_twitter_account
+    get_hashtag
     /],
     login => [qw/
     exists_user validate_user get_user_record
@@ -216,6 +224,17 @@ sub get_oldest_id_for {
     }
 }
 
+sub get_oldest_id_with_hashtag {
+    my $topic = shift;
+    my $oldest_tweet = get_oldest_tweet_with_hashtag($topic);
+    if ($oldest_tweet) {
+        return $oldest_tweet->tweet_id;
+    } else {
+        return;
+    }
+}
+
+
 sub get_most_recent_tweet_by {
     my $screen_name = shift;
     if (my $twitter_account = get_twitter_account($screen_name)) {
@@ -228,6 +247,28 @@ sub get_most_recent_tweet_by {
         return;
     }
 }
+
+sub get_since_id_on {
+    my $topic = shift;
+    if (my $most_recent_tweet = get_most_recent_tweet_on($topic)) {
+        return $most_recent_tweet->tweet_id;
+    } else {
+        return;
+    }
+}
+
+sub get_most_recent_tweet_on {
+    my $topic = shift;
+    my $hashtag = get_hashtag($topic);
+    if ($hashtag and $hashtag->has_tweets) {
+        my $since = $hashtag->tweets->get_column('tweeted_at')->max;
+        my $most_recent = $hashtag->tweets->find({tweeted_at => $since});
+        return $most_recent;
+    } else {
+        return;
+    }
+}
+
 sub get_twitter_account {
     my $screen_name = shift;
     my $search = get_db()->resultset('TwitterAccount')
@@ -251,6 +292,26 @@ sub get_oldest_tweet_by {
         return;
     }
 }
+
+sub get_oldest_tweet_with_hashtag {
+    my $topic = shift;
+    my $hashtag = get_hashtag($topic);
+    if ($hashtag and $hashtag->has_tweets) {
+        my $first = $hashtag->tweets->get_column('tweeted_at')->min;
+        my $oldest = $hashtag->tweets->find({tweeted_at => $first});
+        return $oldest;
+    } else {
+        return;
+    }
+}
+
+sub get_hashtag {
+    my $topic = shift;
+    my $hashtag = get_db->resultset('Hashtag')
+                        ->find_or_create({topic => $topic});
+    return $hashtag;
+}
+
 
 =head2 [ResultRow] get_tweet_record( tweet_id, screen_name )
 
@@ -278,14 +339,44 @@ sub get_tweet_record {
     return $tweet;
 }
 
-=head2 store_twitter_statuses( list_of_tweets )
+=head2 store_search_statuses( list_of_tweets )
 
 Function:  Store the tweets in the database
 Arguments: The list of twitter statuses returned from the Twitter API
 
 =cut
 
-sub store_twitter_statuses {
+sub store_search_statuses {
+    my (@statuses) = @_;
+    for (@statuses) {
+        store_user_info_from_search($_);
+        my $tweet_rec = get_tweet_record(
+            $_->from_user, $_->id, $_->text);
+        $tweet_rec->update({
+            tweeted_at      => $_->created_at,
+        });
+        my $text = $_->text;
+
+        my @mentions = $text =~ /$mentions_re/g;
+        for my $mention (@mentions) {
+            $tweet_rec->add_to_mentions({screen_name => $mention})
+                unless ($tweet_rec->mentions->search({screen_name => $mention})->count);
+        }
+        my @hashtags = $text =~ /$hashtags_re/g;
+        for my $hashtag (@hashtags) {
+            $tweet_rec->add_to_hashtags({topic => $hashtag})
+                unless $tweet_rec->hashtags->search({topic => $hashtag})->count;
+        }
+        my @urls = $text =~ /$urls_re/g;
+        for my $url (@urls) {
+            $tweet_rec->add_to_urls({address => $url})
+                unless $tweet_rec->urls->search({address => $url})->count;
+        }
+        $tweet_rec->update;
+    }
+}
+
+sub store_timeline_statuses {
     my (@statuses) = @_;
     for (@statuses) {
         my $tweet_rec = get_tweet_record(
@@ -314,6 +405,19 @@ sub store_twitter_statuses {
         }
         $tweet_rec->update;
     }
+}
+
+sub store_user_info_from_search {
+    my $user = shift;
+
+    my $twitter_account = get_db()->resultset('TwitterAccount')
+                                  ->find_or_create({
+                                screen_name => $user->from_user
+                            });
+    $twitter_account->update({
+            twitter_id        => $user->from_user_id,
+            profile_image_url => $user->profile_image_url,
+        });
 }
 
 sub store_user_info {
@@ -418,9 +522,17 @@ Returns:   <List Context> A list of result row objects
 =cut
 
 sub get_urls_for {
-    my $screen_name = shift;
-    return get_tweet_features_for_user($screen_name, 
-        'Url', 'address', 'tweet_urls');
+    my %args = @_;
+    if (my $screen_name = $args{screen_name}) {
+        return get_tweet_features_for_user($screen_name, 
+            'Url', 'address', 'tweet_urls');
+    } elsif (my $topic = $args{topic}) {
+        return get_tweet_features_for_topic($topic, 
+            'Url', 'address', 'tweet_urls');
+    } else {
+        confess "Bad Arguments";
+    }
+
 }
 
 =head2 [ResultsRow(s)] get_mentions_for( screen_name )
@@ -433,10 +545,18 @@ Returns:   <List Context> A list of result row objects
 =cut
 
 sub get_mentions_for {
-    my $screen_name = shift;
-    return get_tweet_features_for_user($screen_name, 
-        'TwitterAccount', 'screen_name', 'tweet_mentions');
+    my %args = @_;
+    if (my $screen_name = $args{screen_name}) {
+        return get_tweet_features_for_user($screen_name, 
+            'TwitterAccount', 'screen_name', 'tweet_mentions');
+    } elsif (my $topic = $args{topic}) {
+        return get_tweet_features_for_topic($topic, 
+            'TwitterAccount', 'screen_name', 'tweet_mentions');
+    } else {
+        confess "Bad Arguments";
+    }
 }
+
 
 =head2 [ResultsRow(s)] get_hashtags_for( screen_name )
 
@@ -448,9 +568,17 @@ Returns:   <List Context> A list of result row objects
 =cut
 
 sub get_hashtags_for {
-    my $screen_name = shift;
-    return get_tweet_features_for_user($screen_name, 
-        'Hashtag', 'topic', 'tweet_hashtags');
+    my %args = @_;
+    if (my $screen_name = $args{screen_name}) {
+        return get_tweet_features_for_user($screen_name, 
+            'Hashtag', 'topic', 'tweet_hashtags');
+    } elsif (my $topic = $args{topic}) {
+        return get_tweet_features_for_topic($topic, 
+            'Hashtag', 'topic', 'tweet_hashtags');
+    } else {
+        confess "Bad Arguments";
+    }
+
 }
 
 =head2 [ResultsRow(s)] get_tags_for( screen_name )
@@ -463,9 +591,39 @@ Returns:   <List Context> A list of result row objects
 =cut
 
 sub get_tags_for {
-    my $screen_name = shift;
-    return get_tweet_features_for_user($screen_name, 
-        'Tag', 'tag_text', 'tweet_tags');
+    my %args = @_;
+    if (my $screen_name = $args{screen_name}) {
+        return get_tweet_features_for_user($screen_name, 
+            'Tag', 'tag_text', 'tweet_tags');
+    } elsif (my $topic = $args{topic}) {
+        return get_tweet_features_for_topic($topic, 
+            'Tag', 'tag_text', 'tweet_tags');
+    } else {
+        confess "Bad Arguments";
+    }
+}
+
+sub get_authors_for_topic {
+    my $topic = shift;
+
+    return get_db()->resultset('TwitterAccount')->search(
+        {
+            'hashtag.topic' => $topic,
+        },
+        {   
+            'select' => [
+                'screen_name',
+                {count => 'screen_name', -as => 'number'}
+            ],
+            'as' => ['screen_name', 'count'],
+            'join' => {
+                tweets => {
+                    tweet_hashtags => 
+                        'hashtag'}},
+            distinct => 1,
+            'order_by' => {-desc => 'number'},
+        }
+    );
 }
 
 =head2 [ResultsRow(s)] get_tweet_features_for_user( screen_name, source main_column bridge_table )
@@ -484,7 +642,7 @@ This function is used by get_mentions_for et. al. to query the db.
 
 sub get_tweet_features_for_user {
     my ($screen_name, $source, $main_col, $bridge_table) = @_;
-    Dancer::debug(Dancer::to_dumper(\@_));
+    debug(Dancer::to_dumper(\@_));
     my $search = get_db()->resultset($source)->search(
         {   
             'tweet.twitter_account' => $screen_name
@@ -503,95 +661,249 @@ sub get_tweet_features_for_user {
     return $search;
 }
 
-sub get_user_count_summary {
-    my $screen_name = shift;
-    my $mention_count_query = get_db()->resultset('TwitterAccount')->search(
+sub get_tweet_features_for_topic {
+    my ($topic, $source, $main_column, $bridge_table) = @_;
+    return get_db()->resultset($source)->search(
         {
-            'tweet.twitter_account' => $screen_name,
+            'hashtag.topic' => $topic,
         },
-        {
-            'select' => {count => 'screen_name'},
-            'as'     => [qw/mention_count/],
-            'join'   => {tweet_mentions => 'tweet'},
-        }
-    )->as_query;
-    my $hashtags_count_query = get_db()->resultset('Hashtag')->search(
-        {
-            'tweet.twitter_account' => $screen_name,
-        },
-        {
-            'select' => {count => 'hashtag_id'},
-            'as'     => [qw/hashtag_count/],
-            'join'   => {tweet_hashtags => 'tweet'},
-        }
-    )->as_query;
-    my $urls_count_query = get_db()->resultset('Url')->search(
-        {
-            'tweet.twitter_account' => $screen_name,
-        },
-        {
-            'select' => {count => 'url_id'},
-            'as'     => [qw/url_count/],
-            'join'   => {tweet_urls => 'tweet'},
-        }
-    )->as_query;
-    my $tag_count_query = get_db()->resultset('Tag')->search(
-        {
-            'tweet.twitter_account' => $screen_name,
-        },
-        {
-            'select' => {count => 'tag_id'},
-            'as'     => [qw/tag_count/],
-            'join'   => {tweet_tags => 'tweet'},
-        }
-    )->as_query;
-    my $tweet_count_query = get_db()->resultset('Tweet')->search(
-        {
-            'twitter_account.screen_name' => $screen_name,
-        },
-        {
-            'select' => [{count => 'me.tweet_id'}],
-            'as'  => [qw/tweet_count/],
-            'join' => 'twitter_account',
-        }
-    )->as_query;
-    my $retweet_count_query = get_db()->resultset('Tweet')->search(
-        {
-            'twitter_account.screen_name' => $screen_name,
-            'me.retweeted_count' => {'>' => 0},
-        },
-        {
-            'select' => [{count => 'me.tweet_id'}],
-            'as'   => [qw/retweet_count/],
-            'join' => 'twitter_account',
-        }
-    )->as_query;
-
-    my $rs = get_db()->resultset('TwitterAccount');
-    # for speed
-    $rs->result_class('DBIx::Class::ResultClass::HashRefInflator');
-    return $rs->find(
-        {
-            screen_name => $screen_name,
-        },
-        {
+        {   
             'select' => [
+                $main_column, 
+                {count => $main_column, -as => 'number'}
+            ],
+            'as' => [$main_column, 'count'],
+            'join' => {
+                $bridge_table => {
+                    tweet => {
+                        tweet_hashtags => 
+                            'hashtag'}}},
+            distinct => 1,
+            'order_by' => {-desc => 'number'},
+        }
+    );
+}
+sub get_hashtag_count_query {
+    my %args = @_;
+    my %count_args;
+    if (my $screen_name = $args{screen_name}) {
+        $count_args{constraint_path}  = 'tweet.twitter_account';
+        $count_args{constraint_value} = $screen_name;
+        $count_args{join}             = {tweet_hashtags => 'tweet'};
+    } elsif (my $topic = $args{topic}) {
+        $count_args{constraint_path}  = 'hashtag.topic';
+        $count_args{constraint_value} = $topic;
+        $count_args{join}             = 
+            {tweet_hashtags => {tweet => {tweet_hashtags => 'hashtag'}}};
+    } else {
+        confess "Bad Arguments";
+    }
+
+    $count_args{main_column}      = 'hashtag_id';
+    $count_args{source}           = 'Hashtag';
+    $count_args{as_column}        = 'hashtag_count';
+    my $query = get_count_query(%count_args);
+    return $query;
+}
+
+sub get_mention_count_query {
+    my %args = @_;
+    my %count_args;
+    if (my $screen_name = $args{screen_name}) {
+        $count_args{constraint_path}  = 'tweet.twitter_account';
+        $count_args{constraint_value} = $screen_name;
+        $count_args{join}             = {tweet_mentions => 'tweet'};
+    } elsif (my $topic = $args{topic}) {
+        $count_args{constraint_path}  = 'hashtag.topic';
+        $count_args{constraint_value} = $topic;
+        $count_args{join}             = 
+            {tweet_mentions => {tweet => {tweet_hashtags => 'hashtag'}}};
+    } else {
+        confess "Bad Arguments";
+    }
+
+    $count_args{main_column}      = 'screen_name';
+    $count_args{source}           = 'TwitterAccount';
+    $count_args{as_column}        = 'mention_count';
+    my $mention_count_query = get_count_query(%count_args);
+    return $mention_count_query;
+}
+
+sub get_url_count_query {
+    my %args = @_;
+    my %count_args;
+    if (my $screen_name = $args{screen_name}) {
+        $count_args{constraint_path}  = 'tweet.twitter_account';
+        $count_args{constraint_value} = $screen_name;
+        $count_args{join}             = {tweet_urls => 'tweet'};
+    } elsif (my $topic = $args{topic}) {
+        $count_args{constraint_path}  = 'hashtag.topic';
+        $count_args{constraint_value} = $topic;
+        $count_args{join}             = 
+            {tweet_urls => {tweet => {tweet_hashtags => 'hashtag'}}};
+    } else {
+        confess "Bad Arguments";
+    }
+
+    $count_args{main_column}      = 'url_id';
+    $count_args{source}           = 'Url';
+    $count_args{as_column}        = 'url_count';
+    my $query = get_count_query(%count_args);
+    return $query;
+}
+
+sub get_tag_count_query {
+    my %args = @_;
+    my %count_args;
+    if (my $screen_name = $args{screen_name}) {
+        $count_args{constraint_path}  = 'tweet.twitter_account';
+        $count_args{constraint_value} = $screen_name;
+        $count_args{join}             = {tweet_tags => 'tweet'};
+    } elsif (my $topic = $args{topic}) {
+        $count_args{constraint_path}  = 'hashtag.topic';
+        $count_args{constraint_value} = $topic;
+        $count_args{join}             = 
+            {tweet_tags => {tweet => {tweet_hashtags => 'hashtag'}}};
+    } else {
+        confess "Bad Arguments";
+    }
+
+    $count_args{main_column}      = 'tag_id';
+    $count_args{source}           = 'Tag';
+    $count_args{as_column}        = 'tag_count';
+    my $query = get_count_query(%count_args);
+    return $query;
+}
+
+sub get_tweets_count_query {
+    my %args = @_;
+    my %count_args;
+    if (my $screen_name = $args{screen_name}) {
+        $count_args{constraint_path}  = 'twitter_account.screen_name';
+        $count_args{constraint_value} = $screen_name;
+        $count_args{join}             = 'twitter_account';
+    } elsif (my $topic = $args{topic}) {
+        $count_args{constraint_path}  = 'hashtag.topic';
+        $count_args{constraint_value} = $topic;
+        $count_args{join}             = {tweet_hashtags => 'hashtag'};
+    } else {
+        confess "Bad Arguments";
+    }
+
+    $count_args{main_column}      = 'tweet_id';
+    $count_args{source}           = 'Tweet';
+    $count_args{as_column}        = 'tweet_count';
+    my $query = get_count_query(%count_args);
+    return $query;
+}
+
+sub get_retweet_count_query {
+    my %args = @_;
+    my %count_args;
+    if (my $screen_name = $args{screen_name}) {
+        $count_args{constraint_path}  = 'twitter_account.screen_name';
+        $count_args{constraint_value} = $screen_name;
+        $count_args{join}             = 'twitter_account';
+    } elsif (my $topic = $args{topic}) {
+        $count_args{constraint_path}  = 'hashtag.topic';
+        $count_args{constraint_value} = $topic;
+        $count_args{join}             = {tweet_hashtags => 'hashtag'};
+    } else {
+        confess "Bad Arguments";
+    }
+
+    $count_args{extra_constraint} = {'me.retweeted_count' => {'>' => 0}},
+    $count_args{main_column}      = 'tweet_id';
+    $count_args{source}           = 'Tweet';
+    $count_args{as_column}        = 'retweet_count';
+    my $query = get_count_query(%count_args);
+    return $query;
+}
+
+sub get_tweeter_count_query {
+    my %args = @_;
+    return unless ($args{topic});
+    my %count_args = (
+        source           => 'TwitterAccount',
+        constraint_path  => 'hashtag.topic',
+        constraint_value => $args{topic},
+        main_column      => 'screen_name',
+        as_column        => 'tweeter_count',
+        join             => {tweets => {tweet_hashtags => 'hashtag'}},
+    );
+    return get_count_query(%count_args);
+}
+
+sub get_count_query {
+    my %args = @_;
+    my %constraint = (
+        $args{constraint_path} => $args{constraint_value},
+    );
+    @constraint{keys %{$args{extra_constraint}}} 
+        = values(%{$args{extra_constraint}}) if $args{extra_constraint};
+    return get_db()->resultset($args{source})->search(\%constraint,
+        {
+            'select' => {count => $args{main_column}},
+            'as'     => [$args{as_column}],
+            'join'   => $args{join},
+        }
+    )->as_query;
+}
+
+sub get_user_count_summary {
+    my %args = @_;
+
+    my $mention_count_query  = get_mention_count_query(%args);
+    my $hashtags_count_query = get_hashtag_count_query(%args);
+    my $urls_count_query     = get_url_count_query(%args);
+    my $tag_count_query      = get_tag_count_query(%args);
+    my $tweet_count_query    = get_tweets_count_query(%args);
+    my $retweet_count_query  = get_retweet_count_query(%args);
+    my $tweeter_count_query  = get_tweeter_count_query(%args);
+
+    my $source;
+    my $constraint;
+    my $select = [
                 $tweet_count_query,
                 $retweet_count_query,
                 $hashtags_count_query,
                 $tag_count_query,
                 $mention_count_query,
                 $urls_count_query,
-                'created_at',
-            ],
-            as => [qw/
-                tweet_count retweet_count hashtag_count 
-                tag_count mention_count urls_total
-                created_at
-                /
-            ],
-        }
-    );
+    ];
+    my $as = [qw/tweet_count retweet_count hashtag_count tag_count 
+                mention_count urls_total/];
+    if (my $screen_name = $args{screen_name}) {
+        $source = 'TwitterAccount';
+        $constraint = {screen_name => $screen_name};
+        push @$select, 'created_at';
+        push @$as,'created_at';
+    } elsif (my $topic = $args{topic}) {
+        $source = 'Hashtag';
+        $constraint = {topic => $topic},
+        push @$select, $tweeter_count_query;
+        push @$as,'tweeter_count';
+    } else {
+        confess "Bad Arguments";
+    }
+
+    my $rs = get_db()->resultset($source);
+    # for speed
+    $rs->result_class('DBIx::Class::ResultClass::HashRefInflator');
+    my $data = $rs->find($constraint,{'select' => $select, 'as' => $as});
+
+    if (my $screen_name = $args{screen_name}) {
+        $data->{beginning}   = DateTime::Format::SQLite->parse_datetime(
+                                $data->{created_at})->dmy;
+        $data->{most_recent} = get_most_recent_tweet_by($screen_name)
+                                ->tweeted_at->dmy();
+    } elsif (my $topic = $args{topic}) {
+        $data->{beginning}   = get_oldest_tweet_with_hashtag($topic)
+                                ->tweeted_at->dmy();
+        $data->{most_recent} = get_most_recent_tweet_on($topic)
+                                ->tweeted_at->dmy();
+    }
+    return $data;
 }
 
 =head2 [HashRef] add_tags_to_tweets([tags], [tweet_ids])
@@ -778,11 +1090,7 @@ sub get_tweets_with_hashtag {
         {'hashtag.topic'           => $hashtag },
         {'join' => {tweet_hashtags => 'hashtag'}}
     );
-    if (wantarray) {
-        return tweet_page_from_rs($rs, $max_id);
-    } else {
-        return $rs;
-    }
+    return $rs;
 }
 
 =head2 [Results] get_tweets_with_url( screen_name, url, [max_id] )
@@ -848,22 +1156,30 @@ Returns:   <List Context> DBIx::Class result rows
 =cut
 
 sub get_retweet_summary {
-    my $screen_name = shift;
+    my %args = @_;
+    my $thing;
+    if (my $screen_name = $args{screen_name}) {
+        $thing = get_twitter_account($screen_name);
+    } elsif (my $topic = $args{topic}) {
+        $thing = get_hashtag($topic);
+    } else {
+        confess "Bad Arguments:", @_;
+    }
     my $col = 'retweeted_count';
-    return get_twitter_account($screen_name)->tweets->search(
-                    {
-                        $col => {'>' =>  0},
-                    },
-                    {
-                        'select' => [
-                            $col,
-                            {count => $col,
-                            -as   => 'occurs'},
-                        ],
-                        as => [$col, 'occurs'],
-                        distinct => 1,
-                        'order_by' => {-desc => 'occurs'},
-                    });
+    return $thing->tweets->search(
+            {
+                $col => {'>' =>  0},
+            },
+            {
+                'select' => [
+                    $col,
+                    {count => $col,
+                    -as   => 'occurs'},
+                ],
+                as => [$col, 'occurs'],
+                distinct => 1,
+                'order_by' => {-desc => 'occurs'},
+            });
 }
 
 =head2 [@years] get_years_for( screen_name )
@@ -875,14 +1191,22 @@ Returns:   (List[Str]) A list of years
 =cut
 
 sub get_years_for {
-    my $screen_name = shift;
+    my %args = @_;
+    my $thing;
+    if (my $screen_name = $args{screen_name}) {
+        $thing = get_twitter_account($screen_name);
+    } elsif (my $topic = $args{topic}) {
+        $thing = get_hashtag($topic);
+    } else {
+        confess "Bad Arguments:", @_;
+    }
     my @years = uniq( 
-                    map( {$_->tweeted_at->year} 
-                    get_twitter_account($screen_name)->tweets->search(
-                            { tweeted_at => {'!=' => undef}},
-                            { order_by => {-desc => 'tweeted_at'}}
-                        )->all)
-                );
+        map( {$_->tweeted_at->year} 
+                $thing->tweets->search(
+                        { tweeted_at => {'!=' => undef}},
+                        { order_by => {-desc => 'tweeted_at'}}
+                    )->all)
+        );
     return @years;
 }
 
@@ -897,20 +1221,28 @@ Returns:   (List[Str]) A list of months
 =cut
 
 sub get_months_in {
-    my $screen_name = shift;
-    my $year = shift;
+    my %args = @_;
+    my $thing;
+    if (my $screen_name = $args{screen_name}) {
+        $thing = get_twitter_account($screen_name);
+    } elsif (my $topic = $args{topic}) {
+        $thing = get_hashtag($topic);
+    } else {
+        confess "Bad Arguments:", @_;
+    }
+    my $year = $args{year};
     my $year_start = DateTime->new(year => $year, month => 1, day => 1);
     my $year_end =  DateTime->new(year => ++$year, month => 1, day => 1);
 
     my @months = uniq(
-                map  {$_->tweeted_at->month} 
-                get_twitter_account($screen_name)->tweets->search(
-                        { tweeted_at => {'!='    => undef            }},
-                        { order_by   => {'-desc' => 'tweeted_at'     }})
-                ->search({tweeted_at => {'>='    => $year_start->ymd }})
-                ->search({tweeted_at => {'<'     => $year_end->ymd   }})
-                ->all
-                );
+        map  {$_->tweeted_at->month} 
+        $thing->tweets->search(
+                { tweeted_at => {'!='    => undef            }},
+                { order_by   => {'-desc' => 'tweeted_at'     }})
+        ->search({tweeted_at => {'>='    => $year_start->ymd }})
+        ->search({tweeted_at => {'<'     => $year_end->ymd   }})
+        ->all
+        );
     return @months;
 }
 
@@ -926,24 +1258,20 @@ Returns:   List of DBIx::Class result rows
 
 sub get_tweets_in_month {
     my ($screen_name, $year, $month, $max_id) = @_;
+    my %args = @_;
     my $start_of_month = DateTime->new(
-        year => $year, month => $month, day => 1);
+        year => $args{year}, month => $args{month}, day => 1);
     my $end_of_month = DateTime->new(
-        year => $year, month => $month, day => 1
+        year => $args{year}, month => $args{month}, day => 1
     )->add( months => 1 );
 
-    my $rs = get_tweets_by($screen_name, $max_id)->search(
+    my $rs = get_tweets_by($args{screen_name}, $args{max_id})->search(
                 { tweeted_at => {'!='  => undef                }},
                 { order_by   => {-desc => 'tweeted_at'         }})
         ->search({tweeted_at => {'>='  => $start_of_month->ymd }})
         ->search({tweeted_at => {'<'   => $end_of_month->ymd   }});
 
-    if (wantarray) {
-        return tweet_page_from_rs($rs, $max_id);
-    } else {
-        return $rs;
-    };
-
+    return $rs;
 }
 
 sub tweet_page_from_rs {
@@ -975,6 +1303,20 @@ sub get_tweets_from {
     } else {
         return $rs;
     };
+}
+
+sub get_tweets_on {
+    my ($topic, $max_id) = @_;
+    my $condition = ($max_id)
+        ? { tweeted_at => { '<' => $max_id }}
+        : {};
+    return get_hashtag($topic)->tweets->search(
+        $condition,
+        {
+            order_by => {-desc => 'tweeted_at'},
+            prefetch => 'twitter_account',
+        },
+    );
 }
 
 sub get_tweets_by {

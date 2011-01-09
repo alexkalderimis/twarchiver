@@ -24,6 +24,43 @@ before sub {
     }
 };
 
+get '/show/tweets/on/:topic/to/:screen_name' => sub {
+    # TODO: this route needed for hashtag analysis
+};
+
+get '/show/tweets/on/:topic' => sub {
+    my $topic = params->{topic};
+    my $content_url = $topic;
+    my $title = "Tweets On $topic";
+
+    template 'hashtag' => {
+        content_url => $content_url,
+        title       => $title,
+        topic       => $topic,
+    };
+};
+
+get '/show/tweets/on/:topicA/and/:topicB' => sub {
+    # TODO: This is need for hashtag analysis
+};
+
+get '/show/tweets/on/:topic/links/' => sub {
+    # TODO: This is needed for hashtag analysis
+};
+
+get '/show/tweets/on/:topic/retweeted' => sub {
+    # TODO: This is needed for hashtag analysis
+};
+
+get '/show/tweets/on/:topic/by/:screen_name' => sub {
+    # TODO: This is needed for hashtag analysis
+};
+
+get '/show/tweets/on/:topic/tagged/:tag' => sub {
+    # TODO: This is needed for hashtag analysis
+};
+
+
 get '/show/:screen_name/to/*.*' => sub {
     my $screen_name = params->{screen_name};
     my ($mention, $format) = splat;
@@ -454,6 +491,17 @@ get '/load/content/by/:screen_name' => sub {
     template 'tweets' => {tweets => $tweets}, {layout => 0};
 };
 
+get '/load/content/on/:topic' => sub {
+    my $topic = params->{topic};
+    my $maxId = params->{from};
+    my $user = session('username');
+
+    return $html->p("Not Authorised") if ( needs_authorisation($user) );
+
+    my $tweets = get_tweets_on($topic, $maxId);
+    template 'tweets_on' => {tweets => $tweets}, {layout => 0};
+};
+
 before_template sub {
     my $tokens = shift;
     $tokens->{get_linkified_text} = \&get_linkified_text;
@@ -503,120 +551,6 @@ get '/load/content/search/:screen_name' => sub {
     template 'tweets' => {tweets => $tweets, re => $re}, {layout => 0};
 };
 
-sub get_tweets_matching_search {
-    my $screen_name = shift;
-    my $searchterm = shift;
-    my $is_case_insensitive = shift;
-    my $re = eval { ($is_case_insensitive) 
-                        ? qr/$searchterm/i 
-                        : qr/$searchterm/; };
-    if ($@) {
-        $re =
-          ($is_case_insensitive)
-          ? qr/\Q$searchterm\E/i
-          : qr/\Q$searchterm\E/;
-    }
-    my $rs = get_twitter_account($screen_name)->tweets;
-    my @tweets;
-    while ( my $tweet = $rs->next() ) {
-        if ( $tweet->text =~ $re ) {
-            push @tweets, $tweet;
-        }
-    }
-    debug( "Got " . scalar(@tweets) . " tweets with searchterm" );
-    return ($re, @tweets);
-}
-
-
-ajax '/load/timeline' => sub {
-    my $screen_name = params->{screen_name}
-        || get_user_record(session('username'))
-                ->twitter_account->screen_name;
-    my @years = get_years_for($screen_name);
-    if (@years) {
-        return $html->li_group([
-            map {make_year_group($screen_name, $_)} @years]);
-    } else {
-        return $html->p("No tweets found");
-    }
-};
-
-ajax '/load/mentions' => sub {
-    my $screen_name = params->{screen_name}
-        || get_user_record(session('username'))
-                ->twitter_account->screen_name;
-    my @mentions = get_mentions_for($screen_name)->all;
-    if (@mentions) {
-        return $html->li_group([
-            map {make_mention_sidebar_item($_)} @mentions]);
-    } else {
-        return $html->p("No mentions found");
-    }
-};
-
-ajax '/load/hashtags' => sub {
-    my $screen_name = params->{screen_name}
-        || get_user_record(session('username'))
-                ->twitter_account->screen_name;
-    my @hashtags = get_hashtags_for($screen_name)->all;
-    if (@hashtags) {
-        return $html->li_group([
-            map {make_hashtag_sidebar_item($_)} @hashtags]);
-    } else {
-        return $html->p("No hashtags found");
-    }
-};
-
-ajax '/load/urls' => sub {
-    my $screen_name = params->{screen_name}
-        || get_user_record(session('username'))
-                ->twitter_account->screen_name;
-    my @urls = get_urls_for($screen_name)->all;
-    if (@urls) {
-        return $html->li_group([
-            map {make_url_sidebar_item($_)} @urls]);
-    } else {
-        return $html->p("No urls found");
-    }
-};
-
-ajax '/load/tags' => sub {
-    my $screen_name = params->{screen_name}
-        || get_user_record(session('username'))
-                ->twitter_account->screen_name;
-    my @tags = get_tags_for($screen_name)->all;
-    if (@tags) {
-        return $html->li_group([
-            map {make_tag_sidebar_item($_)} @tags]);
-    } else {
-        return $html->p("No Tags Found");
-    }
-};
-
-ajax '/load/retweeteds' => sub {
-    my $screen_name = params->{screen_name}
-        || get_user_record(session('username'))
-                ->twitter_account->screen_name;
-    return make_retweeted_sidebar($screen_name);
-};
-
-=head2 /load/content/:username
-
-Function: Called by ajax to populate the page with content for all tweets
-Returns:  The content html string
-
-=cut
-
-get '/load/content/tweets' => sub {
-    my $user = session('username');
-    my $max_id = params->{from};
-    my $screen_name = get_user_record($user)->twitter_account->screen_name;
-    return $html->p("Not Authorised") if ( needs_authorisation($user) );
-
-    my @tweets = get_tweets_by($screen_name, $max_id);
-    my $content = make_content(@tweets);
-    return $content;
-};
 get qr{/load/content/(\d{4})-(\d{1,2})} => sub {
     my $user = session('username');
     my ($year, $month) = splat;
@@ -645,23 +579,153 @@ get '/load/content/:screen_name/from/:epoch' => sub {
     return $content;
 };
 
-ajax '/load/summary' => sub {
-    my $screen_name = params->{screen_name}
-        || get_user_record(session('username'))
-                ->twitter_account->screen_name;
+=head2 /load/content/:username
 
-    my $data = get_user_count_summary($screen_name);
-    $data->{beginning} = DateTime::Format::SQLite->parse_datetime(
-        $data->{created_at})->dmy;
-    $data->{most_recent}     = get_most_recent_tweet_by($screen_name)
-                                ->tweeted_at->dmy();
+Function: Called by ajax to populate the page with content for all tweets
+Returns:  The content html string
+
+=cut
+
+get '/load/content/tweets' => sub {
+    my $user = session('username');
+    my $max_id = params->{from};
+    my $screen_name = get_user_record($user)->twitter_account->screen_name;
+    return $html->p("Not Authorised") if ( needs_authorisation($user) );
+
+    my @tweets = get_tweets_by($screen_name, $max_id);
+    my $content = make_content(@tweets);
+    return $content;
+};
+
+sub get_tweets_matching_search {
+    my $screen_name = shift;
+    my $searchterm = shift;
+    my $is_case_insensitive = shift;
+    my $re = eval { ($is_case_insensitive) 
+                        ? qr/$searchterm/i 
+                        : qr/$searchterm/; };
+    if ($@) {
+        $re =
+          ($is_case_insensitive)
+          ? qr/\Q$searchterm\E/i
+          : qr/\Q$searchterm\E/;
+    }
+    my $rs = get_twitter_account($screen_name)->tweets;
+    my @tweets;
+    while ( my $tweet = $rs->next() ) {
+        if ( $tweet->text =~ $re ) {
+            push @tweets, $tweet;
+        }
+    }
+    debug( "Got " . scalar(@tweets) . " tweets with searchterm" );
+    return ($re, @tweets);
+}
+
+sub get_kv {
+    if (my $screen_name = params->{screen_name}) {
+        return (screen_name => $screen_name);
+    } elsif (my $topic = params->{topic}) {
+        return (topic => $topic);
+    } 
+}
+
+ajax '/load/timeline' => sub {
+    my %kv = get_kv();
+    return send_error("Bad Parameters") unless (%kv);
+    my @years = get_years_for(%kv);
+    if (@years) {
+        return $html->li_group([
+            map {make_year_group(%kv, year => $_)} @years]);
+    } else {
+        return $html->p("No tweets found");
+    }
+};
+
+ajax '/load/tweeters' => sub {
+    my $topic = params->{on};
+    return send_error("Bad Parameters") unless ($topic);
+    my @authors = get_authors_for_topic($topic)->all;
+    return template tweeters_sidebar => {
+        tweeters => \@authors,
+        get_tweets_with_hashtag => \&get_tweets_with_hashtag,
+        topic => $topic,
+    };
+};
+
+ajax '/load/mentions' => sub {
+    my %kv = get_kv();
+    return send_error("Bad Parameters") unless (%kv);
+    my @mentions = get_mentions_for(%kv)->all;
+    if (@mentions) {
+        return $html->li_group([
+            map {make_mention_sidebar_item($_)} @mentions]);
+    } else {
+        return $html->p("No mentions found");
+    }
+};
+
+ajax '/load/hashtags' => sub {
+    my %kv = get_kv();
+    return send_error("Bad Parameters") unless (%kv);
+    my @hashtags = get_hashtags_for(%kv)->all;
+    if (@hashtags) {
+        return $html->li_group([
+            map {make_hashtag_sidebar_item($_)} @hashtags]);
+    } else {
+        return $html->p("No hashtags found");
+    }
+};
+
+ajax '/load/urls' => sub {
+    my %kv = get_kv();
+    return send_error("Bad Parameters") unless (%kv);
+    my @urls = get_urls_for(%kv)->all;
+    if (@urls) {
+        return $html->li_group([
+            map {make_url_sidebar_item($_)} @urls]);
+    } else {
+        return $html->p("No urls found");
+    }
+};
+
+ajax '/load/tags' => sub {
+    my %kv = get_kv();
+    return send_error("Bad Parameters") unless (%kv);
+
+    my @tags = get_tags_for(%kv)->all;
+    if (@tags) {
+        return $html->li_group([
+            map {make_tag_sidebar_item($_)} @tags]);
+    } else {
+        return $html->p("No Tags Found");
+    }
+};
+
+ajax '/load/retweeteds' => sub {
+    my %kv = get_kv();
+    return send_error("Bad Parameters") unless (%kv);
+
+    return make_retweeted_sidebar(%kv);
+};
+
+
+ajax '/load/summary' => sub {
+    my %kv = get_kv();
+    return send_error("Bad Parameters") unless (%kv);
+
+    my $data = get_user_count_summary(%kv);
     return to_json( $data );
 };
 
 get '/downloadtweets' => sub {
-    my $maxId = params->{maxId};
+    my $maxId     = params->{maxId};
     my $twitterer = params->{by};
-    my $response = download_tweets(from => $maxId, by => $twitterer);
+    my $topic     = params->{on};
+    my $response = download_tweets(
+        from => $maxId, 
+        by => $twitterer,
+        on => $topic,
+    );
     return to_json( $response );
 };
 

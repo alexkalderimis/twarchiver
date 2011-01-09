@@ -149,7 +149,7 @@ Returns:  A Net::Twitter instance
 sub get_twitter {
     my @tokens = @_;
     my %args   = (
-        traits          => [qw/OAuth API::REST InflateObjects/],
+        traits  => [qw/OAuth API::REST InflateObjects API::Search/],
         consumer_key    => CONS_KEY,
         consumer_secret => CONS_SEC,
         decode_html_entities => 1,
@@ -177,57 +177,109 @@ sub download_tweets {
     my $username = session('username');
     my $screen_name = $args{by} 
         || get_user_record($username)->twitter_account->screen_name;
-    my $maxId = $args{from} 
-        || get_oldest_id_for($screen_name);
-    $maxId = Math::BigInt->new($maxId);
-    $maxId->bsub(1);
+    my $topic = $args{on};
 
-    my $twitter_ac = get_twitter_account($screen_name);
-    if (has_been_updated_recently($twitter_ac)) {
-        return {
+    my $thing = ($topic) 
+            ? get_hashtag($topic)
+            : get_twitter_account($screen_name);
+    if (has_been_updated_recently( $thing )) {
+        my $ret = {
             isFinished => \1,
-            got => $twitter_ac->tweets->count,
-            total => $twitter_ac->tweet_total,
+            got => $thing->tweets->count,
         };
+        $ret->{total} = $thing->tweet_total unless ($topic);
+        return $ret;
     }
 
     my @tokens  = restore_tokens($username);
     my $twitter = get_twitter(@tokens);
 
     if ( $twitter->authorized ) {
-        download_user_info(for => $twitter_ac, from => $twitter);
-        my $args = { 
-            id    => get_twitter_account($screen_name)->twitter_id,
-            count => setting('downloadbatchsize') 
-        };
-        $args->{max_id} = "$maxId" if ($maxId && $maxId > 0);
-        debug(to_dumper($args));
-        my $response = {isFinished => \0};
-        my $statuses = eval {$twitter->user_timeline($args)};
-        if (my $e = $@) {
-            error($e);
-            $maxId->badd(1);
-            $response->{nextBatchFromId} = "$maxId";
-        } elsif (@$statuses) {
-            store_twitter_statuses(@$statuses);
-            $response->{nextBatchFromId} = $statuses->[-1]->id;
+        if ($topic) {
+            my $page = $args{page};
+            unless ($page) {
+                if ($thing->last_update && $thing->tweets->count) {
+                    my $count = $thing->tweets->count;
+                    my $got_pages = int($count / 100);
+                    $page = $got_pages + 1;
+                } else {
+                    $page = 1;
+                }
+            }
+            return download_tweets_for_hashtag(
+                $twitter, $page, $thing, $topic);
         } else {
-            download_latest_tweets(by => $screen_name);
-            $response->{isFinished} = \1;
-            $response->{nextBatchFromId} = 0;
+            my $maxId = $args{from} || get_oldest_id_for($screen_name);
+            $maxId = Math::BigInt->new($maxId);
+            $maxId->bsub(1);
+            return download_tweets_for_screenname(
+                $thing, $twitter, $maxId, $screen_name);
         }
-        $response->{got} = $twitter_ac->tweets->count;
-        $response->{total} = $twitter_ac->tweet_total;
-        debug(to_dumper($response));
-        return $response;
     } else {
         send_error("Not authorised");
     }
-
 }
+
+sub download_tweets_for_hashtag {
+    my ($twitter, $page_no, $hashtag, $topic) = @_;
+    debug(to_dumper([$page_no, $topic]));
+    my $page = $page_no || 1;
+    my $args = {
+        q => $topic, 
+        rpp => 100, 
+        page => $page,
+    };
+    debug(to_dumper($args));
+    my $response = {isFinished => \0};
+    my $r = eval {$twitter->search($args)};
+    if (my $e = $@) {
+        error($e);
+        $response->{nextPage} = $page;
+    } elsif (my @results = @{$r->{results}}) {
+        store_search_statuses(@results);
+        $response->{nextPage} = ++$page;
+    } else {
+        download_latest_tweets_on_topic($topic);
+        $response->{isFinished} = \1;
+        $response->{nextPage} = 0;
+    }
+    $response->{got} = $hashtag->tweets->count;
+    debug(to_dumper($response));
+    return $response;
+}
+
+sub download_tweets_for_screenname {
+    my ($twitter_ac, $twitter, $maxId, $screen_name) = @_;
+    download_user_info(for => $twitter_ac, from => $twitter);
+    my $args = { 
+        id    => get_twitter_account($screen_name)->twitter_id,
+        count => setting('downloadbatchsize') 
+    };
+    $args->{max_id} = "$maxId" if ($maxId && $maxId > 0);
+    debug(to_dumper($args));
+    my $response = {isFinished => \0};
+    my $statuses = eval {$twitter->user_timeline($args)};
+    if (my $e = $@) {
+        error($e);
+        $maxId->badd(1);
+        $response->{nextBatchFromId} = "$maxId";
+    } elsif (@$statuses) {
+        store_timeline_statuses(@$statuses);
+        $response->{nextBatchFromId} = $statuses->[-1]->id;
+    } else {
+        download_latest_tweets(by => $screen_name);
+        $response->{isFinished} = \1;
+        $response->{nextBatchFromId} = 0;
+    }
+    $response->{got} = $twitter_ac->tweets->count;
+    $response->{total} = $twitter_ac->tweet_total;
+    debug(to_dumper($response));
+    return $response;
+}
+
 sub has_been_updated_recently {
-    my $account = shift;
-    my $last_update = $account->last_update();
+    my $thing = shift;
+    my $last_update = $thing->last_update();
     my $five_minutes_ago = DateTime->now()->subtract(minutes => 5);
     if ($last_update and $last_update > $five_minutes_ago) {
         debug("Has been updated recently " . $last_update->datetime());
@@ -238,6 +290,34 @@ sub has_been_updated_recently {
             debug("Last update at " . $last_update->datetime());
         }
         return false;
+    }
+}
+
+sub download_latest_tweets_on_topic {
+    my $topic   = shift;
+    my $user    = session('username');
+    my @tokens  = restore_tokens($user);
+    my $twitter = get_twitter(@tokens);
+    my $since   = get_since_id_on($topic);
+    if ( $twitter->authorized ) {
+        my %args = (
+            q => $topic, 
+            rpp => 100, 
+        );
+        $args{since_id} = $since if ($since);
+        for ( $args{page} = 1; ; $args{page}++ ) {
+            debug("Getting page $args{page} of statuses on $topic");
+            debug(to_dumper({%args}));
+            my $r = $twitter->search(\%args);
+            last unless @{$r->{results}};
+            store_statuses(@{$r->{results}});
+            debug("Stored " . scalar(@{$r->{results}}) . " statuses");
+        }
+        my $now = DateTime->now();
+        debug("Updated at " . $now->datetime());
+        get_hashtag($topic)->update({last_update => $now});
+    } else {
+        die "Not authorised.";
     }
 }
 

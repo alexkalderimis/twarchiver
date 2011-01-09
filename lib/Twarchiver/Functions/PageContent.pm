@@ -561,27 +561,36 @@ Function: Make a sidebar summarising retweeted and favourited tweets
 =cut
 
 sub make_retweeted_sidebar {
-    my $screen_name = shift;
-    my $column   = 'retweeted_count';
-    my $account  = get_twitter_account($screen_name);
-    my $total    = $account->tweets
-                        ->search( { $column => { '>' => 0 } } )
+    my %args = @_;
+    my $thing;
+    my $uri;
+    if (my $screen_name = $args{screen_name}) {
+        $thing = get_twitter_account($screen_name);
+        $uri   = request->uri_for("/show/$screen_name/retweeted" );
+    } elsif (my $topic = $args{topic} ) {
+        $thing = get_hashtag($topic);
+        $uri   = request->uri_for("/show/tweets/on/$topic/retweeted");
+    } else {
+        confess "Bad Arguments";
+    }
+
+    my $total    = $thing->tweets
+                        ->search( { retweeted_count => { '>' => 0 } } )
                         ->count;
     my $list     = $html->li_group(
         [
             $html->a(
-                href => request->uri_for( 
-                    "/show/$screen_name/retweeted" ),
+                href => $uri,
                 text => "All Retweeted Statuses ($total)",
             )
         ]
     );
     if ($total) {
-        my @rows = get_retweet_summary( $screen_name );
+        my @rows = get_retweet_summary( %args );
         $list .= $html->li_group(
             [
                 map { make_retweet_link( 
-                        $_->$column, $_->get_column("occurs")) }
+                        $_->retweeted_count, $_->get_column("occurs")) }
                   @rows
             ]
         );
@@ -599,11 +608,18 @@ Returns:  '<a href="/show/user/retweeted?count=2">Retweeted twice (7)</a>'
 sub make_retweet_link {
     my $retweet_count   = shift;
     my $number_of_tweets = shift;
-    my $screen_name = params->{screen_name};
+    my $uri;
     confess "retweet count '$retweet_count' is not a number" 
         unless $retweet_count =~ /^\d+$/;
     confess "number of tweets '$number_of_tweets' is not a number"
         unless $number_of_tweets =~ /^\d+$/;
+    if (my $screen_name = params->{screen_name}) {
+        $uri = request->uri_for( "/show/$screen_name/retweeted" );
+    } elsif (my $topic = params->{topic}) {
+        $uri = request->uri_for( "/show/tweets/on/$topic/retweeted" );
+    } else {
+        confess "Bad Parameters";
+    }
 
     my $text = 'Retweeted ';
     if ( $retweet_count == 1 ) {
@@ -615,8 +631,7 @@ sub make_retweet_link {
     }
     $text .= " ($number_of_tweets)";
 
-    my $uri = URI->new( 
-        request->uri_for( "/show/$screen_name/retweeted" ) );
+    $uri = URI->new($uri);
     $uri->query_form( count => $retweet_count );
     return $html->a(
         href => "$uri",
@@ -633,11 +648,13 @@ Function: Make a html list section for each year of the form:
 =cut
 
 sub make_year_group {
-    my ( $screen_name, $year ) = @_;
-    my @months = get_months_in( $screen_name, $year );
+    my %args = @_;
+    my @mons = get_months_in( %args );
     my $month_group =
-      $html->li_group( [ map { make_month_link( $screen_name, $year, $_ ) } @months ] );
-    my $list_item = $html->h3($year) . "\n" . $html->ul($month_group);
+      $html->li_group([map {make_month_link(%args, month => $_)} @mons]);
+    my $list_item = $html->h3($args{year}) 
+                    . "\n" 
+                    . $html->ul($month_group);
     return $list_item;
 }
 
@@ -670,16 +687,20 @@ Returns:  '<a href="/show/username/2010/12">December (7 tweets)</a>'
 =cut
 
 sub make_month_link {
-    my ( $user, $y, $m ) = @_;
-    my $screen_name = params->{screen_name} ||
-                      get_user_record(session('username'))
-                        ->twitter_account->screen_name;
-    my $number_of_tweets = get_tweets_in_month( $user, $y, $m )->count;
-    my $uri = URI->new(request->uri_for("show/$screen_name/$y-$m"));
-    my $text = sprintf( 
-        "%s (%s tweets)", 
-        get_month_name_for($m), 
-        $number_of_tweets 
+    my %args = @_;
+    my $number_of_tweets = get_tweets_in_month( %args )->count;
+    my $uri;
+    if (my $screen_name = $args{screen_name}) {
+        $uri = request->uri_for(
+            "show/$screen_name/$args{year}-$args{month}");
+    } elsif (my $topic = $args{topic}) {
+        $uri = request->uri_for(
+            "show/tweets/on/$topic/$args{year}-$args{month}");
+    } else {
+        confess "Bad Arguments";
+    }
+    my $text = sprintf( "%s (%s tweets)", 
+        get_month_name_for($args{month}), $number_of_tweets 
     );
     return $html->a(
         href => "$uri",
@@ -716,10 +737,16 @@ Returns:  '<a href="/show/user/url?address=this">(linked to 7 times)</a>'
 
 sub make_url_report_link {
     my ( $address, $count ) = @_;
-    my $screen_name = params->{screen_name};
     confess "no address" unless $address;
     confess "no count" unless defined $count;
-    my $uri = URI->new( request->uri_for( "show/$screen_name/links/to" ));
+    my $uri;
+    if (my $who = params->{screen_name}) {
+        $uri = URI->new( request->uri_for("show/$who/links/to"));
+    } elsif (my $topic = params->{topic}) {
+        $uri = URI->new(request->uri_for("show/tweets/on/$topic/links"));
+    } else {
+        confess "Bad Parameters";
+    }
     $uri->query_form( address => $address );
 
     return $html->a(
@@ -737,13 +764,8 @@ Returns:  '<a href="show/user/tag/tagtext">tagtext (7)</a>'
 =cut 
 
 sub make_tag_sidebar_item {
-    my $tag      = shift;
-    my $result = eval { make_tag_link( 
-        session('username'), $tag->tag_text, $tag->get_column('count') );
-    };
-    if (my $e = $@) {
-        confess "Problem making tag sidebar item: $e";
-    }
+    my $tag    = shift;
+    my $result = make_tag_link($tag->tag_text, $tag->get_column('count'));
     return $result;
 }
 
@@ -755,13 +777,16 @@ Returns: '<a href="show/user/tag/tagtext">tagtext (7)</a>'
 =cut
 
 sub make_tag_link {
-    my ( $username, $tag, $count ) = @_;
-    my $screen_name = params->{screen_name};
-    for ([0, 'username'], [1, 'tag'], [2, 'count']) {
-        confess "No ", $_->[1] unless $_[$_->[0]];
-    };
-    my $href = URI->new(
-        request->uri_for( "show/$screen_name/tagged/$tag" ));
+    my ( $tag, $count ) = @_;
+    my $uri;
+    if (my $who = params->{screen_name}) {
+        $uri = request->uri_for("show/$who/tagged/$tag");
+    } elsif (my $topic = params->{topic}) {
+        $uri = request->uri_for("show/tweets/on/$topic/tagged/$tag");
+    } else {
+        confess "Bad Parameters";
+    }
+    my $href = URI->new($uri);
     return $html->a(
         href => "$href",
         text => "$tag ($count)",
@@ -798,8 +823,9 @@ Returns:  'http://twitter.com/search?q=topic'
 sub get_hashtag_url {
     my $topic = shift;
     confess "Topic is undefined" unless (defined $topic);
-    my $uri   = URI->new(TWITTER_SEARCH);
-    $uri->query_form( q => $topic );
+#    my $uri   = URI->new(TWITTER_SEARCH);
+#    $uri->query_form( q => $topic );
+    my $uri = request->uri_for("/show/tweets/on/$topic");
     return "$uri";
 }
 
@@ -829,17 +855,22 @@ Returns:  '<a href="show/user/on/hashtag">(7 hashtags)</a>'
 =cut
 
 sub make_hashtag_report_link {
-    my ( $topic, $count ) = @_;
-    my $screen_name = params->{screen_name};
     for ([0, 'topic'], [1, 'count']) {
         confess "No ", $_->[1] unless $_[$_->[0]];
     }
+    my ( $topic, $count ) = @_;
     confess "Topic is not a hashtag: got $topic"
         unless ($topic =~ /^#/);
+    my $uri;
+    if (my $me = params->{screen_name}) {
+        $uri = request->uri_for("show/$me/on" . substr($topic, 1) );
+    } elsif (my $topicA = params->{topic}) {
+        $uri = request->uri_for("show/tweets/on/$topicA/and/$topic");
+    } else {
+        confess "Bad Parameters";
+    }
     return $html->a(
-        href => URI->new(
-            request->uri_for("show/$screen_name/on/" . substr( $topic, 1 ) )
-        ),
+        href => $uri,
         text  => "($count hashtags)",
         class => 'sidebarinternallink',
     );
@@ -925,13 +956,20 @@ Returns:  '<a href="show/user/to/mentioned_name" class="sidebarinternallink">(7 
 =cut
 
 sub make_mention_report_link {
-    my $me = params->{screen_name};
     my ( $screen_name, $count ) = @_;
+    my $uri;
+    if (my $me = params->{screen_name}) {
+        $uri = request->uri_for("show/$me/to/$screen_name");
+    } elsif (my $topic = params->{topic}) {
+        $uri = request->uri_for("show/tweets/on/$topic/by/$screen_name");
+    } else {
+        confess "Bad Parameters";
+    }
     for ([0, 'mention'], [1, 'count']) {
         confess "No ", $_->[1] unless $_[$_->[0]];
     }
     return $html->a(
-        href => request->uri_for("show/$me/to/$screen_name"),
+        href => $uri,
         text  => "($count mentions)",
         class => 'sidebarinternallink',
     );
