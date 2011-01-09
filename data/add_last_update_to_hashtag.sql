@@ -1,0 +1,1 @@
+ALTER TABLE hashtag ADD COLUMN last_update DATETIME;
