@@ -9,6 +9,14 @@
                 <ul id="timeline-list"><li>Loading<li></ul>
             </div>
         </li>
+        <% IF topic.defined %>
+        <li>
+            <h3><a href="#" onclick="javascript:toggleExpensiveDiv('tweeters');">Tweeted By</a></h3>
+            <div id="tweeters" style="display: none;"> 
+                Loading...
+            </div>
+        </li>
+        <% END %>
         <li>
             <h3><a href="#" onclick="javascript:toggleExpensiveDiv('mentions');">Mentions</a></h3>
             <div id="mentions" style="display: none;">

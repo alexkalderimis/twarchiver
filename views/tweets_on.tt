@@ -8,8 +8,14 @@ requires
 <% processed.push(tweet) %>
 <% LAST IF processed.size > settings.pageSize %>
 <li>
-<div onclick="toggleForm('<% tweet.tweet_id %>')">
-    <h2><% tweet.tweeted_at.strftime(date_format) %></h2>
+<% profile_img = tweet.twitter_account.profile_image_url %>
+<% author = make_user_home_link( tweet.twitter_account.screen_name ) %>
+<div 
+    class="tweetbox"
+    onclick="toggleForm('<% tweet.tweet_id %>')" 
+    style="background-image: url(<% profile_img %>)" 
+    >
+    <h2><% tweet.tweeted_at.strftime(date_format) %> by <% author %></h2>
     <p><% get_linkified_text(highlight(tweet.text, re)) %></p>
 </div>
 <div id="<% tweet.tweet_id %>-tags" class="tags-list">
