@@ -174,6 +174,7 @@ Arguments: The user's twitter screen name
 
 sub download_tweets {
     my %args = @_;
+    debug("Args to download_tweets: " . to_dumper({%args}));
     my $username = session('username');
     my $screen_name = $args{by} 
         || get_user_record($username)->twitter_account->screen_name;
@@ -196,16 +197,16 @@ sub download_tweets {
 
     if ( $twitter->authorized ) {
         if ($topic) {
-            my $page = $args{page};
-            unless ($page) {
-                if ($thing->last_update && $thing->tweets->count) {
-                    my $count = $thing->tweets->count;
-                    my $got_pages = int($count / 100);
-                    $page = $got_pages + 1;
-                } else {
-                    $page = 1;
-                }
-            }
+            my $page = $args{page} || 1;
+#            if ($page and $page < 2) {
+#                if ($thing->last_update && $thing->tweets->count) {
+#                    my $count = $thing->tweets->count;
+#                    my $got_pages = int($count / 100);
+#                    $page = $got_pages + 1;
+#                } else {
+#                    $page = 1;
+#                }
+#            }
             return download_tweets_for_hashtag(
                 $twitter, $page, $thing, $topic);
         } else {
@@ -240,9 +241,11 @@ sub download_tweets_for_hashtag {
         error($e);
         $response->{nextPage} = $page;
     } elsif ($r and my @results = @{$r->{results}}) {
+        debug("Storing " . scalar(@results) . " statuses");
         store_search_statuses(@results);
         $response->{nextPage} = ++$page;
     } else {
+        debug("Got them all going back, trying forwards now");
         download_latest_tweets_on_topic($topic);
         $response->{isFinished} = \1;
         $response->{nextPage} = 0;
