@@ -1,4 +1,4 @@
-<# 
+<%# 
 requires 
     subs: get_linkified_text, highlight, get_tags_for, 
     variables: [re], tweets, date_format 

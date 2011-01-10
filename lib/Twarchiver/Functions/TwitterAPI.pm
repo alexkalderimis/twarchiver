@@ -231,11 +231,15 @@ sub download_tweets_for_hashtag {
     };
     debug(to_dumper($args));
     my $response = {isFinished => \0};
-    my $r = eval {$twitter->search($args)};
+    my $r = eval {
+        if ($page <= 15) {
+            return $twitter->search($args);
+        }
+    };
     if (my $e = $@) {
         error($e);
         $response->{nextPage} = $page;
-    } elsif (my @results = @{$r->{results}}) {
+    } elsif ($r and my @results = @{$r->{results}}) {
         store_search_statuses(@results);
         $response->{nextPage} = ++$page;
     } else {
@@ -310,7 +314,7 @@ sub download_latest_tweets_on_topic {
             debug(to_dumper({%args}));
             my $r = $twitter->search(\%args);
             last unless @{$r->{results}};
-            store_statuses(@{$r->{results}});
+            store_search_statuses(@{$r->{results}});
             debug("Stored " . scalar(@{$r->{results}}) . " statuses");
         }
         my $now = DateTime->now();

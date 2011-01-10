@@ -54,6 +54,8 @@ our @EXPORT_OK = qw/
     get_tags_from_tweet
     get_tweets_matching
     get_hashtag
+    get_since_id_on
+    get_tweets_on
 /;
 our %EXPORT_TAGS = (
     'all' => [qw/
@@ -76,6 +78,8 @@ our %EXPORT_TAGS = (
     get_tags_from_tweet
     get_tweets_matching
     get_hashtag
+    get_since_id_on
+    get_tweets_on
     /],
     'routes' => [qw/
     get_all_tweets_for get_tweets_with_tag get_retweeted_tweets 
@@ -92,6 +96,7 @@ our %EXPORT_TAGS = (
     get_user_count_summary 
     get_tags_from_tweet
     get_tweets_matching
+    get_tweets_on
     /],
     'pagecontent' => [qw/
     get_user_record get_retweet_summary get_months_in 
@@ -109,6 +114,7 @@ our %EXPORT_TAGS = (
     get_oldest_id_for
     get_twitter_account
     get_hashtag
+    get_since_id_on
     /],
     login => [qw/
     exists_user validate_user get_user_record
@@ -260,7 +266,7 @@ sub get_since_id_on {
 sub get_most_recent_tweet_on {
     my $topic = shift;
     my $hashtag = get_hashtag($topic);
-    if ($hashtag and $hashtag->has_tweets) {
+    if ($hashtag and $hashtag->tweets->count) {
         my $since = $hashtag->tweets->get_column('tweeted_at')->max;
         my $most_recent = $hashtag->tweets->find({tweeted_at => $since});
         return $most_recent;

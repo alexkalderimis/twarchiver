@@ -29,8 +29,8 @@ get '/show/tweets/on/:topic/to/:screen_name' => sub {
 };
 
 get '/show/tweets/on/:topic' => sub {
-    my $topic = params->{topic};
-    my $content_url = $topic;
+    my $topic = '#' . params->{topic};
+    my $content_url = params->{topic};
     my $title = "Tweets On $topic";
 
     template 'hashtag' => {
@@ -492,7 +492,7 @@ get '/load/content/by/:screen_name' => sub {
 };
 
 get '/load/content/on/:topic' => sub {
-    my $topic = params->{topic};
+    my $topic = '#' . params->{topic};
     my $maxId = params->{from};
     my $user = session('username');
 
@@ -509,7 +509,8 @@ before_template sub {
     $tokens->{get_tags_for} = \&get_tags_from_tweet;
     $tokens->{date_format} = DATE_FORMAT, 
     $tokens->{sqlite_date} =
-        sub {DateTime::Format::SQLite->format_datetime(shift)},
+        sub {DateTime::Format::SQLite->format_datetime(shift)};
+    $tokens->{make_user_home_link} = \&make_user_home_link;
 };
 
 get '/load/content/:screen_name/links/to' => sub {
@@ -721,10 +722,12 @@ get '/downloadtweets' => sub {
     my $maxId     = params->{maxId};
     my $twitterer = params->{by};
     my $topic     = params->{on};
+    my $page      = params->{page};
     my $response = download_tweets(
         from => $maxId, 
-        by => $twitterer,
-        on => $topic,
+        by   => $twitterer,
+        on   => $topic,
+        page => $page,
     );
     return to_json( $response );
 };

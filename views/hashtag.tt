@@ -23,7 +23,7 @@
 // Asynchronously load the content
 var topic = "<% topic %>";
 window.onload = function() {
-    downloadTweets();
+    downloadTweets(15);
 };
 function downloadTweets(page) {
     var data = {on: topic};
@@ -40,8 +40,10 @@ function updateProgress(data) {
     document.getElementById('got').innerHTML = data.got;
     if (data.total != null) {
         document.getElementById('total').innerHTML = data.total;
-    } else {
-        document.getElementById('total').style.display = "none";
+    } else if (data.nextPage != null) {
+        var gotPages  = parseInt(data.nextPage) - 1;
+        document.getElementById('total').innerHTML
+            = "(up to page " + gotPages + " of 15)";
     }
     if (data.isFinished) {
         allDone();
