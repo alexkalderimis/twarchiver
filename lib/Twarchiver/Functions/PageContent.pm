@@ -825,6 +825,7 @@ sub get_hashtag_url {
     confess "Topic is undefined" unless (defined $topic);
 #    my $uri   = URI->new(TWITTER_SEARCH);
 #    $uri->query_form( q => $topic );
+    $topic = substr($topic, 1);
     my $uri = request->uri_for("/show/tweets/on/$topic");
     return "$uri";
 }

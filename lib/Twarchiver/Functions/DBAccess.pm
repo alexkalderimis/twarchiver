@@ -1363,7 +1363,7 @@ sub validate_user {
     my $user_rec = get_user_record($username);
     my $passhash = $user_rec->passhash;
 
-    if (Crypt::SaltedHash->validate($passhash, $password)) {
+    if (eval{Crypt::SaltedHash->validate($passhash, $password)}) {
         return 1;
     } else {
         return 0;
@@ -1411,6 +1411,7 @@ sub beta_key_is_valid_and_unused {
 
 sub assign_beta_key {
     my %args = @_;
+    confess "No key" unless $args{key};
     my $key_rec = get_db->resultset('Betakey')->find({key => $args{key}});
     confess "Key not valid: $args{key}" unless $key_rec;
     $key_rec->update({user => $args{user}});

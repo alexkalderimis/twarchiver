@@ -26,7 +26,8 @@ post '/login' => sub {
             session username => $user;
             redirect params->{url} || '/';
         } else {
-            debug("Login failed - password incorrect for " . params->{username});
+            debug("Login failed - password incorrect for " 
+                . params->{login_user});
             redirect '/?failed=incorrect';
         }
     }
@@ -35,7 +36,7 @@ post '/login' => sub {
 post '/register' => sub {
     my $user = params->{reg_user};
     my $beta_key = params->{beta_key};
-    if ($beta_key !~ /^\{SSHA\}/) {
+    if (setting("in_beta") && $beta_key !~ /^\{SSHA\}/) {
         $beta_key = '{SSHA}' . $beta_key;
     }
 
@@ -54,9 +55,11 @@ post '/register' => sub {
             $csh->add(params->{reg_password});
             my $passhash = $csh->generate;
             my $user_rec = get_user_record($user);
-            eval {
-                assign_beta_key(key => $beta_key, user => $user_rec);
-            };
+            if (setting("in_beta")) {
+                eval {
+                    assign_beta_key(key => $beta_key, user => $user_rec);
+                };
+            }
             if (my $e = $@) {
                 redirect '/?failed=notinbeta';
             } else {
