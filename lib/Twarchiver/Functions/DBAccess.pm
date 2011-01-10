@@ -102,6 +102,7 @@ our %EXPORT_TAGS = (
     get_user_record get_retweet_summary get_months_in 
     get_tweets_in_month 
     get_twitter_account
+    get_hashtag
     /],
     twitterapi => [qw/
     save_user_info restore_tokens 
@@ -1263,19 +1264,25 @@ Returns:   List of DBIx::Class result rows
 =cut
 
 sub get_tweets_in_month {
-    my ($screen_name, $year, $month, $max_id) = @_;
     my %args = @_;
+    my $superset;
+    if (my $screen_name = $args{screen_name}) {
+        $superset = get_tweets_by($screen_name, $args{max_id});
+    } elsif (my $topic = $args{topic}) {
+        $superset = get_tweets_on($topic, $args{max_id});
+    } else {
+        confess "Bad Arguments:", @_;
+    }
     my $start_of_month = DateTime->new(
         year => $args{year}, month => $args{month}, day => 1);
     my $end_of_month = DateTime->new(
         year => $args{year}, month => $args{month}, day => 1
     )->add( months => 1 );
 
-    my $rs = get_tweets_by($args{screen_name}, $args{max_id})->search(
-                { tweeted_at => {'!='  => undef                }},
-                { order_by   => {-desc => 'tweeted_at'         }})
-        ->search({tweeted_at => {'>='  => $start_of_month->ymd }})
-        ->search({tweeted_at => {'<'   => $end_of_month->ymd   }});
+    my $rs = $superset->search({ tweeted_at => {'!='  => undef                }},
+                         { order_by   => {-desc => 'tweeted_at'         }})
+                ->search({tweeted_at => {'>='  => $start_of_month->ymd }})
+                ->search({tweeted_at => {'<'   => $end_of_month->ymd   }});
 
     return $rs;
 }

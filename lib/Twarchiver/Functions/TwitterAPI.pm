@@ -351,7 +351,7 @@ sub download_latest_tweets {
             debug(to_dumper({%nt_args}));
             my $statuses = $twitter->user_timeline(\%nt_args);
             last unless @$statuses;
-            store_twitter_statuses(@$statuses);
+            store_timeline_statuses(@$statuses);
             debug("Stored " . scalar(@$statuses) . " statuses");
         }
         my $now = DateTime->now();

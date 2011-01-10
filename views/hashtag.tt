@@ -23,7 +23,7 @@
 // Asynchronously load the content
 var topic = "<% topic %>";
 window.onload = function() {
-    downloadTweets(15);
+    downloadTweets();
 };
 function downloadTweets(page) {
     var data = {on: topic};

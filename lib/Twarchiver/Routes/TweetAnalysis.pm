@@ -562,9 +562,13 @@ get qr{/load/content/(\d{4})-(\d{1,2})} => sub {
 
     return $html->p("Not Authorised") if ( needs_authorisation($user) );
 
-    my @tweets = get_tweets_in_month($screen_name, $year, $month, $max_id);
-    my $content = make_content(@tweets);
-    return $content;
+    my $tweets = get_tweets_in_month(
+        screen_name => $screen_name, 
+        year => $year, 
+        month => $month, 
+        max_id => $max_id
+    );
+    template 'tweets' => {tweets => $tweets}, {layout => 0};
 };
 
 get '/load/content/:screen_name/from/:epoch' => sub {
