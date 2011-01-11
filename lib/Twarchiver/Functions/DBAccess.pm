@@ -938,7 +938,10 @@ sub add_tags_to_tweets {
                     push @{$response->{errors}}, 
                         "Tweet $tweet_id is already tagged with $tag";
                 } else {
-                    $tweet->add_to_tags({tag_text => $tag});
+                    $tweet->add_to_tags({
+                        tag_text => $tag,
+                        tagger => get_user_record($username),
+                    });
                     if ($is_private) {
                         my $link = $tweet->tweet_tags->find(
                             {'tag.tag_text' => $tag},
