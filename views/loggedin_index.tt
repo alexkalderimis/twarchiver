@@ -1,21 +1,17 @@
 <div id="page">
 
-    <% INCLUDE sidebar.tt %>
+    <% INCLUDE logged_in_controls.tt %>
+    <% INCLUDE home_sidebar.tt %>
     <div id="main">
         <div id="header">
           <h1><% settings.site.name %></h1>
           <h2 id="quote"><% quote %></h2>
         </div>
 
-        <div id="menu">
+        <div class="menu">
             <ul>
                 <li>
-                  <a href="#" onclick="toggleDiv('logout_content', 'div#drop-down-boxes > div');" id="logout_link">Logout</a>
-                </li>
-                <li>
-                    <a href="#" onclick="javascript:toggleDiv('search', '#drop-down-boxes > div')">
-                        Search
-                    </a>
+                  <a href="#" onclick="toggleDiv('settings', 'div#drop-down-boxes > div');" id="settings_link">Settings</a>
                 </li>
                 <li>
                     <a href='#' onclick="toggleDiv('link-box', '#drop-down-boxes > div');" id="where_next_link">Where Next?</a>
@@ -26,37 +22,31 @@
         <div id="main-content">
 
           <div id="drop-down-boxes">
-            <div id="logout_content" style="display: none;">
-              <form id="logout_form" action="/logout" method="post">
-                  <table>
-                  <tr>
-                  <td>Really?</td>
-                  <td><input type="submit" id="logout-button" value="Yes">
-                  </input></td>
-                  <td><input type="button" id="no-button" value="No"
-                  onclick="toggleDiv('logout_content');" >
-                  </input></td>
-                  </tr>
-                  </table>
-              </form>
-            </div>
-
-            <div id="search" style="display: none;">
-            <form method="get" action="/search/<% user.twitter_account.screen_name %>"/>
-                <p>Search Term:
-                    <input type="text" name="searchterm" size="30" />
-                    <input type="submit" value="Find" />
-                </p>
-            </form>
+            <div id="settings" style="display: none;">
+                <p>Settings such as which people/tags to update, etc</p>
             </div>
 
             <div id="link-box" style="display: none;">
               <ul id="where_next_list">
                 <li>
-                  <a href="/show/tweets">See a list of all your tweets</a>
+                    <form method="get" action="/show/tweets/by">
+                    <span>Get someone's tweets:
+                        <input type="text" name="screen_name" size="30"
+                        value="Screen name">
+                        </input>
+                        <input type="submit" value="View" />
+                    </span>
+                    </form>
                 </li>
                 <li>
-                  <a href="/graph/tweets/by/month">See a graph of your activity over time</a>
+                    <form method="get" action="/show/tweets/on">
+                    <span>Get tweets on a topic:
+                        <input type="text" name="screen_name" size="30"
+                        value="Hash tag">
+                        </input>
+                        <input type="submit" value="View" />
+                    </span>
+                    </form>
                 </li>
                 <li>
                   <a href="/download/tweets.txt">Download all your tweets as a text file</a>

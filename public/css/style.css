@@ -57,6 +57,10 @@ width: 500px;
 box-shadow: 3px 3px 4px #000;
 }
 
+.clearboth {
+    clear: both;
+}
+
 #sidebar {
 float: right;
 width: 225px;
@@ -111,7 +115,7 @@ margin-bottom: 10px;
 font-size: 14px;
 }
 
-#menu {
+div.menu {
     font-weight: bold;
     font-family: 'Yanone Kaffeesatz', arial, serif;
     right: 0px;
@@ -123,32 +127,45 @@ font-size: 14px;
     font-family: 'Yanone Kaffeesatz', arial, serif;
 }
 
-#menu a {
+div.menu a {
   background-color: #333;
 }
-#menu {
-  font-size: 120%;
+div.menu a {
+  /*font-size: 120%;*/
 }
-#menu ul {
-  background-color: #228;
+div.menu ul {
+  background-color: #333;
+  font-size: 120%;
   color: #fff;
   margin: 0; padding: 0;
 }
-#menu ul li {
+div.menu ul li {
   display: inline;
+  float: left; 
+  background-color: #333;
+  /*text-decoration: none;*/
+  /*color: white;*/
+  /*padding: 4px 10px;*/
 }
-#menu ul li a {
-  float: left; text-decoration: none;
-  color: white;
+div.menu ul li div {
   padding: 4px 10px;
 }
-#menu ul li a:visited {
+
+div.menu ul li a{
+  padding: 4px 10px;
+  float: left; 
+  text-decoration: none;
+  color: white;
+  /*padding: 4px 10px;*/
+}
+div.menu a:visited {
   color: white;
 }
-#menu ul li a:hover, .menu ul li .current {
+div.menu a:hover {
   color: #000;
   background-color:#bdd73c;
 }
+
 #search, #masstagger p {
     text-size: 20px;
     padding: 10px;

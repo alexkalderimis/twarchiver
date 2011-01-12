@@ -17,6 +17,8 @@ get '/' => sub {
         my $username = session('username');
         return authorise($username) if needs_authorisation($username);
         $args->{user} = get_user_record($username);
+        $args->{tagged_tweet_count} = 543;
+        $args->{my_tagged_tweet_count} = 132;
         template 'loggedin_index' => $args;
 
     } else {
