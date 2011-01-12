@@ -1,0 +1,15 @@
+<div class="menu">
+    <ul>
+        <li>
+            <div>
+          Logged in as <% user.username %>
+            </div>
+         </li> 
+        <li>
+            <a href="#" onclick="confirmLogout()">Logout</a>
+        </li>
+        <li>
+            <a href="<% request.uri_for("/") %>">Home</a>
+        </li>
+    </ul>
+</div>
