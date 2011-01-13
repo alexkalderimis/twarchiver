@@ -6,10 +6,26 @@
             </div>
          </li> 
         <li>
-            <a href="#" onclick="confirmLogout()">Logout</a>
+            <a href="#logout-popup" rel="facebox">Logout</a>
         </li>
         <li>
             <a href="<% request.uri_for("/") %>">Home</a>
         </li>
     </ul>
 </div>
+<div id="logout-popup" style="display: none;">
+    <form id="logout_form" action="/logout" method="post">
+        <table>
+            <tr>
+            <td>Really?</td>
+            <td><input type="submit" id="logout-button" value="Yes"></input></td>
+            <td><input type="button" id="no-button" value="No" onclick="jQuery(document).trigger('close.facebox');" ></input></td>
+            </tr>
+        </table>
+    </form>
+</div>
+<script>
+jQuery(document).ready(function($) {
+    $('a[rel*=facebox]').facebox();
+});
+</script>
