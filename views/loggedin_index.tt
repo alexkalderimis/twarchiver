@@ -3,18 +3,22 @@
     <% INCLUDE logged_in_controls.tt %>
     <% INCLUDE home_sidebar.tt %>
     <div id="main">
-        <div id="header">
-          <h1><% settings.site.name %></h1>
-          <h2 id="quote"><% quote %></h2>
-        </div>
-
+        <% INCLUDE index_title.tt %>
         <div class="menu">
             <ul>
                 <li>
-                  <a href="#" onclick="toggleDiv('settings', 'div#drop-down-boxes > div');" id="settings_link">Settings</a>
+                  <a 
+            href="#" 
+            onclick="toggleDiv('settings', 'div.tab', '#content');"
+            id="settings_link"
+                    >Settings</a>
                 </li>
                 <li>
-                    <a href='#' onclick="toggleDiv('link-box', '#drop-down-boxes > div');" id="where_next_link">Where Next?</a>
+                    <a 
+            href="#"
+            onclick="toggleDiv('link-box', 'div.tab', '#content');" 
+            id="where_next_link"
+                    >Where Next?</a>
                 </li>
             </ul>
         </div>
@@ -22,17 +26,21 @@
         <div id="main-content">
 
           <div id="drop-down-boxes">
-            <div id="settings" style="display: none;">
+            <div id="settings" style="display: none;" class="tab">
                 <p>Settings such as which people/tags to update, etc</p>
             </div>
 
-            <div id="link-box" style="display: none;">
+            <div id="link-box" style="display: none;" class="tab">
               <ul id="where_next_list">
                 <li>
                     <form method="get" action="/show/tweets/by">
                     <span>Get someone's tweets:
-                        <input type="text" name="screen_name" size="30"
-                        value="Screen name">
+                        <input 
+                        type="text" 
+                        name="screen_name" 
+                        size="30"
+                        placeholder="start typing a screen name.."
+                        id="ScreenNames">
                         </input>
                         <input type="submit" value="View" />
                     </span>
@@ -41,8 +49,12 @@
                 <li>
                     <form method="get" action="/show/tweets/on">
                     <span>Get tweets on a topic:
-                        <input type="text" name="screen_name" size="30"
-                        value="Hash tag">
+                        <input 
+                        type="text" 
+                        name="topic" 
+                        size="30"
+                        placeholder="start typing a hashtag..."
+                        id="HashTags">
                         </input>
                         <input type="submit" value="View" />
                     </span>
@@ -57,39 +69,41 @@
               </ul>
             </div>
           </div>
+          <div id="content" class="tab">
+            <h2 id="welcome">Welcome to Your <% settings.site.name %>, <% user.username %></h2>
 
-          <div id="content">
-              <h2 id="welcome">Welcome to Your <% settings.site.name %>, <% user.username %></h2>
-
-              <p id="progress">
-              Downloading tweets for <% user.twitter_account.screen_name %> - please be patient:
-              <span id='elipsis'>...</span>
-              <span id='got-and-total' style="display: none">
-                Got <span id="got"></span>
-                of <span id="total"></span>
-              </span>
-              </p>
-              <p>
-              <% settings.site.name %> is a twitter archive webapp - designed to make 
-              searching through your tweets easy (did you know for
-              instance that you have <% user.twitter_account.tweets_rs.count %> of them?) - you know that though,
-              you've been with us since <% user.created_at.strftime(date_format) %>!
-              </p>
-              <p>
-              Look around: you'll find a million ways to slice and dice your tweets,
-              starting with the links on the right, or just click 
-              <a href="/show/<% user.twitter_account.screen_name %>">here</a> to show all your tweets
-              on a single page.
-              </p>
-              <em><% settings.site.byline %></em>
-              </p>
+            <% INCLUDE downloadprogress.tt %>
+            <p><% settings.site.welcome1 %></p>
+            <p><% settings.site.welcome2 %></p>
+            <p><em><% settings.site.byline %></em></p>
             </div>
-        </div>
+          </div>
+
      </div>
  </div>
 <script> 
 // Asynchronously load the content
     window.onload = function() {
+        $("#ScreenNames").autocompleteArray(
+            [<% screen_name_list %>],
+            {
+                delay:10,
+                minChars:1,
+                matchSubset:1,
+                autoFill:true,
+                maxItemsToShow:10
+            }
+        );
+        $("#HashTags").autocompleteArray(
+            [<% hashtag_list %>],
+            {
+                delay:10,
+                minChars:1,
+                matchSubset:1,
+                autoFill:true,
+                maxItemsToShow:10
+            }
+        );
         downloadTweets();
     };
     function downloadTweets(fromId) {

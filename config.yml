@@ -7,7 +7,9 @@ appname: "twarchiver"
 
 site:
     name: "Twarchiver"
-    byline: "All is not lost - It's Twistory!"
+    byline: "It's all sorted - it's in your Twarchive!"
+    welcome1: "Twarchiver is a twitter archiving webapp - designed to store and organise your tweets for you."
+    welcome2: "You can view the ways that tweets have been organised by clicking on the links to the right, or you can see where else you can go, by clicking on \"Where Next?\""
 
 contactaddress: "contact@twarchiver.com"
 

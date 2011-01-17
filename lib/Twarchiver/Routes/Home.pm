@@ -19,6 +19,8 @@ get '/' => sub {
         $args->{user} = get_user_record($username);
         $args->{tagged_tweet_count} = 543;
         $args->{my_tagged_tweet_count} = 132;
+        $args->{screen_name_list} = get_screen_name_list();
+        $args->{hashtag_list} = get_hashtags_list();
         template 'loggedin_index' => $args;
 
     } else {

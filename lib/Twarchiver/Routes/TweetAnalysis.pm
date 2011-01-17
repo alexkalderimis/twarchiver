@@ -28,6 +28,14 @@ get '/show/tweets/on/:topic/to/:screen_name' => sub {
     # TODO: this route needed for hashtag analysis
 };
 
+get '/show/tweets/on' => sub {
+    if (params->{topic}) {
+        redirect "/show/tweets/on/" . params->{topic};
+    } else {
+        pass
+    }
+};
+
 get '/show/tweets/on/:topic' => sub {
     my $topic = '#' . params->{topic};
     my $content_url = params->{topic};
@@ -37,6 +45,7 @@ get '/show/tweets/on/:topic' => sub {
         content_url => $content_url,
         title       => $title,
         topic       => $topic,
+        user        => get_user_record(session('username')),
     };
 };
 
@@ -112,8 +121,17 @@ sub return_tweet_analysis_page {
         csv_export_url => $csv_url,
         profile_image => $profile_image,
         screen_name => $screen_name,
+        user        => get_user_record(session('username')),
     };
 }
+
+get '/show/tweets/by' => sub {
+    if (my $screen_name = params->{screen_name}) {
+        redirect "/show/$screen_name";
+    } else {
+        pass;
+    }
+};
 
 get '/show/tweets' => sub {
 

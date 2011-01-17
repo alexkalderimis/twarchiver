@@ -234,16 +234,23 @@ function toggleExpensiveDiv(divid) {
     }
 }
 
-function toggleDiv(divid, othersSelector){
+function toggleDiv(divid, othersSelector, defaultSelector){
     if (othersSelector != null) {
         $(othersSelector).each(function() {
-            if (this.style.display != "none" && this.id != divid) {
-                $(this).slideToggle('fast', function() {});
+            if (this.id != divid) {
+                $(this).slideUp('fast');
             }
         });
     }
     var selector = '#' + divid;
-    $(selector).slideToggle('fast', function() {});
+    $(selector).slideToggle('fast', function() {
+        if (defaultSelector != null) {
+            var slid = document.getElementById(divid);
+            if (slid.style.display == "none") {
+                $(defaultSelector).slideToggle('fast', function() {});
+            }
+        }
+    });
 };
 
 function toggleForm(divId) {

@@ -1,18 +1,15 @@
 <div id="page">
     <div id="main">
         
-        <div id="header">
-          <h1><% settings.site.name %></h1>
-          <h2 id="quote"><% quote %></h2>
-        </div>
+        <% INCLUDE index_title.tt %>
 
-        <div id="menu">
+        <div class="menu">
             <ul>
                 <li>
-                  <a href="#" onclick="toggleDiv('login_content', '#drop-down-boxes > div');" id="login_link">Login</a>
+                  <a href="#" onclick="toggleDiv('login_content', 'div.tabable', '#content');" id="login_link">Login</a>
                 </li>
                 <li>
-                    <a href='#' onclick="toggleDiv('register_content', '#drop-down-boxes > div');" id="register_link">Register</a>
+                    <a href='#' onclick="toggleDiv('register_content', 'div.tabable', '#content');" id="register_link">Register</a>
                 </li>
             </ul>
         </div>
@@ -21,7 +18,7 @@
 
           <div id="drop-down-boxes">
 
-              <div id="login_content" style="display: none;">
+              <div id="login_content" style="display: none;" class="tabable">
                 <form id="login_form" action="/login" method="post">
                     Please enter your <% settings.site.name %> login details. 
                     <table>
@@ -39,7 +36,7 @@
                     <input type="submit" value="login" />
                 </form>
               </div>
-              <div id="register_content" style="display: none;">
+              <div id="register_content" style="display: none;" class="tabable">
                 <form id="register_form" action="/register" method="post">
                     Please choose a login name and password for <% settings.site.name %> - please
                     <em>do not enter your twitter login details</em>
@@ -73,7 +70,7 @@
                 </form>
               </div>
           </div>
-          <div id="content">
+          <div id="content" class="tabable">
               <h2 id="welcome">Welcome to <% settings.site.name %></h2>
 
               <p id="failure_message">

@@ -1,5 +1,6 @@
 <div id="page">
 
+    <% INCLUDE logged_in_controls.tt %>
     <% INCLUDE sidebar.tt %>
 
     <div id="main">

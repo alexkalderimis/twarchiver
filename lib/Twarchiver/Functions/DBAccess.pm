@@ -56,6 +56,8 @@ our @EXPORT_OK = qw/
     get_hashtag
     get_since_id_on
     get_tweets_on
+    get_screen_name_list
+    get_hashtags_list
 /;
 our %EXPORT_TAGS = (
     'all' => [qw/
@@ -80,6 +82,8 @@ our %EXPORT_TAGS = (
     get_hashtag
     get_since_id_on
     get_tweets_on
+    get_screen_name_list
+    get_hashtags_list
     /],
     'routes' => [qw/
     get_all_tweets_for get_tweets_with_tag get_retweeted_tweets 
@@ -97,6 +101,8 @@ our %EXPORT_TAGS = (
     get_tags_from_tweet
     get_tweets_matching
     get_tweets_on
+    get_screen_name_list
+    get_hashtags_list
     /],
     'pagecontent' => [qw/
     get_user_record get_retweet_summary get_months_in 
@@ -1435,6 +1441,30 @@ sub get_tags_from_tweet {
         }
     )->get_column("tag_text")->all;
     return @tags;
+}
+
+sub get_screen_name_list {
+    my $db = get_db();
+    my @names = $db->resultset("TwitterAccount")
+                   ->get_column("screen_name")
+                   ->all;
+    if (wantarray) {
+        return @names;
+    } else {
+        return join(',', map {'"' . $_ . '"'} @names);
+    }
+}
+
+sub get_hashtags_list {
+    my $db = get_db();
+    my @topics = $db->resultset("Hashtag")
+                   ->get_column("topic")
+                   ->all;
+    if (wantarray) {
+        return @topics;
+    } else {
+        return join(',', map {'"' . substr($_, 1) . '"'} @topics);
+    }
 }
 
 1;
