@@ -1,6 +1,5 @@
 package Twarchiver::Functions::Util;
 
-use feature ':5.10';
 use DateTime;
 use Carp qw/confess/;
 
@@ -49,9 +48,8 @@ Arguments: A number from 1 - 12
 Returns:   A string with the corresponding month name
 
 =cut
-
+my %name_of_month;
 sub get_month_name_for {
-    state %name_of_month;
     my $month_number = shift;
     confess "No month number provided to get_month_name_for" 
         unless $month_number;
