@@ -24,6 +24,46 @@ before sub {
     }
 };
 
+get '/show/all/tagged' => sub {
+    my $username = session('username');
+    my $content_url = "all/tagged";
+    my $title = "Tagged Tweets";
+
+    template 'tagstream' => {
+        content_url => $content_url,
+        title       => $title,
+        tag         => 'all',
+        user        => get_user_record(session('username')),
+    };
+};
+
+get '/show/my/tagged/tweets' => sub {
+    my $username = session('username');
+    my $content_url = "tagged/by/$username";
+    my $title = "Tweets tagged by $username";
+
+    template 'tagstream' => {
+        content_url => $content_url,
+        title       => $title,
+        tag         => "_by:$username",
+        user        => get_user_record($username),
+    };
+};
+
+get '/show/tweets/tagged' => sub {
+    my $username = session('username');
+    my $tag = params->{tag};
+    my $content_url = URI->new("tagged/with/$tag");
+    my $title = "Tweets tagged with $tag";
+
+    template 'tagstream' => {
+        content_url => "$content_url",
+        title       => $title,
+        tag         => $tag,
+        user        => get_user_record($username),
+    };
+};
+
 get '/show/tweets/on/:topic/to/:screen_name' => sub {
     # TODO: this route needed for hashtag analysis
 };
@@ -470,6 +510,7 @@ get '/load/content/:screen_name/tagged/:tag' => sub {
     template 'tweets' => {tweets => $tweets}, {layout => 0};
 };
 
+
 get '/load/content/:screen_name/to/:mention' => sub {
     my $user = session('username');
     my $max_id = params->{from};
@@ -517,6 +558,23 @@ get '/load/content/on/:topic' => sub {
     return $html->p("Not Authorised") if ( needs_authorisation($user) );
 
     my $tweets = get_tweets_on($topic, $maxId);
+    template 'tweets_on' => {tweets => $tweets}, {layout => 0};
+};
+
+get '/load/content/tagged/by/:username' => sub {
+    my $user = get_user_record(session('username'));
+    my $tweets = tweets_tagged_by($user);
+    template 'tweets_on' => {tweets => $tweets}, {layout => 0};
+};
+
+get '/load/content/all/tagged' => sub {
+    my $tweets = get_tagged_tweets();
+    template 'tweets_on' => {tweets => $tweets}, {layout => 0};
+};
+
+get '/load/content/tagged/with/:tag' => sub {
+    my $tag = params->{tag};
+    my $tweets = get_tweets_tagged($tag);
     template 'tweets_on' => {tweets => $tweets}, {layout => 0};
 };
 

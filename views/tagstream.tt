@@ -1,0 +1,30 @@
+<div id="page">
+
+    <% INCLUDE logged_in_controls.tt %>
+    <% INCLUDE sidebar.tt %>
+
+    <div id="main">
+
+        <% INCLUDE title.tt %>
+
+        <% INCLUDE menu.tt %>
+
+        <div id="main-content">
+
+            <% INCLUDE dropdownboxes.tt %>
+            <div id="content">
+                <ol id="content-ol"></ol>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script> 
+// Asynchronously load the content
+window.onload = function() {
+    var url = "/load/content/<% content_url %>";
+    $("#content-ol").load(url, null, function() {});
+    updateSideBars({tag: "<% tag %>"});
+};
+</script>
+

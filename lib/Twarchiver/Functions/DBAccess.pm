@@ -58,6 +58,10 @@ our @EXPORT_OK = qw/
     get_tweets_on
     get_screen_name_list
     get_hashtags_list
+    get_tagged_tweets
+    tweets_tagged_by
+    get_tag_list
+    get_tweets_tagged 
 /;
 our %EXPORT_TAGS = (
     'all' => [qw/
@@ -84,6 +88,10 @@ our %EXPORT_TAGS = (
     get_tweets_on
     get_screen_name_list
     get_hashtags_list
+    get_tagged_tweets
+    tweets_tagged_by
+    get_tag_list
+    get_tweets_tagged 
     /],
     'routes' => [qw/
     get_all_tweets_for get_tweets_with_tag get_retweeted_tweets 
@@ -103,6 +111,10 @@ our %EXPORT_TAGS = (
     get_tweets_on
     get_screen_name_list
     get_hashtags_list
+    get_tagged_tweets
+    tweets_tagged_by
+    get_tag_list
+    get_tweets_tagged 
     /],
     'pagecontent' => [qw/
     get_user_record get_retweet_summary get_months_in 
@@ -946,12 +958,14 @@ sub add_tags_to_tweets {
                 } else {
                     $tweet->add_to_tags({
                         tag_text => $tag,
+                    });
+                    my $link = $tweet->tweet_tags->find(
+                        {'tag.tag_text' => $tag},
+                        {'join' => 'tag'});
+                    $link->update({
                         tagger => get_user_record($username),
                     });
                     if ($is_private) {
-                        my $link = $tweet->tweet_tags->find(
-                            {'tag.tag_text' => $tag},
-                            {'join' => 'tag'});
                         $link->update(
                             {private_to => get_user_record($username)}
                         );
@@ -1465,6 +1479,43 @@ sub get_hashtags_list {
     } else {
         return join(',', map {'"' . substr($_, 1) . '"'} @topics);
     }
+}
+
+sub get_tag_list {
+    my $db = get_db();
+    my @tags = $db->resultset("Tag")
+                   ->get_column("tag_text")
+                   ->all;
+    if (wantarray) {
+        return @tags;
+    } else {
+        return join(',', map {'"' . $_ . '"'} @tags);
+    }
+}
+
+sub get_tagged_tweets {
+    return get_db()->resultset("Tweet")->search(
+        {
+            "tweet_tags.tag" => {"!=" => undef},
+        },
+        {
+            join => 'tweet_tags',
+            order_by => {-desc => 'tweeted_at'},
+            distinct => 1,
+        });
+
+}
+
+sub tweets_tagged_by {
+    my $user = shift;
+    return get_tagged_tweets->search(
+        {'tweet_tags.tagger' => $user->user_id},{'join' => 'tweet_tags'});
+}
+
+sub get_tweets_tagged {
+    my $tag = shift;
+    return get_tagged_tweets->search(
+        {'tag.tag_text' => $tag}, {'join' => {'tweet_tags' => 'tag'}});
 }
 
 1;

@@ -61,6 +61,20 @@
                     </form>
                 </li>
                 <li>
+                    <form method="get" action="/show/tweets/tagged">
+                    <span>Get tweets with a tag:
+                        <input 
+                        type="text" 
+                        name="tag" 
+                        size="30"
+                        placeholder="start typing a tag..."
+                        id="Tags">
+                        </input>
+                        <input type="submit" value="View" />
+                    </span>
+                    </form>
+                </li>
+                <li>
                   <a href="/download/tweets.txt">Download all your tweets as a text file</a>
                 </li>
                 <li>
@@ -96,6 +110,16 @@
         );
         $("#HashTags").autocompleteArray(
             [<% hashtag_list %>],
+            {
+                delay:10,
+                minChars:1,
+                matchSubset:1,
+                autoFill:true,
+                maxItemsToShow:10
+            }
+        );
+        $("#Tags").autocompleteArray(
+            [<% tag_list %>],
             {
                 delay:10,
                 minChars:1,

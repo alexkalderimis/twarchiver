@@ -17,10 +17,12 @@ get '/' => sub {
         my $username = session('username');
         return authorise($username) if needs_authorisation($username);
         $args->{user} = get_user_record($username);
-        $args->{tagged_tweet_count} = 543;
-        $args->{my_tagged_tweet_count} = 132;
+        $args->{tagged_tweet_count} = get_tagged_tweets->count();
+        $args->{my_tagged_tweet_count} 
+            = tweets_tagged_by($args->{user})->count;
         $args->{screen_name_list} = get_screen_name_list();
         $args->{hashtag_list} = get_hashtags_list();
+        $args->{tag_list} = get_tag_list();
         template 'loggedin_index' => $args;
 
     } else {
