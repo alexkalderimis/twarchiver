@@ -2,8 +2,6 @@ package Twarchiver::Routes::Home;
 
 use Dancer ':syntax';
 
-use feature ':5.10';
-
 use Template;
 use Twarchiver::Functions::DBAccess qw/:routes/;
 use Twarchiver::Functions::TwitterAPI qw/:routes/;
@@ -30,8 +28,8 @@ get '/' => sub {
     }
 };
 
+my @quotes;
 sub get_quote {
-    state @quotes;
     unless (@quotes) {
         @quotes = @{setting('historyquotes')};
     }
