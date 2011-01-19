@@ -4,7 +4,7 @@
 <head>
 <meta http-equiv="Content-type" content="text/html; charset=<% settings.charset %>" />
 <title><% settings.sitename %></title>
-<link rel="stylesheet" href="<% request.base %>/css/style.css" />
+<link rel="stylesheet" href="/css/style.css" />
 <link href='http://fonts.googleapis.com/css?family=Yanone+Kaffeesatz' rel='stylesheet' type='text/css'>
 <link href='http://fonts.googleapis.com/css?family=Molengo' rel='stylesheet' type='text/css'>
 <link href="/javascripts/facebox/facebox.css" media="screen" rel="stylesheet" type="text/css"/>
