@@ -8,8 +8,6 @@ use Twarchiver::Schema;
 use List::MoreUtils qw(uniq);
 use Data::Dumper;
 
-use feature qw( :5.10 );
-
 =head1 NAME
 
 Twarchiver::DBActions - Functions for interacting with the database
@@ -162,24 +160,24 @@ Function: Get a connection to the database
 Returns:  A DBIx::Class::Schema instance
 
 =cut
+{
+    my $schema;
+    sub get_db {
+        unless ($schema) {
+            Dancer::debug( "Connecting to " . Dancer::setting('database') );
+            $schema = Twarchiver::Schema->connect(
+                "dbi:SQLite:dbname=". Dancer::setting('database'),
+                undef, undef,
+                {
+                    AutoCommit => 1,
+                    sqlite_unicode => 1,
+                }
+            );
+        }
 
-sub get_db {
-    state $schema;
-    unless ($schema) {
-        Dancer::debug( "Connecting to " . Dancer::setting('database') );
-        $schema = Twarchiver::Schema->connect(
-            "dbi:SQLite:dbname=". Dancer::setting('database'),
-            undef, undef,
-            {
-                AutoCommit => 1,
-                sqlite_unicode => 1,
-            }
-        );
+        return $schema;
     }
-
-    return $schema;
 }
-
 =head2 [ResultRow] get_user_record( screen_name )
 
 Function:  Get the db record for the given user
