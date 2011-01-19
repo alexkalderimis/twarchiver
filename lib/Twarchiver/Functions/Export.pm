@@ -1,8 +1,6 @@
 package Twarchiver::Functions::Export;
 use Dancer ':syntax';
 
-use feature ':5.10';
-
 our $VERSION = '0.1';
 
 use Text::CSV;
