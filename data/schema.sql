@@ -57,7 +57,7 @@ CREATE TABLE IF NOT EXISTS tweet_tag (
     tweet INTEGER REFERENCES tweet(tweet_id),
     tag INTEGER REFERENCES tag(tag_id),
     private_to INTEGER REFERENCES user(user_id)
-    tagger INTEGER NOT NULL REFERENCES user(user_id)
+    tagger INTEGER NOT NULL DEFAULT 0 REFERENCES user(user_id)
 );
 
 CREATE TABLE IF NOT EXISTS tag (
