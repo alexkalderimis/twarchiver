@@ -3,8 +3,6 @@ package Twarchiver::Functions::TwitterAPI;
 use Dancer ':syntax';
 use Math::BigInt;
 
-use feature ':5.10';
-
 our $VERSION = '0.1';
 
 use Net::Twitter;
