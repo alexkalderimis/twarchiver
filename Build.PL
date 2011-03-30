@@ -12,6 +12,7 @@ my $build = Module::Build->new(
         'perl'                          => '5.10.00',
         'Dancer'                        => 1.2,
         'Dancer::Plugin::Ajax'          => 0,
+        'Dancer::Plugin::ProxyPath'     => 0,
         'Crypt::SaltedHash'             => 0,
         URI                             => 0,
         Template                        => 0,
