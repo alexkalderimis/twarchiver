@@ -5,7 +5,7 @@ margin: 0;
 margin-bottom: 25px;
 padding: 0;
 background-color: #E9F6F6;
-background-image: url("/images/vine.png"); 
+background-image: url("../images/vine.png"); 
 background-repeat: no-repeat;
 background-position: top left;
 background-attachment: fixed;

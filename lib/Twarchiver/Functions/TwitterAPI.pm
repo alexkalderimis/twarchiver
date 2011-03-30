@@ -1,6 +1,7 @@
 package Twarchiver::Functions::TwitterAPI;
 
 use Dancer ':syntax';
+use Dancer::Plugin::ProxyPath;
 use Math::BigInt;
 
 our $VERSION = '0.1';
@@ -118,7 +119,7 @@ Function: redirect the user to twitter to authorise us.
 =cut
 
 sub authorise {
-    my $cb_url = request->uri_for( request->path );
+    my $cb_url = proxy->uri_for( request->path );
     debug("callback url is $cb_url");
     eval {
         my $twitter = get_twitter();

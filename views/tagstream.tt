@@ -22,7 +22,7 @@
 <script> 
 // Asynchronously load the content
 window.onload = function() {
-    var url = "/load/content/<% content_url %>";
+    var url = "<% proxy.uri_for("/load/content/$content_url") %>";
     $("#content-ol").load(url, null, function() {});
     updateSideBars({tag: "<% tag %>"});
 };

@@ -4,6 +4,7 @@ use strict;
 use warnings;
 
 use Dancer ':syntax';
+use Dancer::Plugin::ProxyPath;
 use Crypt::SaltedHash qw/validate/;
 use Twarchiver::Functions::DBAccess qw/:login/;
 use Twarchiver::Functions::PageContent qw/:login/;
@@ -14,7 +15,7 @@ post '/login' => sub {
     
     if (not exists_user($user)) {
         warning "Failed login for unrecognised user '$user'";
-        redirect '/?failed=notexists';
+        redirect proxy->uri_for('/?failed=notexists');
     } else {
         my $user_rec = get_user_record($user);
         if (validate_user($user, params->{login_password})) {
@@ -24,11 +25,11 @@ post '/login' => sub {
             );
             # Logged in successfully
             session username => $user;
-            redirect params->{url} || '/';
+            redirect params->{url} || proxy->uri_for('/');
         } else {
             debug("Login failed - password incorrect for " 
                 . params->{login_user});
-            redirect '/?failed=incorrect';
+            redirect proxy->uri_for('/?failed=incorrect');
         }
     }
 };
@@ -42,14 +43,14 @@ post '/register' => sub {
 
     if (exists_user($user)) {
         debug "User already exists";
-        redirect '/?failed=exists';
+        redirect proxy->uri_for('/?failed=exists');
     } else {
         if (not (params->{reg_password} && params->{confirm_password})) {
-            redirect '/?failed=nopass';
+            redirect proxy->uri_for('/?failed=nopass');
         } elsif (params->{reg_password} ne params->{confirm_password}) {
-            redirect '/?failed=notmatchingpass';
+            redirect proxy->uri_for('/?failed=notmatchingpass');
         } elsif (setting("in_beta") and not beta_key_is_valid_and_unused($beta_key)) {
-            redirect '/?failed=notinbeta';
+            redirect proxy->uri_for('/?failed=notinbeta');
         } else {
             my $csh = Crypt::SaltedHash->new(algorithm => 'SHA-1');
             $csh->add(params->{reg_password});
@@ -61,7 +62,7 @@ post '/register' => sub {
                 };
             }
             if (my $e = $@) {
-                redirect '/?failed=notinbeta';
+                redirect proxy->uri_for('/?failed=notinbeta');
             } else {
                 $user_rec->update({
                     passhash => $passhash,
@@ -69,7 +70,7 @@ post '/register' => sub {
                     last_login => DateTime->now(),
                 });
                 session username => $user;
-                redirect params->{url} || '/';
+                redirect params->{url} || proxy->uri_for('/');
             }
         }
     }
@@ -77,7 +78,7 @@ post '/register' => sub {
 
 post '/logout' => sub {
     session->destroy;
-    redirect('/');
+    redirect(proxy->uri_for('/'));
 };
 
 before sub {

@@ -1,10 +1,9 @@
 package Twarchiver::Functions::PageContent;
-use Dancer ':syntax';
 
 our $VERSION = '0.1';
 
-use Twarchiver::Functions::DBAccess ':pagecontent';
-use Twarchiver::Functions::Util ':all';
+use Dancer ':syntax';
+use Dancer::Plugin::ProxyPath;
 
 use HTML::EasyTags;
 use List::MoreUtils qw(uniq);
@@ -12,6 +11,9 @@ use URI;
 use Carp qw/confess/;
 use Encode;
 use DateTime::Format::SQLite;
+
+use Twarchiver::Functions::DBAccess ':pagecontent';
+use Twarchiver::Functions::Util ':all';
 
 use constant {
     TWITTER_BASE   => 'http://twitter.com/',
@@ -564,10 +566,10 @@ sub make_retweeted_sidebar {
     my $uri;
     if (my $screen_name = $args{screen_name}) {
         $thing = get_twitter_account($screen_name);
-        $uri   = request->uri_for("/show/$screen_name/retweeted" );
+        $uri   = proxy->uri_for("/show/$screen_name/retweeted" );
     } elsif (my $topic = $args{topic} ) {
         $thing = get_hashtag($topic);
-        $uri   = request->uri_for("/show/tweets/on/$topic/retweeted");
+        $uri   = proxy->uri_for("/show/tweets/on/$topic/retweeted");
     } else {
         confess "Bad Arguments";
     }
@@ -612,9 +614,9 @@ sub make_retweet_link {
     confess "number of tweets '$number_of_tweets' is not a number"
         unless $number_of_tweets =~ /^\d+$/;
     if (my $screen_name = params->{screen_name}) {
-        $uri = request->uri_for( "/show/$screen_name/retweeted" );
+        $uri = proxy->uri_for( "/show/$screen_name/retweeted" );
     } elsif (my $topic = params->{topic}) {
-        $uri = request->uri_for( "/show/tweets/on/$topic/retweeted" );
+        $uri = proxy->uri_for( "/show/tweets/on/$topic/retweeted" );
     } else {
         confess "Bad Parameters";
     }
@@ -671,7 +673,7 @@ sub make_user_home_link {
                                                 ->screen_name;
     }
     my $link = $html->a(
-        href => request->uri_for( "/show/$screen_name" ),
+        href => proxy->uri_for( "/show/$screen_name" ),
         text => $screen_name,
     );
     return $link;
@@ -689,10 +691,10 @@ sub make_month_link {
     my $number_of_tweets = get_tweets_in_month( %args )->count;
     my $uri;
     if (my $screen_name = $args{screen_name}) {
-        $uri = request->uri_for(
+        $uri = proxy->uri_for(
             "show/$screen_name/$args{year}-$args{month}");
     } elsif (my $topic = $args{topic}) {
-        $uri = request->uri_for(
+        $uri = proxy->uri_for(
             "show/tweets/on/$topic/$args{year}-$args{month}");
     } else {
         confess "Bad Arguments";
@@ -739,9 +741,9 @@ sub make_url_report_link {
     confess "no count" unless defined $count;
     my $uri;
     if (my $who = params->{screen_name}) {
-        $uri = URI->new( request->uri_for("show/$who/links/to"));
+        $uri = URI->new( proxy->uri_for("show/$who/links/to"));
     } elsif (my $topic = params->{topic}) {
-        $uri = URI->new(request->uri_for("show/tweets/on/$topic/links"));
+        $uri = URI->new(proxy->uri_for("show/tweets/on/$topic/links"));
     } else {
         confess "Bad Parameters";
     }
@@ -778,9 +780,9 @@ sub make_tag_link {
     my ( $tag, $count ) = @_;
     my $uri;
     if (my $who = params->{screen_name}) {
-        $uri = request->uri_for("show/$who/tagged/$tag");
+        $uri = proxy->uri_for("show/$who/tagged/$tag");
     } elsif (my $topic = params->{topic}) {
-        $uri = request->uri_for("show/tweets/on/$topic/tagged/$tag");
+        $uri = proxy->uri_for("show/tweets/on/$topic/tagged/$tag");
     } else {
         confess "Bad Parameters";
     }
@@ -824,7 +826,7 @@ sub get_hashtag_url {
 #    my $uri   = URI->new(TWITTER_SEARCH);
 #    $uri->query_form( q => $topic );
     $topic = substr($topic, 1);
-    my $uri = request->uri_for("/show/tweets/on/$topic");
+    my $uri = proxy->uri_for("/show/tweets/on/$topic");
     return "$uri";
 }
 
@@ -862,9 +864,9 @@ sub make_hashtag_report_link {
         unless ($topic =~ /^#/);
     my $uri;
     if (my $me = params->{screen_name}) {
-        $uri = request->uri_for("show/$me/on" . substr($topic, 1) );
+        $uri = proxy->uri_for("show/$me/on" . substr($topic, 1) );
     } elsif (my $topicA = params->{topic}) {
-        $uri = request->uri_for("show/tweets/on/$topicA/and/$topic");
+        $uri = proxy->uri_for("show/tweets/on/$topicA/and/$topic");
     } else {
         confess "Bad Parameters";
     }
@@ -926,7 +928,7 @@ sub get_mention_url {
     confess "Mention is undefined" unless (defined $mention);
     $mention = substr( $mention, 1 ) if ($mention =~ /^\@/);
     # return TWITTER_BASE . $mention;
-    return request->uri_for("/show/$mention");
+    return proxy->uri_for("/show/$mention");
 }
 
 =head2 make_mention_link( mentioned_name )
@@ -958,9 +960,9 @@ sub make_mention_report_link {
     my ( $screen_name, $count ) = @_;
     my $uri;
     if (my $me = params->{screen_name}) {
-        $uri = request->uri_for("show/$me/to/$screen_name");
+        $uri = proxy->uri_for("show/$me/to/$screen_name");
     } elsif (my $topic = params->{topic}) {
-        $uri = request->uri_for("show/tweets/on/$topic/by/$screen_name");
+        $uri = proxy->uri_for("show/tweets/on/$topic/by/$screen_name");
     } else {
         confess "Bad Parameters";
     }

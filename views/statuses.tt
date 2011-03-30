@@ -32,7 +32,7 @@ function downloadTweets(fromId) {
         data.maxId = fromId;
     }
     console.log(data);
-    $.get("/downloadtweets", data, updateProgress, "json");
+    $.get("<% proxy.uri_for("/downloadtweets") %>", data, updateProgress, "json");
 }
 function updateProgress(data) {
     console.log(data);
@@ -52,7 +52,7 @@ function allDone() {
         parent : '#content',
         ajax   : true
     }); */
-    var url = "/load/content/<% content_url %>";
+    var url = "<% proxy.uri_for("/load/content/$content_url") %>";
     ensureHidden('progress');
     $("#content-ol").load(url, null, function() {});
     updateSideBars({screen_name: "<% screen_name %>"});

@@ -4,10 +4,10 @@
             <ul>
         <% END %>
         <li>
-            <% uri = request.uri_for("/show/" _ tweeter.screen_name ) %>
+            <% uri = proxy.uri_for("/show/" _ tweeter.screen_name ) %>
             <a href="<% uri %>"><% tweeter.screen_name %></a>
             <% 
-uri = request.uri_for("/show/tweets/on/$topic/by/" _ tweeter.screen_name )
+uri = proxy.uri_for("/show/tweets/on/$topic/by/" _ tweeter.screen_name )
 count_rs = get_tweets_with_hashtag(tweeter.screen_name, topic)
 count    = count_rs.count
             %>

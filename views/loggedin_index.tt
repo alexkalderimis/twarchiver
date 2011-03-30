@@ -33,7 +33,7 @@
             <div id="link-box" style="display: none;" class="tab">
               <ul id="where_next_list">
                 <li>
-                    <form method="get" action="/show/tweets/by">
+                    <form method="get" action="<% proxy.uri_for("/show/tweets/by") %>">
                     <span>Get someone's tweets:
                         <input 
                         type="text" 
@@ -47,7 +47,7 @@
                     </form>
                 </li>
                 <li>
-                    <form method="get" action="/show/tweets/on">
+                    <form method="get" action="<% proxy.uri_for("/show/tweets/on") %>">
                     <span>Get tweets on a topic:
                         <input 
                         type="text" 
@@ -61,7 +61,7 @@
                     </form>
                 </li>
                 <li>
-                    <form method="get" action="/show/tweets/tagged">
+                    <form method="get" action="<% proxy.uri_for("/show/tweets/tagged") %>">
                     <span>Get tweets with a tag:
                         <input 
                         type="text" 
@@ -135,7 +135,7 @@
         if (fromId != null) {
             data.maxId = fromId;
         }
-        $.get("/downloadtweets", data, updateProgress, "json");
+        $.get("<% proxy.uri_for("/downloadtweets")%>", data, updateProgress, "json");
     }
     function updateProgress(data) {
         console.log(data);

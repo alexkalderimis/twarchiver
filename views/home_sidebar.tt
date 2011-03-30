@@ -3,14 +3,14 @@
     <ul id="sidebar-items">
         <li>
             <h3>
-                <a href="<% request.uri_for("/show/all/tagged") %>">
+                <a href="<% proxy.uri_for("/show/all/tagged") %>">
                 All Tagged Tweets (<% tagged_tweet_count %>)
                 </a>
             </h3>
         </li>
         <li>
             <h3>
-                <a href="<% request.uri_for("/show/my/tagged/tweets") %>">
+                <a href="<% proxy.uri_for("/show/my/tagged/tweets") %>">
                 Tweets You've tagged (<% my_tagged_tweet_count %>)
                 </a>
             </h3>

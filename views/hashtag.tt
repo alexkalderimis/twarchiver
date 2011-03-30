@@ -32,7 +32,7 @@ function downloadTweets(page) {
         data.page = page;
     }
     console.log(data);
-    $.get("/downloadtweets", data, updateProgress, "json");
+    $.get("<% proxy.uri_for("/downloadtweets") %>", data, updateProgress, "json");
 }
 function updateProgress(data) {
     console.log(data);
@@ -53,12 +53,7 @@ function updateProgress(data) {
     }
 }
 function allDone() {
-    /* $.throbberShow({
-        image : "/images/ajax-loader.gif",
-        parent : '#content',
-        ajax   : true
-    }); */
-    var url = "/load/content/on/<% content_url %>";
+    var url = "<% proxy.uri_for("/load/content/on/$content_url") %>";
     ensureHidden('progress');
     $("#content-ol").load(url, null, function() {});
     updateSideBars({topic: "<% topic %>"});

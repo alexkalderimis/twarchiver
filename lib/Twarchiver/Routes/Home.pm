@@ -1,6 +1,7 @@
 package Twarchiver::Routes::Home;
 
 use Dancer ':syntax';
+use Dancer::Plugin::ProxyPath;
 
 use Template;
 use Twarchiver::Functions::DBAccess qw/:routes/;

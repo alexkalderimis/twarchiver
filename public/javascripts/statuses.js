@@ -15,6 +15,7 @@ function addTags(tweetId) {
     ensureHidden(tweetId);
     requestAddTags(tags, tweetIds);
 }
+
 function requestAddTags(tags, tweetIds) {
     var tagList = tags.join(",");
     var tweetList = tweetIds.join(",");
@@ -29,7 +30,7 @@ function requestAddTags(tags, tweetIds) {
         error    : handleError,
         success  : tagAdder,
         type     : "post",
-        url      : "/addtags",
+        url      : $('#add-tags-url').text()
     });
 }
 
@@ -72,7 +73,7 @@ function requestRemoveTags(tags, tweetIds) {
         error    : handleError,
         success  : tagDeleter,
         type     : "post",
-        url      : "/removetags",
+        url      : $('#remove-tags-url').text()
     });
 }
 
@@ -228,7 +229,7 @@ function toggleExpensiveDiv(divid) {
         if (divid == "summary" || divid == 'usertags') {
             updateTags();
         } else {
-            $(target).load("/load/" + divid, sessionArgs);
+            $(target).load($('#load-url').text() + divid, sessionArgs);
         }
         hasBeenOpened[divid] = true;
     }
@@ -274,8 +275,9 @@ function loadSummary(data) {
 var sessionArgs = {};
 
 function updateTags() {
-    $("#tagLinksList").load("/load/tags", sessionArgs);
-    $.get("/load/summary", sessionArgs, loadSummary, "json");
+    var loadUrl = $('#load-url').text();
+    $("#tagLinksList").load(loadUrl + "tags", sessionArgs);
+    $.get(loadUrl + "summary", sessionArgs, loadSummary, "json");
 }
 
 function updateSideBars(args) {
@@ -283,8 +285,9 @@ function updateSideBars(args) {
         sessionArgs = args;
     }
     console.log(sessionArgs);
-    $("#timeline-list").load("/load/timeline", sessionArgs);
-    $("#retweetedLinksList").load("/load/retweeteds", sessionArgs);
+    var loadUrl = $('#load-url').text();
+    $("#timeline-list").load(loadUrl + "timeline", sessionArgs);
+    $("#retweetedLinksList").load(loadUrl + "retweeteds", sessionArgs);
 }
 /**
 *

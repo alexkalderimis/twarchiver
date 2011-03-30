@@ -7,6 +7,7 @@ use DateTime;
 use URI;
 use Template;
 
+use Dancer::Plugin::ProxyPath;
 use Twarchiver::Functions::DBAccess    ':routes';
 use Twarchiver::Functions::PageContent ':routes';
 use Twarchiver::Functions::TwitterAPI  ':routes';
@@ -146,9 +147,9 @@ sub return_tweet_analysis_page {
     my $params = $args{params};
     my $screen_name = $args{screen_name} 
         || get_user_record($username)->twitter_account->screen_name;
-    my $text_url = request->uri_for(request->path . '.txt', $params);
-    my $tsv_url  = request->uri_for(request->path . '.tsv', $params);
-    my $csv_url  = request->uri_for(request->path . '.csv', $params);
+    my $text_url = proxy->uri_for(request->path . '.txt', $params);
+    my $tsv_url  = proxy->uri_for(request->path . '.tsv', $params);
+    my $csv_url  = proxy->uri_for(request->path . '.csv', $params);
     my $profile_image = get_twitter_account($screen_name)
                             ->profile_image_url
                         || '/images/' . setting("headericon");
@@ -177,7 +178,7 @@ get '/show/tweets' => sub {
 
     my $screen_name = get_user_record(session('username'))
                         ->twitter_account->screen_name;
-    redirect request->uri_for("/show/$screen_name");
+    redirect proxy->uri_for("/show/$screen_name");
 };
 
 get qr{/show/([[:alnum:]]+)/(\d{4})-(\d{1,2}).(\w{3,4})} => sub {
@@ -214,7 +215,7 @@ get '/show/tweets.:format' => sub {
     my $format = lc params->{format};
     my $screen_name = get_user_record(session('username'))
                         ->twitter_account->screen_name;
-    redirect request->uri_for("/show/$screen_name.$format");
+    redirect proxy->uri_for("/show/$screen_name.$format");
 };
 
 get '/show/:screen_name.:format' => sub {
@@ -399,7 +400,7 @@ get '/show/:screen_name/retweeted.:format' => sub {
 
     if ($format eq 'html') {
         my $path = "/show/$screen_name/retweeted";
-        redirect request->uri_for( $path, params );
+        redirect proxy->uri_for( $path, params );
     } else {
         my @tweets  = get_retweeted_tweets($screen_name, $count);
         return export_tweets_in_format($format, @tweets);
@@ -462,7 +463,7 @@ get '/search/tweets.:format' => sub {
 get '/search/tweets' => sub {
     my $screen_name = get_user_record(session('username'))
                         ->twitter_account->screen_name;
-    redirect request->uri_for("/search/$screen_name");
+    redirect proxy->uri_for("/search/$screen_name");
 };
 
 

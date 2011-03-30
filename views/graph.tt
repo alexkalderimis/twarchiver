@@ -124,7 +124,7 @@
         var unit = 1;
         var checked = 0;
         var cumulativeCB = document.getElementById("cumulative");
-        var mainurl = "/graph/<% screen_name %>/by/" + interval;
+        var mainurl = "<% proxy.uri_for("/graph/$screen_name/by/") %>" + interval;
         if (cumulativeCB.checked) {
             checked = 1;
             mainurl = mainurl + "?cumulative=1";
@@ -137,7 +137,7 @@
 
     function refreshGraph(interval, unit, showCumulative) {
         $.throbberShow({
-            image : "/images/ajax-loader.gif",
+            image : "<% proxy.uri_for("/images/ajax-loader.gif") %>",
             parent : '#timeline-graph',
             ajax: false
         });
@@ -156,12 +156,12 @@
 
         options.bars.barWidth = dayInMillis * days * unit;
 
-        var dataurl = "/graphdata/<% screen_name %>/by/" + interval;
+        var dataurl = "<% proxy.uri_for("/graphdata/$screen_name/by/") %>" + interval;
         if (showCumulative != null && showCumulative > 0) {
-            dataurl = dataurl + "?cumulative=1";
+            dataurl += "?cumulative=1";
         }
         if (unit != 1) {
-            dataurl = dataurl + "&unit=" + unit;
+            dataurl += "&unit=" + unit;
         }
 
         $.ajax({
@@ -201,7 +201,7 @@
     });
 
     placeholder.bind("plotclick", function (event, pos, item) {
-        var url = "/show/<% screen_name %>/from/";
+        var url = "<% proxy.uri_for("/show/$screen_name/from/") %>";
         if (item && item.series.label != "Cumulative total") {
             url = url + (item.datapoint[0].toFixed(0) / 1000);
             var parts = item.series.label.toLowerCase().split(" ");

@@ -9,12 +9,12 @@
             <a href="#logout-popup" rel="facebox">Logout</a>
         </li>
         <li>
-            <a href="<% request.uri_for("/") %>">Home</a>
+            <a href="<% proxy.uri_for("/") %>">Home</a>
         </li>
     </ul>
 </div>
 <div id="logout-popup" style="display: none;">
-    <form id="logout_form" action="/logout" method="post">
+    <form id="logout_form" action="<% proxy.uri_for("/logout") %>" method="post">
         <table>
             <tr>
             <td>Really?</td>
